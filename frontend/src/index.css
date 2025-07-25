@@ -1,0 +1,121 @@
+/*
+BRP THEME UPDATE (2024)
+
+Previous theme variables (for rollback):
+--background: 0 0% 98%;
+--foreground: 215 25% 15%;
+--card: 0 0% 100%;
+--card-foreground: 215 25% 15%;
+--popover: 0 0% 100%;
+--popover-foreground: 215 25% 15%;
+--primary: 217 91% 60%;
+--primary-foreground: 0 0% 100%;
+--secondary: 210 40% 96%;
+--secondary-foreground: 215 25% 15%;
+--muted: 210 40% 96%;
+--muted-foreground: 215 20% 45%;
+--accent: 210 40% 96%;
+--accent-foreground: 215 25% 15%;
+--destructive: 0 84% 60%;
+--destructive-foreground: 0 0% 100%;
+--border: 214 31% 91%;
+--input: 214 31% 91%;
+--ring: 217 91% 60%;
+--radius: 0.75rem;
+*/
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* White */
+    --foreground: 0 0% 0%;   /* Black */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 51 100% 50%; /* #FFD903 (Yellow) */
+    --primary-foreground: 0 0% 0%; /* Black text on yellow */
+
+    --secondary: 0 0% 35%; /* #58595B (Dark Gray) */
+    --secondary-foreground: 0 0% 100%; /* White text on gray */
+
+    --muted: 220 13% 80%; /* #C7C8CA (Silver) */
+    --muted-foreground: 0 0% 0%;
+
+    --accent: 51 100% 50%; /* Yellow accent */
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 80%; /* Silver */
+    --input: 220 13% 80%;
+    --ring: 51 100% 50%; /* Yellow */
+
+    --radius: 0.75rem;
+
+    /* BRP Specific Colors */
+    --brp-yellow: 51 100% 50%; /* #FFD903 */
+    --brp-black: 0 0% 0%;      /* #000000 */
+    --brp-gray: 0 0% 35%;      /* #58595B */
+    --brp-silver: 220 13% 80%; /* #C7C8CA */
+    /* Allocation Status Colors (Green to Red) */
+    --allocation-low: 142 76% 36%;      /* Green */
+    --allocation-optimal: 88 50% 53%;   /* Lime/Yellow-Green */
+    --allocation-high: 38 92% 50%;      /* Orange */
+    --allocation-over: 0 84% 60%;       /* Red */
+  }
+
+  .dark {
+    --background: 0 0% 0%; /* Black */
+    --foreground: 0 0% 100%; /* White */
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 51 100% 50%; /* #FFD903 (Yellow) */
+    --primary-foreground: 0 0% 0%; /* Black text on yellow */
+
+    --secondary: 0 0% 80%; /* #C7C8CA (Silver) */
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 100%;
+
+    --accent: 51 100% 50%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 51 100% 50%;
+
+    --radius: 0.75rem;
+    /* Allocation Status Colors (Green to Red) for dark mode */
+    --allocation-low: 142 76% 46%;
+    --allocation-optimal: 88 50% 63%;
+    --allocation-high: 38 92% 60%;
+    --allocation-over: 0 84% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

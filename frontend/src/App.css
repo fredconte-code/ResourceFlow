@@ -1,0 +1,20 @@
+/* Resource Scheduling App Styles */
+@layer components {
+  .progress-bar-gradient {
+    background: var(--gradient-primary);
+  }
+  
+  .allocation-progress {
+    transition: var(--transition-smooth);
+  }
+  
+  .card-hover {
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .card-hover:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-1px);
+  }
+}
