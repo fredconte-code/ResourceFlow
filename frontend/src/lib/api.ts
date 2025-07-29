@@ -25,7 +25,7 @@ export interface TeamMember {
   name: string;
   role: string;
   country: 'Canada' | 'Brazil';
-  allocatedHours: number;
+  allocatedHours?: number; // Optional since we now use global settings
 }
 
 export const teamMembersApi = {

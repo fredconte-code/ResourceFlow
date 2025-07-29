@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/context/SettingsContext";
 import { AllocationBar } from "./AllocationBar";
 import { getEmployeeProjectNamesWithCleanup, getEmployeeProjectAllocationsWithCleanup, initializeProjectData } from "@/lib/project-data";
-import { calculateAvailableHours as calculateWorkingHours, getWorkingHoursConfig, calculateWeeklyAvailableHours, calculateMonthlyAvailableHours } from "@/lib/working-hours";
+import { useWorkingHours } from "@/lib/working-hours";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, addMonths, subMonths, startOfMonth } from "date-fns";
 import { teamMembersApi, TeamMember } from "@/lib/api";
@@ -24,7 +24,7 @@ const countryFlags = {
 
 export const TeamManagement = () => {
   const { toast } = useToast();
-  const { canadaHours, brazilHours, buffer } = useSettings();
+  const { getWorkingHoursForCountry } = useWorkingHours();
   
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,8 +62,7 @@ export const TeamManagement = () => {
   const [newMember, setNewMember] = useState<Partial<TeamMember>>({
     name: '',
     role: '',
-    country: 'Canada',
-    allocatedHours: 0
+    country: 'Canada'
   });
 
   const [search, setSearch] = useState("");
@@ -101,8 +100,7 @@ export const TeamManagement = () => {
       const addedMember = await teamMembersApi.create({
         name: newMember.name,
         role: newMember.role,
-        country: newMember.country as 'Canada' | 'Brazil',
-        allocatedHours: newMember.allocatedHours || 0
+        country: newMember.country as 'Canada' | 'Brazil'
       });
 
       setMembers(prev => [...prev, addedMember]);
@@ -132,8 +130,7 @@ export const TeamManagement = () => {
     setEditForm({
       name: member.name,
       role: member.role,
-      country: member.country,
-      allocatedHours: member.allocatedHours
+      country: member.country
     });
   };
 
@@ -157,8 +154,7 @@ export const TeamManagement = () => {
       const updatedMember = await teamMembersApi.update(editingMember.id, {
         name: editForm.name,
         role: editForm.role,
-        country: editForm.country as 'Canada' | 'Brazil',
-        allocatedHours: editForm.allocatedHours || 0
+        country: editForm.country as 'Canada' | 'Brazil'
       });
 
       setMembers(prev => prev.map(m => m.id === editingMember.id ? updatedMember : m));
@@ -331,14 +327,13 @@ export const TeamManagement = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="allocatedHours">Allocated Hours</Label>
-                <Input
-                  id="allocatedHours"
-                  type="number"
-                  value={newMember.allocatedHours}
-                  onChange={(e) => setNewMember(prev => ({ ...prev, allocatedHours: parseInt(e.target.value) || 0 }))}
-                  placeholder="0"
-                />
+                <Label>Working Hours</Label>
+                <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                  {getWorkingHoursForCountry(newMember.country)} hours/week (from global settings)
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Working hours are configured globally in Settings
+                </p>
               </div>
             </div>
             
@@ -349,7 +344,7 @@ export const TeamManagement = () => {
               </Button>
               <Button variant="outline" onClick={() => {
                 setShowAddForm(false);
-                setNewMember({ name: '', role: '', country: 'Canada', allocatedHours: 0 });
+                setNewMember({ name: '', role: '', country: 'Canada' });
                 setShowCustomRole(false);
                 setCustomRole('');
               }}>
@@ -409,7 +404,7 @@ export const TeamManagement = () => {
                         <span>•</span>
                         <span>{countryFlags[member.country]} {member.country}</span>
                         <span>•</span>
-                        <span>{member.allocatedHours}h allocated</span>
+                        <span>{getWorkingHoursForCountry(member.country)}h/week</span>
                       </div>
                     </div>
                   </div>
@@ -477,13 +472,13 @@ export const TeamManagement = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-allocatedHours">Allocated Hours</Label>
-                <Input
-                  id="edit-allocatedHours"
-                  type="number"
-                  value={editForm.allocatedHours || 0}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, allocatedHours: parseInt(e.target.value) || 0 }))}
-                />
+                <Label>Working Hours</Label>
+                <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                  {getWorkingHoursForCountry(editForm.country || 'Canada')} hours/week (from global settings)
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Working hours are configured globally in Settings
+                </p>
               </div>
             </div>
             <DialogFooter>
@@ -493,7 +488,6 @@ export const TeamManagement = () => {
               <Button 
                 onClick={handleSaveEdit} 
                 disabled={savingEdit}
-                className={savingEdit ? "bg-blue-600 hover:bg-blue-700" : ""}
               >
                 {savingEdit ? (
                   <>

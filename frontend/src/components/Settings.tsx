@@ -7,11 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Download, Upload, Trash2, AlertTriangle, Database, AlertCircle } from "lucide-react";
+import { Check, Loader2, Download, Upload, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { employees as allEmployees } from "@/lib/employee-data";
 import { checkDataConsistency } from "@/lib/employee-data";
-import { settingsApi, dataApi, Settings as ApiSettings } from "@/lib/api";
+import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection } from "@/lib/api";
 
 export const Settings = () => {
   const { toast } = useToast();
@@ -24,6 +24,32 @@ export const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Server status state
+  const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+
+  // Check server status
+  const checkServerStatus = async () => {
+    setServerStatus('checking');
+    try {
+      const isOnline = await testApiConnection();
+      setServerStatus(isOnline ? 'online' : 'offline');
+      setLastChecked(new Date());
+    } catch (error) {
+      setServerStatus('offline');
+      setLastChecked(new Date());
+    }
+  };
+
+  // Check server status on component mount and every 30 seconds
+  useEffect(() => {
+    checkServerStatus();
+    
+    const interval = setInterval(checkServerStatus, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Load settings from API
   const loadSettings = async () => {
@@ -73,6 +99,7 @@ export const Settings = () => {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showClearDataDialog, setShowClearDataDialog] = useState(false);
+  const [showClearDataWarning, setShowClearDataWarning] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -324,42 +351,42 @@ export const Settings = () => {
                 <Input
                   id="buffer"
                   type="number"
-                  value={localBuffer}
-                  onChange={(e) => setLocalBuffer(Number(e.target.value))}
-                  placeholder="10"
+                  value={localBuffer || ''}
+                  onChange={(e) => setLocalBuffer(e.target.value === '' ? 0 : Number(e.target.value))}
+                  placeholder="20"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Percentage of time reserved for unexpected tasks
+                  Percentage of time reserved for unexpected tasks (default: 20%)
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="canadaHours">Canada Weekly Hours</Label>
+                <Label htmlFor="canadaHours">Canada Working Hours /Week</Label>
                 <Input
                   id="canadaHours"
                   type="number"
                   step="0.5"
-                  value={localCanadaHours}
-                  onChange={(e) => setLocalCanadaHours(Number(e.target.value))}
+                  value={localCanadaHours || ''}
+                  onChange={(e) => setLocalCanadaHours(e.target.value === '' ? 0 : Number(e.target.value))}
                   placeholder="37.5"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Standard working hours per week for Canadian employees
+                  Standard working hours per week for Canadian employees (default: 37.5h)
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="brazilHours">Brazil Weekly Hours</Label>
+                <Label htmlFor="brazilHours">Brazil Working Hours /Week</Label>
                 <Input
                   id="brazilHours"
                   type="number"
                   step="0.5"
-                  value={localBrazilHours}
-                  onChange={(e) => setLocalBrazilHours(Number(e.target.value))}
+                  value={localBrazilHours || ''}
+                  onChange={(e) => setLocalBrazilHours(e.target.value === '' ? 0 : Number(e.target.value))}
                   placeholder="44"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Standard working hours per week for Brazilian employees
+                  Standard working hours per week for Brazilian employees (default: 44h)
                 </p>
               </div>
             </div>
@@ -367,7 +394,6 @@ export const Settings = () => {
             <Button 
               onClick={handleSave} 
               disabled={saving}
-              className={saving ? "bg-blue-600 hover:bg-blue-700" : ""}
             >
               {saving ? (
                 <>
@@ -390,40 +416,61 @@ export const Settings = () => {
             <CardTitle>Data Management</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" />
-              Export data to CSV
-            </Button>
-            
-            <Button variant="outline" disabled>
-              <Upload className="mr-2 h-4 w-4" />
-              Import data from CSV
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={() => setShowClearDataDialog(true)}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Clear All Data
-            </Button>
-          </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" />
+                Export data to Excel
+              </Button>
+              
+              <Button variant="outline" disabled>
+                <Upload className="mr-2 h-4 w-4" />
+                Import data from CSV
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setShowClearDataWarning(true)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Clear All Data
+              </Button>
+            </div>
           
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              <strong>Export data to CSV:</strong> Download all your data (team members, projects, time off, and allocations) as a CSV file for backup or analysis purposes.
+              <strong>Export data to Excel:</strong> Download all your data (team members, projects, time off, and allocations) as an Excel file for backup or analysis purposes.
             </p>
             <p className="text-sm text-muted-foreground">
               <strong>Import data from CSV:</strong> Coming soon! This feature will allow you to restore your data from a previously exported CSV file.
             </p>
-            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200 dark:border-red-800">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <p className="text-sm text-red-800 dark:text-red-200">
-                <strong>Clear All Data:</strong> ⚠️ <strong>DESTRUCTIVE ACTION!</strong> This will permanently delete ALL your data including team members, projects, time off, allocations, and settings. This action cannot be undone. Make sure to export your data first as a backup.
-              </p>
-            </div>
+            {showClearDataWarning && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200 dark:border-red-800">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  <strong>Clear All Data:</strong> ⚠️ <strong>DESTRUCTIVE ACTION!</strong> This will permanently delete ALL your data including team members, projects, time off, allocations, and settings. This action cannot be undone. Make sure to export your data first as a backup.
+                </p>
+                <div className="flex gap-2 ml-auto">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowClearDataWarning(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => {
+                      setShowClearDataWarning(false);
+                      setShowClearDataDialog(true);
+                    }}
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
@@ -431,6 +478,53 @@ export const Settings = () => {
             <span className="text-sm text-amber-800 dark:text-amber-200">
               <strong>Note:</strong> Data is now stored on the server. Export your data regularly as a backup.
             </span>
+          </div>
+
+          {/* Server Status */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Server className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <span className="font-medium">Server Status</span>
+              </div>
+                              <div className="flex items-center gap-2">
+                  {serverStatus === 'online' ? (
+                    <CircleCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  ) : serverStatus === 'offline' ? (
+                    <CircleX className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  ) : (
+                    <CircleAlert className="h-5 w-5 text-yellow-600 dark:text-yellow-400 animate-pulse" />
+                  )}
+                  <span className={`text-sm font-medium ${
+                    serverStatus === 'online' 
+                      ? 'text-green-700 dark:text-green-400' 
+                      : serverStatus === 'offline' 
+                      ? 'text-red-700 dark:text-red-400' 
+                      : 'text-yellow-700 dark:text-yellow-400'
+                  }`}>
+                    {serverStatus === 'online' ? 'Online' : serverStatus === 'offline' ? 'Offline' : 'Checking...'}
+                  </span>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {lastChecked && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Last checked: {lastChecked.toLocaleTimeString()}
+                </span>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={checkServerStatus}
+                disabled={serverStatus === 'checking'}
+              >
+                {serverStatus === 'checking' ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  'Test'
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

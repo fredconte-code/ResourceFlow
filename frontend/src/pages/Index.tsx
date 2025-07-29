@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { TeamManagement } from "@/components/TeamManagement";
 import { Projects } from "@/components/Projects";
@@ -8,7 +8,16 @@ import { CalendarView } from "@/components/CalendarView";
 const Index = () => {
   console.log('Index component rendering...');
   
-  const [currentView, setCurrentView] = useState('dashboard');
+  // Initialize currentView from localStorage or default to 'dashboard'
+  const [currentView, setCurrentView] = useState(() => {
+    const savedView = localStorage.getItem('currentView');
+    return savedView || 'dashboard';
+  });
+  
+  // Save currentView to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('currentView', currentView);
+  }, [currentView]);
   
   const renderCurrentView = () => {
     switch (currentView) {

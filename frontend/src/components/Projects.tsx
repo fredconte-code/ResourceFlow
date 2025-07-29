@@ -17,11 +17,41 @@ export const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined });
+  const [form, setForm] = useState({ name: "", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined, color: '#3b82f6' });
+  
+  // State for showing/hiding add form
+  const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Predefined color palette for projects (20 colors - strong and light variants)
+  const projectColors = [
+    // Row 1: Strong Colors
+    '#3b82f6', // Blue
+    '#ef4444', // Red
+    '#10b981', // Green
+    '#f59e0b', // Amber
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+    '#06b6d4', // Cyan
+    '#84cc16', // Lime
+    '#f97316', // Orange
+    '#6366f1', // Indigo
+    
+    // Row 2: Light Colors (corresponding to strong colors above)
+    '#93c5fd', // Light Blue
+    '#fca5a5', // Light Red
+    '#86efac', // Light Green
+    '#fcd34d', // Light Amber
+    '#c4b5fd', // Light Purple
+    '#f9a8d4', // Light Pink
+    '#67e8f9', // Light Cyan
+    '#bef264', // Light Lime
+    '#fdba74', // Light Orange
+    '#a5b4fc', // Light Indigo
+  ];
   
   // State for editing
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined });
+  const [editForm, setEditForm] = useState({ name: "", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined, color: '#3b82f6' });
   
   // State for delete confirmation
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
@@ -73,12 +103,13 @@ export const Projects = () => {
         name: form.name,
         startDate: form.startDate ? format(form.startDate, 'yyyy-MM-dd') : undefined,
         endDate: form.endDate ? format(form.endDate, 'yyyy-MM-dd') : undefined,
-        color: '#3b82f6',
+        color: form.color,
         allocatedHours: 0
       });
       
       setProjects(prev => [...prev, addedProject]);
-      setForm({ name: "", startDate: undefined, endDate: undefined });
+      setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
+      setShowAddForm(false);
       
       toast({
         title: "Success",
@@ -101,7 +132,8 @@ export const Projects = () => {
     setEditForm({
       name: project.name,
       startDate: project.startDate ? new Date(project.startDate) : undefined,
-      endDate: project.endDate ? new Date(project.endDate) : undefined
+      endDate: project.endDate ? new Date(project.endDate) : undefined,
+      color: project.color
     });
   };
 
@@ -133,12 +165,13 @@ export const Projects = () => {
       const updatedProject = await projectsApi.update(editingProject.id, {
         name: editForm.name,
         startDate: editForm.startDate ? format(editForm.startDate, 'yyyy-MM-dd') : undefined,
-        endDate: editForm.endDate ? format(editForm.endDate, 'yyyy-MM-dd') : undefined
+        endDate: editForm.endDate ? format(editForm.endDate, 'yyyy-MM-dd') : undefined,
+        color: editForm.color
       });
       
       setProjects(prev => prev.map(p => p.id === editingProject.id ? updatedProject : p));
       setEditingProject(null);
-      setEditForm({ name: "", startDate: undefined, endDate: undefined });
+      setEditForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
       
       toast({
         title: "Success",
@@ -160,7 +193,7 @@ export const Projects = () => {
 
   const handleCancelEdit = () => {
     setEditingProject(null);
-    setEditForm({ name: "", startDate: undefined, endDate: undefined });
+    setEditForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
   };
 
   const handleDeleteClick = (project: Project) => {
@@ -192,6 +225,8 @@ export const Projects = () => {
       });
     }
   };
+
+
 
   if (loading) {
     return (
@@ -226,19 +261,24 @@ export const Projects = () => {
             Manage your projects and their timelines
           </p>
         </div>
-        <Button onClick={() => setForm({ name: "", startDate: undefined, endDate: undefined })}>
+      </div>
+
+      {/* Add Project Button */}
+      <div className="flex items-center gap-4">
+        <Button onClick={() => setShowAddForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Project
         </Button>
       </div>
 
       {/* Add Project Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Project</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {showAddForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Project</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Project Name *</Label>
               <Input
@@ -301,6 +341,26 @@ export const Projects = () => {
                 </PopoverContent>
               </Popover>
             </div>
+
+                          <div className="space-y-2">
+                <Label>Project Color</Label>
+                <div className="grid grid-cols-10 gap-2">
+                  {projectColors.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={cn(
+                        "w-8 h-8 rounded-full border-2 transition-all",
+                        form.color === color 
+                          ? "border-gray-800 scale-110" 
+                          : "border-gray-300 hover:border-gray-500"
+                      )}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setForm({ ...form, color })}
+                    />
+                  ))}
+                </div>
+              </div>
           </div>
           
           <div className="flex gap-2">
@@ -308,13 +368,17 @@ export const Projects = () => {
               <Save className="h-4 w-4 mr-2" />
               Add Project
             </Button>
-            <Button variant="outline" onClick={() => setForm({ name: "", startDate: undefined, endDate: undefined })}>
+            <Button variant="outline" onClick={() => {
+              setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
+              setShowAddForm(false);
+            }}>
               <X className="h-4 w-4 mr-2" />
-              Clear
+              Cancel
             </Button>
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Projects List */}
       <div className="grid gap-4">
@@ -323,7 +387,7 @@ export const Projects = () => {
             <CardContent className="flex items-center justify-center h-32">
               <div className="text-center">
                 <p className="text-muted-foreground">No projects yet.</p>
-                <Button onClick={() => setForm({ name: "", startDate: undefined, endDate: undefined })} className="mt-2">
+                <Button onClick={() => setShowAddForm(true)} className="mt-2">
                   Add your first project
                 </Button>
               </div>
@@ -453,6 +517,26 @@ export const Projects = () => {
                   </Popover>
                 </div>
               </div>
+              
+              <div className="space-y-2">
+                <Label>Project Color</Label>
+                <div className="grid grid-cols-10 gap-2">
+                  {projectColors.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={cn(
+                        "w-8 h-8 rounded-full border-2 transition-all",
+                        editForm.color === color 
+                          ? "border-gray-800 scale-110" 
+                          : "border-gray-300 hover:border-gray-500"
+                      )}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setEditForm({ ...editForm, color })}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={handleCancelEdit}>
@@ -461,7 +545,6 @@ export const Projects = () => {
               <Button 
                 onClick={handleSaveEdit} 
                 disabled={savingEdit}
-                className={savingEdit ? "bg-blue-600 hover:bg-blue-700" : ""}
               >
                 {savingEdit ? (
                   <>

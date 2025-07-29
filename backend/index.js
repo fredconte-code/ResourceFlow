@@ -71,7 +71,7 @@ db.serialize(() => {
 
   // Insert default settings if they don't exist
   db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES 
-    ('buffer', '10'),
+    ('buffer', '20'),
     ('canadaHours', '37.5'),
     ('brazilHours', '44')
   `);

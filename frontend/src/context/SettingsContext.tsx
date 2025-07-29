@@ -34,7 +34,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return "light";
   });
 
-  const [buffer, setBuffer] = useState(10);
+  const [buffer, setBuffer] = useState(20);
   const [canadaHours, setCanadaHours] = useState(37.5);
   const [brazilHours, setBrazilHours] = useState(44);
   const [loading, setLoading] = useState(true);
