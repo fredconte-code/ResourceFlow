@@ -619,15 +619,34 @@ export const CalendarView: React.FC = () => {
                            key={`${employee.id}-${date.toISOString()}`}
                            data-date={format(date, 'yyyy-MM-dd')}
                            className={cn(
-                             "p-1 border-b border-r min-h-[50px] relative",
+                             "p-1 border-b border-r min-h-[50px] relative transition-all duration-200",
                              holiday && "bg-amber-50",
-                             "hover:bg-muted/30 transition-colors"
+                             "hover:bg-muted/30",
+                             isDragOver && dragItem && "ring-2 ring-primary/50 ring-offset-1 bg-primary/5"
                            )}
                            onDragOver={(e) => handleDragOver(e, employee.id, date)}
                            onDrop={(e) => handleDrop(e, employee.id, date)}
                            onDragLeave={handleDragLeave}
                            onMouseOver={(e) => draggingAllocation && handleAllocationDragOver(e, employee.id, date)}
                          >
+                           {/* Drag shadow preview */}
+                           {isDragOver && dragItem && (
+                             <div
+                               className="absolute inset-1 rounded-md border-2 border-dashed opacity-80 z-10 pointer-events-none animate-pulse"
+                               style={{ 
+                                 backgroundColor: `${dragItem.color}30`,
+                                 borderColor: dragItem.color,
+                                 boxShadow: `0 0 12px ${dragItem.color}60, inset 0 0 4px ${dragItem.color}20`
+                               }}
+                             >
+                               <div 
+                                 className="p-1 text-xs font-medium truncate flex items-center justify-center h-full"
+                                 style={{ color: getContrastColor(dragItem.color) }}
+                               >
+                                 <span className="drop-shadow-sm">{dragItem.name}</span>
+                               </div>
+                             </div>
+                           )}
                            {/* Multiple allocations stacked vertically */}
                            {allocations.map((allocation, index) => {
                              const project = projects.find(p => p.id.toString() === allocation.projectId);
