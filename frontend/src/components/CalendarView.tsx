@@ -10,6 +10,23 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Function to determine text color based on background color
+const getContrastColor = (hexColor: string): string => {
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+  
+  // Convert to RGB
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // Return black for light backgrounds, white for dark backgrounds
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+};
+
 export const CalendarView: React.FC = () => {
   console.log('CalendarView component rendering...');
   const { toast } = useToast();
@@ -494,29 +511,32 @@ export const CalendarView: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className={cn(
-                  "p-3 border rounded-lg cursor-move hover:bg-muted/50 transition-colors",
-                  "flex items-center gap-2 min-w-[200px]"
-                )}
-                draggable
-                onDragStart={(e) => handleDragStart(e, project)}
-              >
-                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                <div 
-                  className="w-4 h-4 rounded-full border-2"
-                  style={{ backgroundColor: project.color }}
-                />
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{project.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {project.allocatedHours || 0} hours allocated
-                  </p>
+            {projects
+              .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
+              .map((project) => (
+                <div
+                  key={project.id}
+                  className={cn(
+                    "p-2 border rounded-md cursor-move hover:bg-muted/50 transition-colors",
+                    "flex items-center gap-2 min-w-[120px] max-w-[150px]"
+                  )}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, project)}
+                  style={{ 
+                    backgroundColor: project.color,
+                    borderColor: project.color,
+                    color: getContrastColor(project.color) // Ensure text is readable
+                  }}
+                >
+                  <GripVertical className="h-3 w-3 text-current opacity-70" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs truncate">{project.name}</p>
+                    <p className="text-xs opacity-80 truncate">
+                      {project.allocatedHours || 0}h
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
             {projects.length === 0 && (
               <div className="text-center py-4 text-muted-foreground w-full">
                 <p>No projects available</p>
