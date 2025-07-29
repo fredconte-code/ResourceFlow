@@ -2,11 +2,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AllocationBar } from "./AllocationBar";
-import { Employee, calculateAllocationPercentage, calculateAvailableHours, calculateActualAvailableHours } from "@/lib/employee-data";
+import { Employee } from "@/lib/employee-data";
+import { calculateAllocationPercentage, calculateActualAvailableHours } from "@/lib/working-hours";
 import { MapPin, Calendar, Clock, AlertCircle, Folder } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useState, useEffect } from "react";
-import { getEmployeeProjectNamesWithCleanup, getEmployeeProjectAllocationsWithCleanup, ProjectAllocation, initializeProjectData } from "@/lib/project-data";
+import { getEmployeeProjectNamesWithCleanup, getEmployeeProjectAllocationsWithCleanup, initializeProjectData } from "@/lib/project-data";
+import { ProjectAllocation } from "@/lib/api";
 
 interface EmployeeCardProps {
   employee: Employee;
@@ -30,11 +32,15 @@ export const EmployeeCard = ({ employee }: EmployeeCardProps) => {
     // Initialize project data on first load
     initializeProjectData();
     
-    const loadProjectData = () => {
-      const allocations = getEmployeeProjectAllocationsWithCleanup(employee.id);
-      const projectNames = getEmployeeProjectNamesWithCleanup(employee.id);
-      setProjectAllocations(allocations);
-      setEmployeeProjectNames(projectNames);
+    const loadProjectData = async () => {
+      try {
+        const allocations = await getEmployeeProjectAllocationsWithCleanup(employee.id);
+        const projectNames = await getEmployeeProjectNamesWithCleanup(employee.id);
+        setProjectAllocations(allocations);
+        setEmployeeProjectNames(projectNames);
+      } catch (error) {
+        console.error('Error loading project data:', error);
+      }
     };
 
     // Load initial data

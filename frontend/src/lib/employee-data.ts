@@ -1,4 +1,5 @@
 import { teamMembersApi, TeamMember } from "@/lib/api";
+import { getWorkingHoursForCountry, getMonthlyHours } from "./working-hours";
 
 // Interface for Employee (used in components)
 export interface Employee {
@@ -22,7 +23,7 @@ export const getCurrentEmployees = async (): Promise<Employee[]> => {
       role: member.role,
       country: member.country,
       allocatedHours: member.allocatedHours,
-      availableHours: member.country === 'Canada' ? 150 : 176, // Default values
+      availableHours: getMonthlyHours(getWorkingHoursForCountry(member.country)), // Use settings-based calculation
       vacationDays: 0, // Default values - could be enhanced with vacation data
       holidayDays: 0 // Default values - could be enhanced with holiday data
     }));
@@ -37,7 +38,7 @@ export const getCurrentEmployeesSync = (): Employee[] => {
   return [];
 };
 
-// Default employees data (for fallback)
+// Default employees data (for fallback) - using settings-based calculations
 export const employees = [
   {
     id: '1',
@@ -45,7 +46,7 @@ export const employees = [
     role: 'Developer',
     country: 'Canada' as const,
     allocatedHours: 120,
-    availableHours: 150,
+    availableHours: getMonthlyHours(getWorkingHoursForCountry('Canada')),
     vacationDays: 5,
     holidayDays: 2
   },
@@ -55,7 +56,7 @@ export const employees = [
     role: 'Designer',
     country: 'Brazil' as const,
     allocatedHours: 80,
-    availableHours: 176,
+    availableHours: getMonthlyHours(getWorkingHoursForCountry('Brazil')),
     vacationDays: 3,
     holidayDays: 1
   },
@@ -65,7 +66,7 @@ export const employees = [
     role: 'Scrum Master',
     country: 'Canada' as const,
     allocatedHours: 60,
-    availableHours: 150,
+    availableHours: getMonthlyHours(getWorkingHoursForCountry('Canada')),
     vacationDays: 2,
     holidayDays: 1
   }
