@@ -36,9 +36,9 @@ async function testEndpoint(method, endpoint, data = null, description = '') {
 // Test data
 const testTeamMember = {
   name: 'Test User',
-  role: 'Developer',
-  country: 'Canada',
-  allocatedHours: 40
+      role: 'Developer',
+      country: 'Canada',
+      allocatedHours: 40
 };
 
 const testProject = {

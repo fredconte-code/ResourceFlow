@@ -46,6 +46,8 @@ export const CalendarView: React.FC = () => {
   // Drag and drop state
   const [dragItem, setDragItem] = useState<Project | null>(null);
   const [dragOverCell, setDragOverCell] = useState<{employeeId: string, date: Date} | null>(null);
+  const [draggingAllocationFromTimeline, setDraggingAllocationFromTimeline] = useState<ProjectAllocation | null>(null);
+  const [dragOverProjectsBox, setDragOverProjectsBox] = useState(false);
   
   // Resize state
   const [resizingAllocation, setResizingAllocation] = useState<{
@@ -136,6 +138,13 @@ export const CalendarView: React.FC = () => {
   const handleDragStart = (event: React.DragEvent, project: Project) => {
     setDragItem(project);
     event.dataTransfer.effectAllowed = 'copy';
+    setDraggingAllocationFromTimeline(null);
+  };
+
+  const handleAllocationDragStartFromTimeline = (event: React.DragEvent, allocation: ProjectAllocation) => {
+    setDraggingAllocationFromTimeline(allocation);
+    event.dataTransfer.effectAllowed = 'move';
+    setDragItem(null);
   };
 
   const handleAllocationDragStart = (event: React.MouseEvent, allocation: ProjectAllocation) => {
@@ -227,10 +236,15 @@ export const CalendarView: React.FC = () => {
   const handleAllocationDrop = async (event: React.MouseEvent, employeeId: string, date: Date) => {
     if (!draggingAllocation) return;
     
-    // Check if this project is already allocated to this employee on the target date range
-    const daysDiff = differenceInDays(date, new Date(draggingAllocation.originalStartDate));
-    const newStartDate = addDays(draggingAllocation.originalStartDate, daysDiff);
-    const newEndDate = addDays(draggingAllocation.originalEndDate, daysDiff);
+    // Calculate the new position based on the drop target
+    const allocationDuration = differenceInDays(
+      new Date(draggingAllocation.originalEndDate), 
+      new Date(draggingAllocation.originalStartDate)
+    );
+    
+    // The drop date becomes the new start date
+    const newStartDate = date;
+    const newEndDate = addDays(date, allocationDuration);
     
     // Check for conflicts with other allocations (excluding the current one being moved)
     const conflictingAllocation = allocations.find(allocation => 
@@ -258,7 +272,7 @@ export const CalendarView: React.FC = () => {
     
     try {
       await projectAllocationsApi.update(parseInt(draggingAllocation.allocation.id.toString()), {
-        employeeId: draggingAllocation.allocation.employeeId,
+        employeeId: employeeId, // Use the new employee ID from the drop target
         projectId: draggingAllocation.allocation.projectId,
         startDate: format(newStartDate, 'yyyy-MM-dd'),
         endDate: format(newEndDate, 'yyyy-MM-dd')
@@ -287,6 +301,49 @@ export const CalendarView: React.FC = () => {
 
   const handleDragLeave = () => {
     setDragOverCell(null);
+  };
+
+  const handleProjectsBoxDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    if (draggingAllocationFromTimeline) {
+      setDragOverProjectsBox(true);
+    }
+  };
+
+  const handleProjectsBoxDragLeave = (event: React.DragEvent) => {
+    event.preventDefault();
+    setDragOverProjectsBox(false);
+  };
+
+  const handleProjectsBoxDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
+    
+    if (!draggingAllocationFromTimeline) return;
+    
+    try {
+      // Delete the allocation
+      await projectAllocationsApi.delete(draggingAllocationFromTimeline.id);
+      
+      toast({
+        title: "Allocation Removed",
+        description: `Project allocation has been removed from the timeline.`,
+      });
+      
+      // Reload data
+      const allocationsData = await projectAllocationsApi.getAll();
+      setAllocations(allocationsData);
+      
+    } catch (error) {
+      console.error('Error deleting allocation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove allocation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDraggingAllocationFromTimeline(null);
+      setDragOverProjectsBox(false);
+    }
   };
   
   // Resize handlers
@@ -509,16 +566,30 @@ export const CalendarView: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-lg">Projects - Drag to Calendar</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent
+          onDragOver={handleProjectsBoxDragOver}
+          onDragLeave={handleProjectsBoxDragLeave}
+          onDrop={handleProjectsBoxDrop}
+          className={cn(
+            "transition-colors duration-200",
+            dragOverProjectsBox && "bg-red-50 border-red-200"
+          )}
+        >
           <div className="flex flex-wrap gap-2">
+            {/* Drop zone indicator */}
+            {dragOverProjectsBox && (
+              <div className="w-full p-4 border-2 border-dashed border-red-400 bg-red-50 rounded-md text-center text-red-600 font-medium">
+                Drop here to remove allocation
+              </div>
+            )}
             {projects
               .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
               .map((project) => (
                 <div
                   key={project.id}
                   className={cn(
-                    "p-2 border rounded-md cursor-move hover:bg-muted/50 transition-colors",
-                    "flex items-center gap-2 min-w-[120px] max-w-[150px]"
+                    "p-1.5 border rounded-md cursor-move hover:bg-muted/50 transition-colors",
+                    "flex items-center gap-1 min-w-[100px] max-w-[130px]"
                   )}
                   draggable
                   onDragStart={(e) => handleDragStart(e, project)}
@@ -528,7 +599,7 @@ export const CalendarView: React.FC = () => {
                     color: getContrastColor(project.color) // Ensure text is readable
                   }}
                 >
-                  <GripVertical className="h-3 w-3 text-current opacity-70" />
+                  <GripVertical className="h-2.5 w-2.5 text-current opacity-70" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-xs truncate">{project.name}</p>
                     <p className="text-xs opacity-80 truncate">
@@ -571,8 +642,8 @@ export const CalendarView: React.FC = () => {
                          <div className="overflow-x-auto">
                <div className="min-w-max" data-calendar-container>
                  {/* Header row with dates */}
-                 <div className="grid" style={{ gridTemplateColumns: `180px repeat(${calendarDays.length}, 80px)` }}>
-                   <div className="p-1 font-medium text-xs border-b border-r bg-muted/30">
+                 <div className="grid" style={{ gridTemplateColumns: `150px repeat(${calendarDays.length}, 60px)` }}>
+                   <div className="p-0.5 font-medium text-xs border-b border-r bg-muted/30">
                      Team Members
                    </div>
                    {calendarDays.map((date) => {
@@ -581,7 +652,7 @@ export const CalendarView: React.FC = () => {
                        <div
                          key={date.toISOString()}
                          className={cn(
-                           "p-1 text-center text-xs border-b border-r bg-muted/30",
+                           "p-0.5 text-center text-xs border-b border-r bg-muted/30",
                            isSameDay(date, new Date()) && "bg-primary/10 font-semibold"
                          )}
                        >
@@ -602,9 +673,9 @@ export const CalendarView: React.FC = () => {
                      key={employee.id}
                      data-employee={employee.id}
                      className="grid"
-                     style={{ gridTemplateColumns: `180px repeat(${calendarDays.length}, 80px)` }}
+                     style={{ gridTemplateColumns: `150px repeat(${calendarDays.length}, 60px)` }}
                    >
-                                         <div className="p-1 border-b border-r bg-muted/10">
+                                         <div className="p-0.5 border-b border-r bg-muted/10">
                        <div className="font-medium text-xs">{employee.name}</div>
                        <div className="text-xs text-muted-foreground truncate">{employee.role}</div>
                      </div>
@@ -619,7 +690,7 @@ export const CalendarView: React.FC = () => {
                            key={`${employee.id}-${date.toISOString()}`}
                            data-date={format(date, 'yyyy-MM-dd')}
                            className={cn(
-                             "p-1 border-b border-r min-h-[50px] relative transition-all duration-200",
+                             "p-0.5 border-b border-r min-h-[40px] relative transition-all duration-200",
                              holiday && "bg-amber-50",
                              "hover:bg-muted/30"
                            )}
@@ -627,19 +698,22 @@ export const CalendarView: React.FC = () => {
                            onDrop={(e) => handleDrop(e, employee.id, date)}
                            onDragLeave={handleDragLeave}
                            onMouseOver={(e) => draggingAllocation && handleAllocationDragOver(e, employee.id, date)}
+                           onMouseUp={(e) => draggingAllocation && handleAllocationDrop(e, employee.id, date)}
                          >
                            {/* Drag shadow preview */}
-                           {isDragOver && dragItem && (
+                           {isDragOver && (dragItem || draggingAllocation) && (
                              <div
                                className="absolute inset-1 rounded-md border-2 border-dashed opacity-50 z-10 pointer-events-none"
                                style={{ 
-                                 borderColor: dragItem.color
+                                 borderColor: dragItem?.color || '#3b82f6'
                                }}
                              >
-                               <div 
-                                 className="p-1 text-xs font-medium truncate flex items-center justify-center h-full text-gray-800"
-                               >
-                                 <span className="drop-shadow-sm">{dragItem.name}</span>
+                                                                <div 
+                                   className="p-0.5 text-xs font-medium truncate flex items-center justify-center h-full text-gray-800"
+                                 >
+                                 <span className="drop-shadow-sm">
+                                   {dragItem?.name || 'Moving allocation'}
+                                 </span>
                                </div>
                              </div>
                            )}
@@ -655,7 +729,7 @@ export const CalendarView: React.FC = () => {
                                <div
                                  key={allocation.id}
                                  className={cn(
-                                   "p-1 rounded text-xs font-medium text-white truncate mb-1 relative cursor-move",
+                                   "p-0.5 rounded text-xs font-medium text-white truncate mb-0.5 relative cursor-move",
                                    isResizing && "opacity-75",
                                    isDragging && "opacity-50"
                                  )}
@@ -663,7 +737,19 @@ export const CalendarView: React.FC = () => {
                                  onMouseDown={(e) => handleAllocationDragStart(e, allocation)}
                                  title="Drag to move allocation"
                                >
-                                 {project?.name || 'Unknown Project'}
+                                 <div className="flex items-center justify-between">
+                                   <span className="text-xs">{project?.name || 'Unknown Project'}</span>
+                                   {/* Drag to delete handle */}
+                                   <div
+                                     className="ml-1 w-2 h-2 bg-white/30 rounded cursor-grab hover:bg-white/50 transition-colors"
+                                     draggable
+                                     onDragStart={(e) => {
+                                       e.stopPropagation();
+                                       handleAllocationDragStartFromTimeline(e, allocation);
+                                     }}
+                                     title="Drag to projects box to delete"
+                                   />
+                                 </div>
                                  
                                  {/* Left resize handle */}
                                  {isStartDate && (
@@ -692,7 +778,7 @@ export const CalendarView: React.FC = () => {
                              );
                            })}
                            {vacation && allocations.length === 0 && (
-                             <div className="p-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                             <div className="p-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                {vacation.type}
                              </div>
                            )}
