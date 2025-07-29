@@ -3,9 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { getTeamStats } from "@/lib/employee-data";
 import { Users, Clock, MapPin, TrendingUp, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { useSettings } from "@/context/SettingsContext";
 
 export const TeamOverviewCard = () => {
-  const stats = getTeamStats();
+  const { canadaHours, brazilHours, buffer } = useSettings();
+  const stats = getTeamStats(canadaHours, brazilHours, buffer);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -92,7 +94,7 @@ export const TeamOverviewCard = () => {
                   </span>
                   <span className="text-sm capitalize text-foreground">{status}</span>
                 </div>
-                <Badge variant="secondary" className="bg-background">
+                <Badge variant="secondary" className="bg-muted text-muted-foreground">
                   {count}
                 </Badge>
               </div>

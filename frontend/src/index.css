@@ -119,3 +119,79 @@ Previous theme variables (for rollback):
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Resource Guru-style diagonal stripes for waiting list items */
+  .bg-stripes-diagonal {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 4px,
+      rgba(255, 255, 255, 0.3) 4px,
+      rgba(255, 255, 255, 0.3) 8px
+    );
+  }
+
+  /* Availability bar styles */
+  .availability-bar {
+    @apply h-2 w-full bg-gray-200 rounded-full overflow-hidden;
+  }
+
+  .availability-bar-fill {
+    @apply h-full transition-all duration-300;
+  }
+
+  /* Calendar cell hover effects */
+  .calendar-cell {
+    @apply relative transition-colors duration-200;
+  }
+
+  .calendar-cell:hover {
+    @apply bg-gray-50;
+  }
+
+  .calendar-cell.drag-over {
+    @apply bg-primary/10 border-primary;
+  }
+
+  /* Booking block styles */
+  .booking-block {
+    @apply absolute rounded-sm border border-white/20 cursor-pointer transition-all duration-200;
+  }
+
+  .booking-block:hover {
+    @apply shadow-md z-10;
+  }
+
+  .booking-block.waiting {
+    @apply opacity-75;
+  }
+
+  .booking-block.overtime {
+    @apply ring-2 ring-red-400;
+  }
+
+  /* Timeline grid styles */
+  .timeline-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
+
+  /* Utilization color classes */
+  .utilization-low {
+    @apply bg-green-500;
+  }
+
+  .utilization-optimal {
+    @apply bg-blue-500;
+  }
+
+  .utilization-high {
+    @apply bg-yellow-500;
+  }
+
+  .utilization-over {
+    @apply bg-red-500;
+  }
+}

@@ -1,7 +1,7 @@
 import { ThemeToggle } from "./ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, Settings, Home, Clock, Folder } from "lucide-react";
+import { Calendar, Users, Settings, Home, Folder } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -13,14 +13,13 @@ interface HeaderProps {
 const navigation = [
   { id: 'dashboard', name: 'Dashboard', icon: Home },
   { id: 'team', name: 'Team', icon: Users },
-  { id: 'projects', name: 'Projects', icon: Folder }, // new tab
-  { id: 'timeoff', name: 'Time Off', icon: Clock },
+  { id: 'projects', name: 'Projects', icon: Folder },
   { id: 'calendar', name: 'Calendar', icon: Calendar },
   { id: 'settings', name: 'Settings', icon: Settings },
 ];
 
 export const Header = ({ currentView, onViewChange }: HeaderProps) => {
-  const currentMonth = new Date().toLocaleDateString('en-US', { 
+  const currentMonth = new Date().toLocaleDateString('en-GB', { 
     month: 'long', 
     year: 'numeric' 
   });

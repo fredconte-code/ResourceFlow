@@ -14,7 +14,9 @@ export const AllocationBar = ({
   showLabel = true,
   className 
 }: AllocationBarProps) => {
-  const status = getAllocationStatus(percentage);
+  // Handle NaN and invalid values
+  const safePercentage = isNaN(percentage) || !isFinite(percentage) ? 0 : percentage;
+  const status = getAllocationStatus(safePercentage);
   
   const heightClasses = {
     sm: "h-2",
@@ -29,7 +31,7 @@ export const AllocationBar = ({
     over: "bg-allocation-over"
   };
 
-  const clampedPercentage = Math.min(percentage, 100);
+  const clampedPercentage = Math.min(safePercentage, 100);
 
   return (
     <div className={cn("w-full", className)}>
@@ -51,7 +53,7 @@ export const AllocationBar = ({
             "text-xs font-medium",
             status === "over" ? "text-destructive" : "text-muted-foreground"
           )}>
-            {Number(percentage).toFixed(1).replace(/\.0$/, '')}% allocated
+            {Number(safePercentage).toFixed(1).replace(/\.0$/, '')}% allocated
           </span>
           <span className="text-xs text-muted-foreground capitalize">
             {status === "over" ? "Over-allocated" : status}

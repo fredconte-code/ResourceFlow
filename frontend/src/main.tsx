@@ -3,8 +3,21 @@ import App from './App.tsx'
 import './index.css'
 import { SettingsProvider } from "@/context/SettingsContext";
 
-createRoot(document.getElementById("root")!).render(
-  <SettingsProvider>
-    <App />
-  </SettingsProvider>
-);
+console.log('main.tsx loading...');
+
+const rootElement = document.getElementById("root");
+console.log('Root element:', rootElement);
+
+if (rootElement) {
+  const root = createRoot(rootElement);
+  console.log('React root created');
+  
+  root.render(
+    <SettingsProvider>
+      <App />
+    </SettingsProvider>
+  );
+  console.log('React app rendered');
+} else {
+  console.error('Root element not found!');
+}
