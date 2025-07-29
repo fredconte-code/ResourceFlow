@@ -60,18 +60,6 @@ interface VacationItem {
   days: number;
   type: 'Vacation' | 'Sick Leave' | 'Personal' | 'Other';
   notes?: string;
-  status: 'Approved' | 'Pending' | 'Rejected';
-}
-
-interface TimeOffRequest {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  startDate: Date;
-  endDate: Date;
-  type: 'Vacation' | 'Sick Leave' | 'Personal' | 'Other';
-  notes?: string;
-  status: 'Approved' | 'Pending' | 'Rejected';
 }
 
 export const TimeOffManagement: React.FC = () => {
@@ -83,17 +71,14 @@ export const TimeOffManagement: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [holidays, setHolidays] = useState<HolidayItem[]>([]);
   const [vacations, setVacations] = useState<VacationItem[]>([]);
-  const [timeOffRequests, setTimeOffRequests] = useState<TimeOffRequest[]>([]);
   
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [showHolidayForm, setShowHolidayForm] = useState(false);
   const [showVacationForm, setShowVacationForm] = useState(false);
-  const [showRequestForm, setShowRequestForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCountry, setFilterCountry] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   
   // Form State
@@ -106,14 +91,6 @@ export const TimeOffManagement: React.FC = () => {
   });
   
   const [vacationForm, setVacationForm] = useState({
-    employeeId: '',
-    startDate: new Date(),
-    endDate: new Date(),
-    type: 'Vacation' as 'Vacation' | 'Sick Leave' | 'Personal' | 'Other',
-    notes: ''
-  });
-  
-  const [requestForm, setRequestForm] = useState({
     employeeId: '',
     startDate: new Date(),
     endDate: new Date(),
@@ -166,27 +143,13 @@ export const TimeOffManagement: React.FC = () => {
           endDate: new Date(vacation.endDate),
           days: differenceInDays(new Date(vacation.endDate), new Date(vacation.startDate)) + 1,
           type: vacation.type as 'Vacation' | 'Sick Leave' | 'Personal' | 'Other',
-          notes: '',
-          status: 'Approved' as 'Approved' | 'Pending' | 'Rejected'
+          notes: ''
         };
       });
       
       setEmployees(employeesData);
       setHolidays(convertedHolidays);
       setVacations(convertedVacations);
-      
-      // Generate time off requests from vacations
-      const requests = convertedVacations.map(vacation => ({
-        id: vacation.id,
-        employeeId: vacation.employeeId,
-        employeeName: vacation.employeeName,
-        startDate: vacation.startDate,
-        endDate: vacation.endDate,
-        type: vacation.type,
-        notes: vacation.notes,
-        status: vacation.status
-      }));
-      setTimeOffRequests(requests);
       
     } catch (error) {
       console.error('❌ Error loading TimeOffManagement data:', error);
@@ -367,28 +330,9 @@ export const TimeOffManagement: React.FC = () => {
     const matchesSearch = vacation.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vacation.type.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCountry = filterCountry === 'all' || vacation.employeeCountry === filterCountry;
-    const matchesStatus = filterStatus === 'all' || vacation.status === filterStatus;
     const matchesType = filterType === 'all' || vacation.type === filterType;
-    return matchesSearch && matchesCountry && matchesStatus && matchesType;
+    return matchesSearch && matchesCountry && matchesType;
   });
-
-  const filteredRequests = timeOffRequests.filter(request => {
-    const matchesSearch = request.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.type.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || request.status === filterStatus;
-    const matchesType = filterType === 'all' || request.type === filterType;
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  // Get status badge variant
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'Approved': return 'default';
-      case 'Pending': return 'secondary';
-      case 'Rejected': return 'destructive';
-      default: return 'outline';
-    }
-  };
 
   // Get type badge variant
   const getTypeBadgeVariant = (type: string) => {
@@ -499,20 +443,7 @@ export const TimeOffManagement: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="type">Type</Label>
               <Select value={filterType} onValueChange={setFilterType}>
@@ -542,7 +473,7 @@ export const TimeOffManagement: React.FC = () => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Holidays</CardTitle>
@@ -563,24 +494,11 @@ export const TimeOffManagement: React.FC = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{vacations.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  Approved vacation requests
+                  Vacation requests
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {timeOffRequests.filter(r => r.status === 'Pending').length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Awaiting approval
-                </p>
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Recent Activity */}
@@ -729,9 +647,6 @@ export const TimeOffManagement: React.FC = () => {
                         </div>
                         <Badge variant={getTypeBadgeVariant(vacation.type)}>
                           {vacation.type}
-                        </Badge>
-                        <Badge variant={getStatusBadgeVariant(vacation.status)}>
-                          {vacation.status}
                         </Badge>
                         <Button
                           variant="ghost"

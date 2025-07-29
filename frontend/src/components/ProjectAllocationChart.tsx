@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Area, AreaChart } from 'recharts';
-import { getCurrentEmployees } from "@/lib/employee-data";
-import { getProjects } from "@/lib/project-data";
+import { getCurrentEmployeesSync } from "@/lib/employee-data";
+import { getProjectsSync } from "@/lib/project-data";
 import { Calendar, TrendingUp, Users, Clock } from "lucide-react";
 import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, eachDayOfInterval } from "date-fns";
 import { useState, useEffect, useMemo } from "react";
@@ -29,16 +29,16 @@ export const ProjectAllocationChart = () => {
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [activeTab, setActiveTab] = useState<'attendance' | 'projects' | 'trends'>('attendance');
   
-  const today = new Date();
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
+  const today = useMemo(() => new Date(), []);
+  const monthStart = useMemo(() => startOfMonth(today), [today]);
+  const monthEnd = useMemo(() => endOfMonth(today), [today]);
 
   // Load holidays and vacations from localStorage
   useEffect(() => {
     const storedHolidays = localStorage.getItem('holidays');
     if (storedHolidays) {
       const parsed = JSON.parse(storedHolidays);
-      setHolidays(parsed.map((holiday: any) => ({
+      setHolidays(parsed.map((holiday: { id: string; name: string; date: string; country?: 'Canada' | 'Brazil' | 'Both'; type: 'National' | 'Company' | 'Regional' }) => ({
         ...holiday,
         date: new Date(holiday.date)
       })));
@@ -47,7 +47,7 @@ export const ProjectAllocationChart = () => {
     const storedVacations = localStorage.getItem('vacations');
     if (storedVacations) {
       const parsed = JSON.parse(storedVacations);
-      setVacations(parsed.map((vacation: any) => ({
+      setVacations(parsed.map((vacation: { id: string; employeeName: string; startDate: string; endDate: string; days: number; status: 'Approved' | 'Pending' | 'Requested'; notes?: string }) => ({
         ...vacation,
         startDate: new Date(vacation.startDate),
         endDate: new Date(vacation.endDate)
@@ -60,7 +60,7 @@ export const ProjectAllocationChart = () => {
     let workingCount = 0;
     let timeOffCount = 0;
 
-    getCurrentEmployees().forEach(employee => {
+    getCurrentEmployeesSync().forEach(employee => {
       let hasTimeOff = false;
 
       // Check if employee has vacation this month
@@ -113,13 +113,13 @@ export const ProjectAllocationChart = () => {
 
   // Project allocation data
   const projectData = useMemo(() => {
-    const projects = getProjects();
-    const employees = getCurrentEmployees();
+    const projects = getProjectsSync();
+    const employees = getCurrentEmployeesSync();
     
     return projects.map(project => {
       const projectAllocations = JSON.parse(localStorage.getItem('projectAllocations') || '[]');
-      const projectEmployeeCount = projectAllocations.filter((allocation: any) => 
-        allocation.projectId === project.id
+      const projectEmployeeCount = projectAllocations.filter((allocation: { projectId: string; employeeId: string; startDate: string; endDate: string; hoursPerDay: number }) => 
+        allocation.projectId === project.id.toString()
       ).length;
       
       return {
@@ -152,16 +152,16 @@ export const ProjectAllocationChart = () => {
     return months;
   }, [today]);
 
-  const totalMembers = getCurrentEmployees().length;
+  const totalMembers = getCurrentEmployeesSync().length;
   const workingPercentage = totalMembers > 0 ? ((attendanceData[0].value / totalMembers) * 100).toFixed(1) : '0';
   const timeOffPercentage = totalMembers > 0 ? ((attendanceData[1].value / totalMembers) * 100).toFixed(1) : '0';
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium text-foreground">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: { name: string; value: number; color: string }, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {entry.value}
             </p>

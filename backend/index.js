@@ -20,17 +20,17 @@ db.serialize(() => {
     name TEXT NOT NULL,
     role TEXT NOT NULL,
     country TEXT NOT NULL,
-    allocatedHours INTEGER DEFAULT 0
+    allocated_hours INTEGER DEFAULT 0
   )`);
 
   // Projects table
   db.run(`CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    startDate TEXT,
-    endDate TEXT,
+    start_date TEXT,
+    end_date TEXT,
     color TEXT DEFAULT '#3b82f6',
-    allocatedHours INTEGER DEFAULT 0
+    allocated_hours INTEGER DEFAULT 0
   )`);
 
   // Holidays table
@@ -44,21 +44,21 @@ db.serialize(() => {
   // Vacations table
   db.run(`CREATE TABLE IF NOT EXISTS vacations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    employeeId TEXT NOT NULL,
-    employeeName TEXT NOT NULL,
-    startDate TEXT NOT NULL,
-    endDate TEXT NOT NULL,
+    employee_id TEXT NOT NULL,
+    employee_name TEXT NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
     type TEXT DEFAULT 'vacation'
   )`);
 
   // Project Allocations table
   db.run(`CREATE TABLE IF NOT EXISTS project_allocations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    employeeId TEXT NOT NULL,
-    projectId TEXT NOT NULL,
-    startDate TEXT NOT NULL,
-    endDate TEXT NOT NULL,
-    hoursPerDay INTEGER DEFAULT 8,
+    employee_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    hours_per_day INTEGER DEFAULT 8,
     status TEXT DEFAULT 'active'
   )`);
 
@@ -300,16 +300,16 @@ app.delete('/api/vacations/:id', (req, res) => {
 
 // --- Project Allocations API ---
 app.get('/api/project-allocations', (req, res) => {
-  db.all('SELECT * FROM project_allocations ORDER BY date', [], (err, rows) => {
+  db.all('SELECT * FROM project_allocations ORDER BY start_date', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     // Transform the data to match the expected API format
     const transformedRows = rows.map(row => ({
       id: row.id,
       employeeId: row.employee_id,
       projectId: row.project_id,
-      startDate: row.date, // Using date as startDate for compatibility
-      endDate: row.date,   // Using date as endDate for compatibility
-      hoursPerDay: row.hours || 8,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      hoursPerDay: row.hours_per_day || 8,
       status: row.status || 'active'
     }));
     res.json(transformedRows);
@@ -323,7 +323,7 @@ app.post('/api/project-allocations', (req, res) => {
   }
   
   db.run(
-    'INSERT INTO project_allocations (employeeId, projectId, startDate, endDate, hoursPerDay, status) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO project_allocations (employee_id, project_id, start_date, end_date, hours_per_day, status) VALUES (?, ?, ?, ?, ?, ?)',
     [employeeId, projectId, startDate, endDate || startDate, hoursPerDay || 8, status || 'active'],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -345,7 +345,7 @@ app.put('/api/project-allocations/:id', (req, res) => {
   const { employeeId, projectId, startDate, endDate, hoursPerDay, status } = req.body;
   
   db.run(
-    'UPDATE project_allocations SET employeeId = ?, projectId = ?, startDate = ?, endDate = ?, hoursPerDay = ?, status = ? WHERE id = ?',
+    'UPDATE project_allocations SET employee_id = ?, project_id = ?, start_date = ?, end_date = ?, hours_per_day = ?, status = ? WHERE id = ?',
     [employeeId, projectId, startDate, endDate, hoursPerDay || 8, status || 'active', id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -468,14 +468,16 @@ app.post('/api/import', (req, res) => {
             
             // Import new data
             const importData = () => {
-              // Import team members
-              if (teamMembers && teamMembers.length > 0) {
-                const stmt = db.prepare('INSERT INTO team_members (name, role, country, allocatedHours) VALUES (?, ?, ?, ?)');
-                teamMembers.forEach(member => {
-                  stmt.run(member.name, member.role, member.country, member.allocatedHours || 0);
-                });
-                stmt.finalize();
-              }
+              try {
+                // Import team members
+                if (teamMembers && teamMembers.length > 0) {
+                  const stmt = db.prepare('INSERT INTO team_members (name, role, country, allocated_hours) VALUES (?, ?, ?, ?)');
+                  teamMembers.forEach(member => {
+                    const allocatedHours = parseInt(member.allocatedHours) || 0;
+                    stmt.run(member.name, member.role, member.country, allocatedHours);
+                  });
+                  stmt.finalize();
+                }
               
               // Import projects
               if (projects && projects.length > 0) {
@@ -508,9 +510,10 @@ app.post('/api/import', (req, res) => {
               
               // Import project allocations
               if (projectAllocations && projectAllocations.length > 0) {
-                const stmt = db.prepare('INSERT INTO project_allocations (employeeId, projectId, startDate, endDate, hoursPerDay, status) VALUES (?, ?, ?, ?, ?, ?)');
+                const stmt = db.prepare('INSERT INTO project_allocations (employee_id, project_id, start_date, end_date, hours_per_day, status) VALUES (?, ?, ?, ?, ?, ?)');
                 projectAllocations.forEach(allocation => {
-                  stmt.run(allocation.employeeId, allocation.projectId, allocation.startDate, allocation.endDate, allocation.hoursPerDay || 8, allocation.status || 'active');
+                  const hoursPerDay = parseInt(allocation.hoursPerDay) || 8;
+                  stmt.run(allocation.employeeId, allocation.projectId, allocation.startDate, allocation.endDate, hoursPerDay, allocation.status || 'active');
                 });
                 stmt.finalize();
               }
@@ -525,6 +528,10 @@ app.post('/api/import', (req, res) => {
               }
               
               res.json({ message: 'Data imported successfully' });
+            } catch (error) {
+              console.error('Import error:', error);
+              res.status(500).json({ error: 'Import failed: ' + error.message });
+            }
             };
             
             importData();

@@ -11,7 +11,7 @@ import { Check, Loader2, Download, Upload, Trash2, AlertTriangle, Database, Aler
 import * as XLSX from 'xlsx';
 import { employees as allEmployees } from "@/lib/employee-data";
 import { checkDataConsistency } from "@/lib/employee-data";
-import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection } from "@/lib/api";
+import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection, ExportData } from "@/lib/api";
 
 export const Settings = () => {
   const { toast } = useToast();
@@ -205,8 +205,15 @@ export const Settings = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const workbook = XLSX.read(e.target?.result, { type: 'binary' });
-          const importData: any = {};
+          const workbook = XLSX.read(e.target?.result as string, { type: 'binary' });
+          const importData: ExportData = {
+            teamMembers: [],
+            projects: [],
+            holidays: [],
+            vacations: [],
+            projectAllocations: [],
+            settings: { buffer: 10, canadaHours: 37.5, brazilHours: 44 }
+          };
           
           // Process each sheet
           workbook.SheetNames.forEach(sheetName => {
@@ -216,9 +223,19 @@ export const Settings = () => {
             if (jsonData.length > 0) {
               if (sheetName === 'Settings') {
                 // Convert settings array back to object
-                const settingsObj: any = {};
-                jsonData.forEach((item: any) => {
-                  settingsObj[item.key] = item.value;
+                const settingsObj: { buffer: number; canadaHours: number; brazilHours: number } = {
+                  buffer: 10,
+                  canadaHours: 37.5,
+                  brazilHours: 44
+                };
+                jsonData.forEach((item: { key: string; value: unknown }) => {
+                  if (item.key === 'buffer' && typeof item.value === 'number') {
+                    settingsObj.buffer = item.value;
+                  } else if (item.key === 'canadaHours' && typeof item.value === 'number') {
+                    settingsObj.canadaHours = item.value;
+                  } else if (item.key === 'brazilHours' && typeof item.value === 'number') {
+                    settingsObj.brazilHours = item.value;
+                  }
                 });
                 importData.settings = settingsObj;
               } else {

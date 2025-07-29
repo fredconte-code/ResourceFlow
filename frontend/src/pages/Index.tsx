@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { TeamManagement } from "@/components/TeamManagement";
 import { Projects } from "@/components/Projects";
+import { TimeOffManagement } from "@/components/TimeOffManagement";
 import { Settings } from "@/components/Settings";
 import { CalendarView } from "@/components/CalendarView";
+import { Dashboard } from "@/components/Dashboard";
 
 const Index = () => {
   console.log('Index component rendering...');
@@ -25,18 +27,14 @@ const Index = () => {
         return <TeamManagement />;
       case 'projects':
         return <Projects />;
+      case 'timeoff':
+        return <TimeOffManagement />;
       case 'calendar':
         return <CalendarView />;
       case 'settings':
         return <Settings />;
       default:
-        return (
-          <div className="space-y-6">
-            <h1>Dashboard</h1>
-            <p>Welcome to Resource Scheduler!</p>
-            <p>Navigation is working - try clicking the tabs above.</p>
-          </div>
-        );
+        return <Dashboard />;
     }
   };
 

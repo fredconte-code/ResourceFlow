@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CalendarIcon, GripVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const CalendarView: React.FC = () => {
@@ -32,7 +27,7 @@ export const CalendarView: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   
   // Drag and drop state
-  const [dragItem, setDragItem] = useState<any>(null);
+  const [dragItem, setDragItem] = useState<Project | null>(null);
   const [dragOverCell, setDragOverCell] = useState<{employeeId: string, date: Date} | null>(null);
   
   // Resize state
@@ -52,22 +47,9 @@ export const CalendarView: React.FC = () => {
   } | null>(null);
   
   // Form state
-  const [showHolidayForm, setShowHolidayForm] = useState(false);
-  const [showVacationForm, setShowVacationForm] = useState(false);
+
   
-  // Form data
-  const [holidayForm, setHolidayForm] = useState({
-    name: '',
-    date: new Date(),
-    country: 'Both' as 'Canada' | 'Brazil' | 'Both'
-  });
   
-  const [vacationForm, setVacationForm] = useState({
-    employeeId: '',
-    startDate: new Date(),
-    endDate: new Date(),
-    type: 'Vacation' as 'Vacation' | 'Sick Leave' | 'Personal' | 'Other'
-  });
   
   // Calendar navigation
   const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
@@ -374,109 +356,7 @@ export const CalendarView: React.FC = () => {
     }
   };
   
-  // Form handlers
-  const handleAddHoliday = async () => {
-    try {
-      if (!holidayForm.name.trim()) {
-        toast({
-          title: "Validation Error",
-          description: "Holiday name is required.",
-          variant: "destructive",
-        });
-        return;
-      }
 
-      const newHoliday = {
-        name: holidayForm.name,
-        date: format(holidayForm.date, 'yyyy-MM-dd'),
-        country: holidayForm.country
-      };
-
-      await holidaysApi.create(newHoliday);
-      
-      toast({
-        title: "Success",
-        description: "Holiday added successfully.",
-      });
-      
-      setShowHolidayForm(false);
-      setHolidayForm({
-        name: '',
-        date: new Date(),
-        country: 'Both'
-      });
-      
-      // Reload data
-      const holidaysData = await holidaysApi.getAll();
-      setHolidays(holidaysData);
-      
-    } catch (error) {
-      console.error('Error adding holiday:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add holiday. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAddVacation = async () => {
-    try {
-      if (!vacationForm.employeeId) {
-        toast({
-          title: "Validation Error",
-          description: "Please select an employee.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const employee = employees.find(emp => emp.id === vacationForm.employeeId);
-      if (!employee) {
-        toast({
-          title: "Validation Error",
-          description: "Selected employee not found.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const newVacation = {
-        employeeId: vacationForm.employeeId,
-        employeeName: employee.name,
-        startDate: format(vacationForm.startDate, 'yyyy-MM-dd'),
-        endDate: format(vacationForm.endDate, 'yyyy-MM-dd'),
-        type: vacationForm.type
-      };
-
-      await vacationsApi.create(newVacation);
-      
-      toast({
-        title: "Success",
-        description: "Vacation request added successfully.",
-      });
-      
-      setShowVacationForm(false);
-      setVacationForm({
-        employeeId: '',
-        startDate: new Date(),
-        endDate: new Date(),
-        type: 'Vacation'
-      });
-      
-      // Reload data
-      const vacationsData = await vacationsApi.getAll();
-      setVacations(vacationsData);
-      
-    } catch (error) {
-      console.error('Error adding vacation:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add vacation request. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
   
   // Load data on component mount
   useEffect(() => {
@@ -551,7 +431,7 @@ export const CalendarView: React.FC = () => {
               
               if (dateStr && employeeId) {
                 const targetDate = new Date(dateStr);
-                handleAllocationDrop(e as any, employeeId, targetDate);
+                handleAllocationDrop(e as unknown as React.MouseEvent, employeeId, targetDate);
               }
             }
             
@@ -604,16 +484,7 @@ export const CalendarView: React.FC = () => {
             Drag projects from the sidebar to assign team members to tasks.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowHolidayForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Holiday
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowVacationForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Vacation
-          </Button>
-        </div>
+
       </div>
 
       {/* Projects Sidebar - Top */}
@@ -805,190 +676,7 @@ export const CalendarView: React.FC = () => {
           </CardContent>
         </Card>
 
-      {/* Add Holiday Dialog */}
-      <Dialog open={showHolidayForm} onOpenChange={setShowHolidayForm}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Company Holiday</DialogTitle>
-            <DialogDescription>
-              Add a new company holiday that will affect team availability.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="holiday-name">Holiday Name</Label>
-              <Input
-                id="holiday-name"
-                value={holidayForm.name}
-                onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })}
-                placeholder="e.g., Christmas Day"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !holidayForm.date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {holidayForm.date ? format(holidayForm.date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={holidayForm.date}
-                    onSelect={(date) => date && setHolidayForm({ ...holidayForm, date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="holiday-country">Country</Label>
-              <Select
-                value={holidayForm.country}
-                onValueChange={(value: 'Canada' | 'Brazil' | 'Both') =>
-                  setHolidayForm({ ...holidayForm, country: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Canada">Canada</SelectItem>
-                  <SelectItem value="Brazil">Brazil</SelectItem>
-                  <SelectItem value="Both">Both Countries</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowHolidayForm(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddHoliday}>
-              Add Holiday
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Add Vacation Dialog */}
-      <Dialog open={showVacationForm} onOpenChange={setShowVacationForm}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Vacation Request</DialogTitle>
-            <DialogDescription>
-              Create a new vacation request for a team member.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="vacation-employee">Employee</Label>
-              <Select
-                value={vacationForm.employeeId}
-                onValueChange={(value) => setVacationForm({ ...vacationForm, employeeId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.name} ({employee.role} - {employee.country})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !vacationForm.startDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {vacationForm.startDate ? format(vacationForm.startDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={vacationForm.startDate}
-                      onSelect={(date) => date && setVacationForm({ ...vacationForm, startDate: date })}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="grid gap-2">
-                <Label>End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !vacationForm.endDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {vacationForm.endDate ? format(vacationForm.endDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={vacationForm.endDate}
-                      onSelect={(date) => date && setVacationForm({ ...vacationForm, endDate: date })}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="vacation-type">Type</Label>
-              <Select
-                value={vacationForm.type}
-                onValueChange={(value: 'Vacation' | 'Sick Leave' | 'Personal' | 'Other') =>
-                  setVacationForm({ ...vacationForm, type: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Vacation">Vacation</SelectItem>
-                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                  <SelectItem value="Personal">Personal</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowVacationForm(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddVacation}>
-              Add Vacation Request
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       
 

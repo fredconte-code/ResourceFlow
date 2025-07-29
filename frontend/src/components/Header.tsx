@@ -1,7 +1,7 @@
 import { ThemeToggle } from "./ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, Settings, Home, Folder } from "lucide-react";
+import { Calendar, Users, Settings, Home, Folder, Clock } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ const navigation = [
   { id: 'dashboard', name: 'Dashboard', icon: Home },
   { id: 'team', name: 'Team', icon: Users },
   { id: 'projects', name: 'Projects', icon: Folder },
+  { id: 'timeoff', name: 'Time Off', icon: Clock },
   { id: 'calendar', name: 'Calendar', icon: Calendar },
   { id: 'settings', name: 'Settings', icon: Settings },
 ];

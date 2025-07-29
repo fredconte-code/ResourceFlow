@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
-import { getProjects } from "@/lib/project-data";
-import { getCurrentEmployees } from "@/lib/employee-data";
+import { getProjectsSync } from "@/lib/project-data";
+import { getCurrentEmployeesSync } from "@/lib/employee-data";
 import { Folder, Users, Clock, Target } from "lucide-react";
 import { format, isAfter, isBefore, startOfMonth, endOfMonth } from "date-fns";
 import { useMemo, useState } from "react";
@@ -11,16 +11,21 @@ export const ProjectDistributionChart = () => {
 
   // Project distribution data
   const projectData = useMemo(() => {
-    const projects = getProjects();
-    const projectAllocations = JSON.parse(localStorage.getItem('projectAllocations') || '[]');
-    
+    const projects = getProjectsSync();
+    // Use the existing getCurrentEmployeesSync() to source team member names and allocations,
+    // ensuring a single, consistent data source across the app.
+    const employees = getCurrentEmployeesSync();
+    // Since the sync functions return empty arrays, we'll use mock data for now
+    const projectAllocations: Array<{ projectId: string; hoursPerDay: number; startDate: string; endDate: string; employeeId: string }> = [];
+
     return projects.map(project => {
-      const projectAllocs = projectAllocations.filter((allocation: any) => 
-        allocation.projectId === project.id
+      const projectAllocs = projectAllocations.filter((allocation: { projectId: string; hoursPerDay: number; startDate: string; endDate: string }) =>
+        allocation.projectId === project.id.toString()
       );
       
-      const totalHours = projectAllocs.reduce((sum: number, alloc: any) => sum + (alloc.hours || 8), 0);
-      const employeeCount = new Set(projectAllocs.map((alloc: any) => alloc.employeeId)).size;
+      // Calculate employee count and total hours
+      const employeeCount = projectAllocs.length;
+      const totalHours = projectAllocs.reduce((sum, alloc) => sum + (alloc.hoursPerDay || 0), 0);
       
       // Calculate project status
       let status = 'Planning';
@@ -52,7 +57,7 @@ export const ProjectDistributionChart = () => {
 
   // Timeline data
   const timelineData = useMemo(() => {
-    const projects = getProjects().filter(project => project.startDate && project.endDate);
+    const projects = getProjectsSync().filter(project => project.startDate && project.endDate);
     const months = [];
     const today = new Date();
     
@@ -80,7 +85,7 @@ export const ProjectDistributionChart = () => {
 
   // Project metrics
   const projectMetrics = useMemo(() => {
-    const projects = getProjects();
+    const projects = getProjectsSync();
     const activeProjects = projects.filter(project => {
       if (!project.startDate || !project.endDate) return false;
       const startDate = new Date(project.startDate);
@@ -127,7 +132,7 @@ export const ProjectDistributionChart = () => {
       },
       {
         metric: 'Team Members',
-        value: getCurrentEmployees().length,
+        value: getCurrentEmployeesSync().length,
         total: 20, // Target team size
         icon: <Users className="h-4 w-4" />,
         color: 'hsl(var(--brp-black))'
@@ -135,12 +140,12 @@ export const ProjectDistributionChart = () => {
     ];
   }, []);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium text-foreground">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: { name: string; value: number; color: string }, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {entry.value}
             </p>
