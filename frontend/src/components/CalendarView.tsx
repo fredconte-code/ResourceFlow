@@ -166,6 +166,14 @@ export const CalendarView = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Button variant="outline" size="sm" onClick={() => {
+              const now = new Date();
+              setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+              setSelectedMonth(now.getMonth());
+              setSelectedYear(now.getFullYear());
+            }}>
+              Today
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigateMonth('next')}>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -211,7 +219,7 @@ export const CalendarView = () => {
                             {employee.name}
                             <span className="ml-2 text-lg" title={employee.country}>{countryFlags[employee.country]}</span>
                           </div>
-                          <div className="text-[10px] text-muted-foreground">{employee.role}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{employee.role}</div>
                         </div>
                       </div>
                     </td>
