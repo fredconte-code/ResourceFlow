@@ -69,4 +69,11 @@
     background-color: #ef4444 !important;
     color: white !important;
   }
+  
+  /* Heatmap text styles for better contrast */
+  .heatmap-text {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    font-weight: 600;
+  }
 }

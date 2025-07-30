@@ -165,7 +165,8 @@ export const CalendarView: React.FC = () => {
     }
     
     const maxDailyHours = getWorkingHoursForCountry(employee.country) / WORKING_DAYS_PER_WEEK;
-    return maxDailyHours > 0 ? Math.min((totalAllocatedHours / maxDailyHours) * 100, 100) : 0;
+    // Allow percentages to exceed 100% for overallocated days
+    return maxDailyHours > 0 ? (totalAllocatedHours / maxDailyHours) * 100 : 0;
   };
 
 
@@ -1144,7 +1145,7 @@ export const CalendarView: React.FC = () => {
                   key={project.id}
                   className={cn(
                     "p-1.5 border rounded-md cursor-move hover:bg-muted/50 transition-colors",
-                    "flex items-center gap-1 min-w-[100px] max-w-[130px]"
+                    "flex items-center justify-center min-w-[100px] max-w-[130px] h-8"
                   )}
                   draggable
                   onDragStart={(e) => handleDragStart(e, project)}
@@ -1154,13 +1155,8 @@ export const CalendarView: React.FC = () => {
                     color: getContrastColor(project.color) // Ensure text is readable
                   }}
                 >
-                  <GripVertical className="h-2.5 w-2.5 text-current opacity-70" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-xs truncate">{project.name}</p>
-                    <p className="text-xs opacity-80 truncate">
-                      {project.allocatedHours || 0}h
-                    </p>
-                  </div>
+                  <GripVertical className="h-2.5 w-2.5 text-current opacity-70 mr-1" />
+                  <span className="font-medium text-xs truncate">{project.name}</span>
                 </div>
               ))}
             {projects.length === 0 && (
@@ -1196,10 +1192,7 @@ export const CalendarView: React.FC = () => {
                   variant={heatmapMode ? "default" : "outline"}
                   size="sm"
                   onClick={() => setHeatmapMode(!heatmapMode)}
-                  className={cn(
-                    "flex items-center gap-2",
-                    heatmapMode && "bg-orange-500 hover:bg-orange-600"
-                  )}
+                  className="flex items-center gap-2"
                 >
                   <Flame className="h-4 w-4" />
                   Heatmap
@@ -1355,18 +1348,10 @@ export const CalendarView: React.FC = () => {
                                      return (
                                        <>
                                          {/* Weekend allocation indicator */}
-                                         <div className="absolute bottom-0 left-0 right-0 bg-gray-300 rounded-sm overflow-hidden">
-                                           <div
-                                             className="bg-gray-400 transition-all duration-300"
-                                             style={{ 
-                                               height: "20%",
-                                               width: '100%'
-                                             }}
-                                           />
-                                         </div>
+                                         <div className="absolute inset-0 bg-gray-400/80 rounded-sm transition-all duration-300" />
                                          {/* Weekend text overlay */}
                                          <div className="absolute inset-0 flex items-center justify-center z-10">
-                                           <span className="text-xs font-bold text-gray-800 drop-shadow-sm">
+                                           <span className="text-xs heatmap-text">
                                              Weekend
                                            </span>
                                          </div>
@@ -1374,26 +1359,39 @@ export const CalendarView: React.FC = () => {
                                      );
                                    }
                                    
-                                   if (dailyPercentage === 0) return null;
+                                   // Show color for 0% allocation (no allocation)
+                                   if (dailyPercentage === 0) {
+                                     return (
+                                       <>
+                                         {/* Full cell background color for no allocation */}
+                                         <div 
+                                           className={cn(
+                                             "absolute inset-0 rounded-sm transition-all duration-300",
+                                             getDailyAllocationColor(dailyPercentage)
+                                           )}
+                                         />
+                                         {/* Percentage text overlay */}
+                                         <div className="absolute inset-0 flex items-center justify-center z-10">
+                                           <span className="text-xs heatmap-text">
+                                             0%
+                                           </span>
+                                         </div>
+                                       </>
+                                     );
+                                   }
                                    
                                    return (
                                      <>
-                                       {/* Vertical progress bar */}
-                                       <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-sm overflow-hidden">
-                                         <div
-                                           className={cn(
-                                             "transition-all duration-300",
-                                             getDailyAllocationColor(dailyPercentage)
-                                           )}
-                                           style={{ 
-                                             height: `${dailyPercentage}%`,
-                                             width: '100%'
-                                           }}
-                                         />
-                                       </div>
+                                       {/* Full cell background color */}
+                                       <div 
+                                         className={cn(
+                                           "absolute inset-0 rounded-sm transition-all duration-300",
+                                           getDailyAllocationColor(dailyPercentage)
+                                         )}
+                                       />
                                        {/* Percentage text overlay */}
                                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                                         <span className="text-xs font-bold text-gray-800 drop-shadow-sm">
+                                         <span className="text-xs heatmap-text">
                                            {Math.round(dailyPercentage)}%
                                          </span>
                                        </div>

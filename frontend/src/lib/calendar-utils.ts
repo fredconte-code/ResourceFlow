@@ -29,10 +29,12 @@ export const formatHours = (hours: number) => {
 
 // Color functions
 export const getDailyAllocationColor = (percentage: number) => {
-  if (percentage <= 60) return 'bg-green-500';
-  if (percentage <= 80) return 'bg-yellow-500';
-  if (percentage <= 100) return 'bg-orange-500';
-  return 'bg-red-500';
+  if (percentage === 0) return 'bg-green-500/60'; // Green for no allocation
+  if (percentage <= 25) return 'bg-green-400/60';
+  if (percentage <= 50) return 'bg-green-300/60';
+  if (percentage <= 75) return 'bg-yellow-500/60';
+  if (percentage <= 100) return 'bg-orange-500/60';
+  return 'bg-red-600/60'; // Red for overallocated days (>100%)
 };
 
 export const getAllocationColor = (percentage: number) => {
