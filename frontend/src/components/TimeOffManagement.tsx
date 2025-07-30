@@ -397,273 +397,134 @@ export const TimeOffManagement: React.FC = () => {
             Manage holidays and vacation schedules that affect team availability.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setShowHolidayForm(true)} variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Holiday
-          </Button>
-          <Button onClick={() => setShowVacationForm(true)} size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Vacation
-          </Button>
-        </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Search by name or type..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+      {/* Side by Side Containers */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Holidays Container */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Building className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-lg">Holidays</CardTitle>
+                <Badge variant="secondary" className="ml-2">
+                  {holidays.length}
+                </Badge>
               </div>
+              <Button onClick={() => setShowHolidayForm(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Holiday
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
-              <Select value={filterCountry} onValueChange={setFilterCountry}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Countries" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Countries</SelectItem>
-                  <SelectItem value="Canada">Canada</SelectItem>
-                  <SelectItem value="Brazil">Brazil</SelectItem>
-                  <SelectItem value="Both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Vacation">Vacation</SelectItem>
-                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                  <SelectItem value="Personal">Personal</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="holidays">Holidays</TabsTrigger>
-          <TabsTrigger value="vacations">Vacations</TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Holidays</CardTitle>
-                <Building className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{holidays.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Company and national holidays
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Vacations</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{vacations.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Vacation requests
-                </p>
-              </CardContent>
-            </Card>
-
-          </div>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[...vacations, ...holidays]
-                  .sort((a, b) => {
-                    const dateA = 'startDate' in a ? a.startDate : a.date;
-                    const dateB = 'startDate' in b ? b.startDate : b.date;
-                    return new Date(dateB).getTime() - new Date(dateA).getTime();
-                  })
-                  .slice(0, 5)
-                  .map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <div>
-                          <p className="font-medium">
-                            {'employeeName' in item ? item.employeeName : item.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {'employeeName' in item ? item.type : 'Holiday'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {format('startDate' in item ? item.startDate : item.date, 'MMM dd, yyyy')}
-                      </div>
-                    </div>
-                  ))}
+          </CardHeader>
+          <CardContent>
+            {holidays.length === 0 ? (
+              <div className="text-center py-8">
+                <Building className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">No holidays configured yet</p>
+                <Button onClick={() => setShowHolidayForm(true)} size="sm">
+                  Add your first holiday
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Holidays Tab */}
-        <TabsContent value="holidays" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Holidays</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {filteredHolidays.length === 0 ? (
-                <div className="text-center py-8">
-                  <Building className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-semibold">No holidays found</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Get started by adding a company holiday.
-                  </p>
-                  <Button onClick={() => setShowHolidayForm(true)} className="mt-4">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Holiday
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredHolidays.map((holiday) => (
-                    <div
-                      key={holiday.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
+            ) : (
+              <div className="space-y-3">
+                {holidays
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .map((holiday) => (
+                    <div key={holiday.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                       <div className="flex items-center space-x-3">
-                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                         <div>
-                          <p className="font-medium">{holiday.name}</p>
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <CalendarIcon className="h-3 w-3" />
+                          <p className="font-medium text-sm">{holiday.name}</p>
+                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                             <span>{format(holiday.date, 'MMM dd, yyyy')}</span>
-                            <Globe className="h-3 w-3" />
+                            <span>•</span>
+                            <Badge variant="outline" className="text-xs">
+                              {holiday.type}
+                            </Badge>
+                            <span>•</span>
                             <span>{holiday.country}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">{holiday.type}</Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteHoliday(holiday.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteHoliday(holiday.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Vacations Tab */}
-        <TabsContent value="vacations" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Vacation Requests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {filteredVacations.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-semibold">No vacation requests found</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Get started by adding a vacation request.
-                  </p>
-                  <Button onClick={() => setShowVacationForm(true)} className="mt-4">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Vacation
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredVacations.map((vacation) => (
-                    <div
-                      key={vacation.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
+        {/* Vacations Container */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-lg">Vacations</CardTitle>
+                <Badge variant="secondary" className="ml-2">
+                  {vacations.length}
+                </Badge>
+              </div>
+              <Button onClick={() => setShowVacationForm(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Vacation
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {vacations.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">No vacation requests yet</p>
+                <Button onClick={() => setShowVacationForm(true)} size="sm">
+                  Add your first vacation
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {vacations
+                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                  .map((vacation) => (
+                    <div key={vacation.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                       <div className="flex items-center space-x-3">
-                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                            <User className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{vacation.employeeName}</p>
-                            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                              <span>{vacation.employeeRole}</span>
-                              <span>•</span>
-                              <span>{vacation.employeeCountry}</span>
-                            </div>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div>
+                          <p className="font-medium text-sm">{vacation.employeeName}</p>
+                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                            <span>{format(vacation.startDate, 'MMM dd')} - {format(vacation.endDate, 'MMM dd, yyyy')}</span>
+                            <span>•</span>
+                            <Badge variant="outline" className="text-xs">
+                              {vacation.type}
+                            </Badge>
+                            <span>•</span>
+                            <span>{vacation.days} days</span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            {format(vacation.startDate, 'MMM dd')} - {format(vacation.endDate, 'MMM dd, yyyy')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {vacation.days} day{vacation.days !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                        <Badge variant={getTypeBadgeVariant(vacation.type)}>
-                          {vacation.type}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteVacation(vacation.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteVacation(vacation.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+
 
       {/* Add Holiday Dialog */}
       <Dialog open={showHolidayForm} onOpenChange={setShowHolidayForm}>
