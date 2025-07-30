@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay } from "date-fns";
 import { ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +80,12 @@ export const CalendarView: React.FC = () => {
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
     return eachDayOfInterval({ start, end });
+  };
+
+  // Get day name (Mon, Tue, etc.)
+  const getDayName = (date: Date) => {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return dayNames[getDay(date)];
   };
   
   // Get allocations for a specific employee and date
@@ -648,14 +654,17 @@ export const CalendarView: React.FC = () => {
                    </div>
                    {calendarDays.map((date) => {
                      const holiday = getHolidayForDate(date);
+                     const isWeekendDay = isWeekend(date);
                      return (
                        <div
                          key={date.toISOString()}
                          className={cn(
                            "p-0.5 text-center text-xs border-b border-r bg-muted/30",
-                           isSameDay(date, new Date()) && "bg-primary/10 font-semibold"
+                           isSameDay(date, new Date()) && "bg-primary/10 font-semibold",
+                           isWeekendDay && "weekend-cell"
                          )}
                        >
+                         <div className="text-xs text-muted-foreground font-medium">{getDayName(date)}</div>
                          <div className="font-medium">{getDate(date)}</div>
                          {holiday && (
                            <div className="text-xs text-amber-600 font-medium truncate">
@@ -683,6 +692,7 @@ export const CalendarView: React.FC = () => {
                        const allocations = getAllocationsForCell(employee.id, date);
                        const vacation = getVacationForCell(employee.id, date);
                        const holiday = getHolidayForDate(date);
+                       const isWeekendDay = isWeekend(date);
                        const isDragOver = dragOverCell?.employeeId === employee.id && isSameDay(dragOverCell.date, date);
                        
                        return (
@@ -692,6 +702,7 @@ export const CalendarView: React.FC = () => {
                            className={cn(
                              "p-0.5 border-b border-r min-h-[40px] relative transition-all duration-200",
                              holiday && "bg-amber-50",
+                             isWeekendDay && "weekend-cell",
                              "hover:bg-muted/30"
                            )}
                            onDragOver={(e) => handleDragOver(e, employee.id, date)}
