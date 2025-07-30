@@ -5,7 +5,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
-import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
+import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, teamMembersApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
 import { useWorkingHours } from "@/lib/working-hours";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay } from "date-fns";
 import { ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
@@ -90,11 +90,39 @@ export const CalendarView: React.FC = () => {
     return dayNames[getDay(date)];
   };
 
-  // Calculate allocation percentage for an employee
+  // Custom function to check if date is weekend (Saturday or Sunday)
+  const isWeekendDay = (date: Date) => {
+    const day = getDay(date);
+    // getDay() returns: 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
+    const isWeekend = day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+    
+    // Debug logging for weekend detection
+    console.log(`Date: ${format(date, 'yyyy-MM-dd')}, Day: ${day}, DayName: ${getDayName(date)}, IsWeekend: ${isWeekend}`);
+    
+    return isWeekend;
+  };
+
+  // Format hours display (no decimals for whole numbers, one decimal for fractions)
+  const formatHours = (hours: number) => {
+    return hours % 1 === 0 ? Math.round(hours) : Math.round(hours * 10) / 10;
+  };
+
+  // Calculate allocation percentage for an employee for the current month
   const getEmployeeAllocationPercentage = (employee: Employee) => {
     const weeklyHours = getWorkingHoursForCountry(employee.country);
-    const allocatedHours = employee.allocatedHours || 0;
-    const percentage = weeklyHours > 0 ? (allocatedHours / weeklyHours) * 100 : 0;
+    const monthlyHours = weeklyHours * 4.33; // Average weeks per month (52 weeks / 12 months)
+    const allocatedHours = calculateEmployeeAllocatedHoursForMonth(employee.id);
+    const percentage = monthlyHours > 0 ? (allocatedHours / monthlyHours) * 100 : 0;
+    
+    // Debug: Log progress bar calculation
+    console.log(`Progress bar for ${employee.name}:`, {
+      weeklyHours,
+      monthlyHours,
+      allocatedHours,
+      percentage: Math.min(percentage, 100),
+      allocationsCount: allocations.filter(a => a.employeeId === employee.id).length
+    });
+    
     return Math.min(percentage, 100); // Cap at 100%
   };
 
@@ -104,6 +132,71 @@ export const CalendarView: React.FC = () => {
     if (percentage <= 80) return 'bg-blue-500';
     if (percentage <= 100) return 'bg-yellow-500';
     return 'bg-red-500';
+  };
+
+  // Calculate total allocated hours for an employee
+  const calculateEmployeeAllocatedHours = (employeeId: string) => {
+    const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
+    return employeeAllocations.reduce((total, allocation) => {
+      const startDate = new Date(allocation.startDate);
+      const endDate = new Date(allocation.endDate);
+      const days = differenceInDays(endDate, startDate) + 1;
+      return total + (allocation.hoursPerDay * days);
+    }, 0);
+  };
+
+  // Calculate allocated hours for an employee for the current month only
+  const calculateEmployeeAllocatedHoursForMonth = (employeeId: string) => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    
+    const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
+    return employeeAllocations.reduce((total, allocation) => {
+      const allocationStart = new Date(allocation.startDate);
+      const allocationEnd = new Date(allocation.endDate);
+      
+      // Check if allocation overlaps with current month
+      if (allocationEnd < monthStart || allocationStart > monthEnd) {
+        return total; // No overlap with current month
+      }
+      
+      // Calculate overlap with current month
+      const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
+      const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
+      
+      // Count only working days (exclude weekends)
+      let workingDays = 0;
+      let currentDate = new Date(effectiveStart);
+      while (currentDate <= effectiveEnd) {
+        if (!isWeekendDay(currentDate)) {
+          workingDays++;
+        }
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      return total + (allocation.hoursPerDay * workingDays);
+    }, 0);
+  };
+
+  // Update employee's allocated hours
+  const updateEmployeeAllocatedHours = async (employeeId: string) => {
+    try {
+      const totalAllocatedHours = calculateEmployeeAllocatedHours(employeeId);
+      const employee = employees.find(e => e.id === employeeId);
+      if (employee) {
+        await teamMembersApi.update(parseInt(employeeId), {
+          allocatedHours: totalAllocatedHours
+        });
+        // Update local state
+        setEmployees(prev => prev.map(emp => 
+          emp.id === employeeId 
+            ? { ...emp, allocatedHours: totalAllocatedHours }
+            : emp
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating employee allocated hours:', error);
+    }
   };
   
   // Get allocations for a specific employee and date
@@ -224,25 +317,50 @@ export const CalendarView: React.FC = () => {
     }
     
     try {
+      // Get the employee to determine their country and working hours
+      const employee = employees.find(e => e.id === employeeId);
+      if (!employee) {
+        throw new Error('Employee not found');
+      }
+      
+      // Check if the allocation is on a weekend
+      const isWeekendAllocation = isWeekendDay(date);
+      
+      // Calculate hours per day based on country working hours (0 for weekends)
+      const weeklyHours = getWorkingHoursForCountry(employee.country);
+      const hoursPerDay = isWeekendAllocation ? 0 : weeklyHours / 5; // 0 hours for weekends, normal hours for weekdays
+      
       const newAllocation = {
         employeeId: employeeId,
         projectId: dragItem.id.toString(),
         startDate: format(date, 'yyyy-MM-dd'),
         endDate: format(date, 'yyyy-MM-dd'), // Start with single day, can be resized
-        hoursPerDay: 8,
+        hoursPerDay: hoursPerDay,
         status: 'active'
       };
 
-      await projectAllocationsApi.create(newAllocation);
+      const createdAllocation = await projectAllocationsApi.create(newAllocation);
+      
+      // Update local allocations state immediately
+      setAllocations(prev => [...prev, createdAllocation]);
+      
+      // Update employee's allocated hours
+      await updateEmployeeAllocatedHours(employeeId);
+      
+      // Debug: Log the allocation details
+      console.log('New allocation created:', {
+        employeeId,
+        projectId: dragItem.id,
+        date: format(date, 'yyyy-MM-dd'),
+        hoursPerDay,
+        isWeekend: isWeekendAllocation,
+        totalAllocatedHours: calculateEmployeeAllocatedHoursForMonth(employeeId)
+      });
       
       toast({
         title: "Success",
-        description: `${dragItem.name} assigned to ${employees.find(e => e.id === employeeId)?.name} on ${format(date, 'MMM dd, yyyy')}`,
+        description: `${dragItem.name} assigned to ${employees.find(e => e.id === employeeId)?.name} on ${format(date, 'MMM dd, yyyy')} ${isWeekendAllocation ? '(weekend - no working hours)' : `(${formatHours(hoursPerDay)}h/day)`}`,
       });
-      
-      // Reload data
-      const allocationsData = await projectAllocationsApi.getAll();
-      setAllocations(allocationsData);
       
     } catch (error) {
       console.error('Error creating allocation:', error);
@@ -302,6 +420,13 @@ export const CalendarView: React.FC = () => {
         endDate: format(newEndDate, 'yyyy-MM-dd')
       });
       
+      // Update allocated hours for both old and new employee (if different)
+      const oldEmployeeId = draggingAllocation.allocation.employeeId;
+      if (oldEmployeeId !== employeeId) {
+        await updateEmployeeAllocatedHours(oldEmployeeId);
+      }
+      await updateEmployeeAllocatedHours(employeeId);
+      
       toast({
         title: "Success",
         description: "Allocation moved successfully.",
@@ -345,8 +470,14 @@ export const CalendarView: React.FC = () => {
     if (!draggingAllocationFromTimeline) return;
     
     try {
+      // Get the employee ID before deleting the allocation
+      const employeeId = draggingAllocationFromTimeline.employeeId;
+      
       // Delete the allocation
       await projectAllocationsApi.delete(draggingAllocationFromTimeline.id);
+      
+      // Update employee's allocated hours
+      await updateEmployeeAllocatedHours(employeeId);
       
       toast({
         title: "Allocation Removed",
@@ -426,12 +557,17 @@ export const CalendarView: React.FC = () => {
 
     
     try {
+      const employeeId = allocations.find(a => a.id.toString() === resizingAllocation.allocationId)?.employeeId || '';
+      
       await projectAllocationsApi.update(parseInt(resizingAllocation.allocationId), {
-        employeeId: allocations.find(a => a.id.toString() === resizingAllocation.allocationId)?.employeeId || '',
+        employeeId: employeeId,
         projectId: allocations.find(a => a.id.toString() === resizingAllocation.allocationId)?.projectId || '',
         startDate: format(resizingAllocation.startDate, 'yyyy-MM-dd'),
         endDate: format(resizingAllocation.endDate, 'yyyy-MM-dd')
       });
+      
+      // Update employee's allocated hours
+      await updateEmployeeAllocatedHours(employeeId);
       
       toast({
         title: "Success",
@@ -670,16 +806,16 @@ export const CalendarView: React.FC = () => {
                    <div className="p-0.5 font-medium text-xs border-b border-r bg-muted/30">
                      Team Members
                    </div>
-                   {calendarDays.map((date) => {
-                     const holiday = getHolidayForDate(date);
-                     const isWeekendDay = isWeekend(date);
-                     return (
+                                        {calendarDays.map((date) => {
+                       const holiday = getHolidayForDate(date);
+                       const isWeekendCell = isWeekendDay(date);
+                       return (
                        <div
                          key={date.toISOString()}
                          className={cn(
                            "p-0.5 text-center text-xs border-b border-r bg-muted/30",
                            isSameDay(date, new Date()) && "bg-primary/10 font-semibold",
-                           isWeekendDay && "weekend-cell"
+                           isWeekendCell && "weekend-cell"
                          )}
                        >
                          <div className="text-xs text-muted-foreground font-medium">{getDayName(date)}</div>
@@ -716,7 +852,7 @@ export const CalendarView: React.FC = () => {
                            />
                          </div>
                          <div className="text-xs text-muted-foreground mt-0.5">
-                           {employee.allocatedHours || 0}h / {getWorkingHoursForCountry(employee.country)}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                           {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getWorkingHoursForCountry(employee.country) * 4.33)}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
                          </div>
                        </div>
                      </div>
@@ -724,7 +860,7 @@ export const CalendarView: React.FC = () => {
                        const allocations = getAllocationsForCell(employee.id, date);
                        const vacation = getVacationForCell(employee.id, date);
                        const holiday = getHolidayForDate(date);
-                       const isWeekendDay = isWeekend(date);
+                       const isWeekendCell = isWeekendDay(date);
                        const isDragOver = dragOverCell?.employeeId === employee.id && isSameDay(dragOverCell.date, date);
                        
                        return (
@@ -734,7 +870,7 @@ export const CalendarView: React.FC = () => {
                            className={cn(
                              "p-0.5 border-b border-r min-h-[40px] relative transition-all duration-200",
                              holiday && "bg-amber-50",
-                             isWeekendDay && "weekend-cell",
+                             isWeekendCell && "weekend-cell",
                              "hover:bg-muted/30"
                            )}
                            onDragOver={(e) => handleDragOver(e, employee.id, date)}
@@ -767,6 +903,7 @@ export const CalendarView: React.FC = () => {
                              const isEndDate = isSameDay(new Date(allocation.endDate), date);
                              const isResizing = resizingAllocation?.allocationId === allocation.id.toString();
                              const isDragging = draggingAllocation?.allocation.id === allocation.id;
+                             const isWeekendAllocation = isWeekendDay(date);
                              
                              return (
                                <div
@@ -774,11 +911,12 @@ export const CalendarView: React.FC = () => {
                                  className={cn(
                                    "p-0.5 rounded text-xs font-medium text-white truncate mb-0.5 relative cursor-move",
                                    isResizing && "opacity-75",
-                                   isDragging && "opacity-50"
+                                   isDragging && "opacity-50",
+                                   isWeekendAllocation && "weekend-allocation"
                                  )}
                                  style={{ backgroundColor: project?.color || '#3b82f6' }}
                                  onMouseDown={(e) => handleAllocationDragStart(e, allocation)}
-                                 title="Drag to move allocation"
+                                 title={isWeekendAllocation ? "Weekend allocation (no working hours)" : "Drag to move allocation"}
                                >
                                  <div className="flex items-center justify-between">
                                    <span className="text-xs">{project?.name || 'Unknown Project'}</span>
