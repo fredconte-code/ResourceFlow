@@ -66,6 +66,7 @@ export const TeamManagement = () => {
   });
 
   const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<{name?: string, role?: string, country?: string}>({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [showCustomRole, setShowCustomRole] = useState(false);
   const [customRole, setCustomRole] = useState('');
@@ -209,11 +210,19 @@ export const TeamManagement = () => {
     }
   };
 
-  const filteredMembers = members.filter(member =>
-    member.name.toLowerCase().includes(search.toLowerCase()) ||
-    member.role.toLowerCase().includes(search.toLowerCase()) ||
-    member.country.toLowerCase().includes(search.toLowerCase())
-  );
+  // Smart search that detects what you're searching for
+  const filteredMembers = members.filter(member => {
+    if (!search) return true;
+    
+    const searchLower = search.toLowerCase();
+    
+    // Check if search matches name, role, or country
+    const matchesName = member.name.toLowerCase().includes(searchLower);
+    const matchesRole = member.role.toLowerCase().includes(searchLower);
+    const matchesCountry = member.country.toLowerCase().includes(searchLower);
+    
+    return matchesName || matchesRole || matchesCountry;
+  });
 
   const handleRoleChange = (role: string) => {
     if (role === 'custom') {
@@ -263,10 +272,6 @@ export const TeamManagement = () => {
             Manage your team members and their allocations
           </p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Team Member
-        </Button>
       </div>
 
       {/* Add Member Form */}
@@ -358,13 +363,34 @@ export const TeamManagement = () => {
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
+        <Button onClick={() => setShowAddForm(!showAddForm)} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Team Member
+        </Button>
         <div className="flex-1">
-          <Input
-            placeholder="Search team members..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
-          />
+          <div className="relative">
+            <Input
+              placeholder="🔍 Smart search: name, role, or country..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-sm pr-8"
+            />
+            {search && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearch("")}
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          {search && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Found {filteredMembers.length} member{filteredMembers.length !== 1 ? 's' : ''}
+            </div>
+          )}
         </div>
       </div>
 
@@ -387,7 +413,9 @@ export const TeamManagement = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredMembers.map((member) => (
+          filteredMembers
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((member) => (
             <Card key={member.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
