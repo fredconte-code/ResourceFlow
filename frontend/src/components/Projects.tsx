@@ -394,7 +394,9 @@ export const Projects = () => {
             </CardContent>
           </Card>
         ) : (
-          projects.map((project) => (
+          projects
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((project) => (
             <Card key={project.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
