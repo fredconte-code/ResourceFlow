@@ -213,7 +213,18 @@ export const calculateTimeOffDays = (
 export const calculateAllocationPercentage = (employee: Employee): number => {
   // This is a simplified calculation - in practice, you'd want to use the full calculation
   const totalHours = employee.country === 'Canada' ? 150 : 176; // 4 weeks
-  return totalHours > 0 ? (employee.allocatedHours / totalHours) * 100 : 0;
+  
+  // Get buffer from settings context
+  const { buffer } = useSettings();
+  
+  // Calculate buffer hours
+  const bufferHours = (totalHours * buffer) / 100;
+  
+  // Calculate available hours after deducting buffer
+  const availableHours = totalHours - bufferHours;
+  
+  // Calculate percentage based on available hours (not total hours)
+  return availableHours > 0 ? (employee.allocatedHours / availableHours) * 100 : 0;
 };
 
 // Calculate actual available hours for an employee (legacy function for backward compatibility)

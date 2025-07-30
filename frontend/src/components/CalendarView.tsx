@@ -7,10 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, teamMembersApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
 import { useWorkingHours } from "@/lib/working-hours";
+import { useSettings } from "@/context/SettingsContext";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay } from "date-fns";
 import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -89,6 +91,9 @@ export const CalendarView: React.FC = () => {
 
   // Overallocation warning state
   const [overallocationDialogOpen, setOverallocationDialogOpen] = useState(false);
+  
+  // Tooltip state
+  const [openTooltipId, setOpenTooltipId] = useState<string | null>(null);
   const [overallocationData, setOverallocationData] = useState<{
     employeeId: string;
     employeeName: string;
@@ -180,12 +185,90 @@ export const CalendarView: React.FC = () => {
 
   // Calculate allocation percentage for an employee for the current month
   const getEmployeeAllocationPercentage = (employee: Employee) => {
-    const weeklyHours = getWorkingHoursForCountry(employee.country);
-    const monthlyHours = weeklyHours * WEEKS_PER_MONTH;
     const allocatedHours = calculateEmployeeAllocatedHoursForMonth(employee.id);
-    const percentage = monthlyHours > 0 ? (allocatedHours / monthlyHours) * 100 : 0;
+    const breakdown = getEmployeeBreakdown(employee);
+    
+    // Calculate percentage based on total available hours (after all deductions)
+    const percentage = breakdown.totalAvailableHours > 0 ? (allocatedHours / breakdown.totalAvailableHours) * 100 : 0;
     
     return Math.min(percentage, 100);
+  };
+
+  // Helper function to get available hours for an employee (after buffer deduction)
+  const getEmployeeAvailableHours = (employee: Employee) => {
+    const breakdown = getEmployeeBreakdown(employee);
+    return breakdown.totalAvailableHours;
+  };
+
+  // Function to calculate detailed breakdown for tooltip
+  const getEmployeeBreakdown = (employee: Employee) => {
+    const weeklyHours = getWorkingHoursForCountry(employee.country);
+    const monthlyHours = weeklyHours * WEEKS_PER_MONTH;
+    const dailyHours = weeklyHours / 5; // Assuming 5 working days per week
+    
+    // Get buffer from settings context
+    const { buffer } = useSettings();
+    
+    // Calculate buffer hours for the month
+    const bufferHours = (monthlyHours * buffer) / 100;
+    
+    // Calculate holiday hours for the current month
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    let holidayHours = 0;
+    
+    holidays.forEach(holiday => {
+      const holidayDate = new Date(holiday.date);
+      if (holidayDate >= monthStart && holidayDate <= monthEnd) {
+        // Check if holiday applies to employee's country
+        if (holiday.country === 'Both' || holiday.country === employee.country) {
+          // Only count if it's a working day (not weekend)
+          if (!isWeekendDay(holidayDate)) {
+            holidayHours += dailyHours;
+          }
+        }
+      }
+    });
+    
+    // Calculate vacation hours for the current month
+    let vacationHours = 0;
+    vacations.forEach(vacation => {
+      if (vacation.employeeId === employee.id) {
+        const vacationStart = new Date(vacation.startDate);
+        const vacationEnd = new Date(vacation.endDate);
+        
+        // Calculate overlap with current month
+        if (vacationEnd >= monthStart && vacationStart <= monthEnd) {
+          const effectiveStart = vacationStart < monthStart ? monthStart : vacationStart;
+          const effectiveEnd = vacationEnd > monthEnd ? monthEnd : vacationEnd;
+          
+          // Count working days in vacation period
+          let workingDays = 0;
+          let currentDate = new Date(effectiveStart);
+          while (currentDate <= effectiveEnd) {
+            if (!isWeekendDay(currentDate)) {
+              workingDays++;
+            }
+            currentDate = addDays(currentDate, 1);
+          }
+          
+          vacationHours += workingDays * dailyHours;
+        }
+      }
+    });
+    
+    // Calculate total available hours
+    const totalAvailableHours = monthlyHours - bufferHours - holidayHours - vacationHours;
+    
+    return {
+      maxHoursPerMonth: monthlyHours,
+      maxHoursPerWeek: weeklyHours,
+      maxHoursPerDay: dailyHours,
+      bufferHours,
+      holidayHours,
+      vacationHours,
+      totalAvailableHours
+    };
   };
 
 
@@ -1063,7 +1146,7 @@ export const CalendarView: React.FC = () => {
     loadData();
   }, [toast]);
 
-  // Listen for settings updates to trigger recalculations
+    // Listen for settings updates to trigger recalculations
   useEffect(() => {
     const handleSettingsUpdate = () => {
       // Force re-render by updating a state that triggers recalculation
@@ -1071,11 +1154,25 @@ export const CalendarView: React.FC = () => {
     };
 
     window.addEventListener('settingsUpdate', handleSettingsUpdate);
-    
+
     return () => {
       window.removeEventListener('settingsUpdate', handleSettingsUpdate);
     };
   }, [currentDate]);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openTooltipId && !(event.target as Element).closest('[data-tooltip-trigger]')) {
+        setOpenTooltipId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openTooltipId]);
 
   // Cleanup double-click timeout on unmount
   useEffect(() => {
@@ -1369,8 +1466,72 @@ export const CalendarView: React.FC = () => {
                                style={{ width: `${getEmployeeAllocationPercentage(employee)}%` }}
                              />
                            </div>
-                           <div className="text-[10px] text-muted-foreground mt-0.5">
-                             {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getWorkingHoursForCountry(employee.country) * 4.33)}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                           <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center justify-between">
+                             <span>
+                               {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getEmployeeAvailableHours(employee))}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                             </span>
+                             <TooltipProvider>
+                               <Tooltip open={openTooltipId === employee.id} onOpenChange={(open) => setOpenTooltipId(open ? employee.id : null)}>
+                                 <TooltipTrigger asChild>
+                                   <button 
+                                     className="ml-1 p-0.5 rounded-full hover:bg-muted/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                     data-tooltip-trigger
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setOpenTooltipId(openTooltipId === employee.id ? null : employee.id);
+                                     }}
+                                   >
+                                     <svg className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                     </svg>
+                                   </button>
+                                 </TooltipTrigger>
+                                 <TooltipContent side="right" className="max-w-xs" sideOffset={5}>
+                                   <div className="space-y-2">
+                                     <div className="font-semibold text-sm border-b pb-1">Allocation Breakdown</div>
+                                     {(() => {
+                                       const breakdown = getEmployeeBreakdown(employee);
+                                       return (
+                                         <div className="space-y-1 text-xs">
+                                           <div className="flex justify-between">
+                                             <span>Max hours per month:</span>
+                                             <span className="font-medium">{formatHours(breakdown.maxHoursPerMonth)}</span>
+                                           </div>
+                                           <div className="flex justify-between">
+                                             <span>Max hours per week:</span>
+                                             <span className="font-medium">{formatHours(breakdown.maxHoursPerWeek)}</span>
+                                           </div>
+                                           <div className="flex justify-between">
+                                             <span>Max hours per day:</span>
+                                             <span className="font-medium">{formatHours(breakdown.maxHoursPerDay)}</span>
+                                           </div>
+                                           <div className="flex justify-between text-amber-600">
+                                             <span>Deducted buffer time:</span>
+                                             <span className="font-medium">-{formatHours(breakdown.bufferHours)}</span>
+                                           </div>
+                                           {breakdown.holidayHours > 0 && (
+                                             <div className="flex justify-between text-red-600">
+                                               <span>Deducted holiday hours:</span>
+                                               <span className="font-medium">-{formatHours(breakdown.holidayHours)}</span>
+                                             </div>
+                                           )}
+                                           {breakdown.vacationHours > 0 && (
+                                             <div className="flex justify-between text-blue-600">
+                                               <span>Deducted vacation hours:</span>
+                                               <span className="font-medium">-{formatHours(breakdown.vacationHours)}</span>
+                                             </div>
+                                           )}
+                                           <div className="flex justify-between font-semibold border-t pt-1">
+                                             <span>Total available hours:</span>
+                                             <span className="font-medium">{formatHours(breakdown.totalAvailableHours)}</span>
+                                           </div>
+                                         </div>
+                                       );
+                                     })()}
+                                   </div>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
                            </div>
                          </div>
                        </div>
