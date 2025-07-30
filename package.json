@@ -1,5 +1,21 @@
 {
+  "name": "resource-scheduler",
+  "version": "1.0.0",
+  "description": "Resource Scheduler Application",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "restart": "npm run stop && npm start",
+    "stop": "pkill -f 'node index.js' && pkill -f 'vite'",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "npm start"
+  },
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
