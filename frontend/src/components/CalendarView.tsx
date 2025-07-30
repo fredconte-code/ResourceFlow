@@ -3,6 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, teamMembersApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
@@ -67,7 +71,15 @@ export const CalendarView: React.FC = () => {
     mouseOffset: { x: number; y: number };
   } | null>(null);
   
-  // Form state
+  // Edit allocation dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingAllocation, setEditingAllocation] = useState<ProjectAllocation | null>(null);
+  const [editStartDate, setEditStartDate] = useState<Date | undefined>(undefined);
+  const [editEndDate, setEditEndDate] = useState<Date | undefined>(undefined);
+  
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingAllocation, setDeletingAllocation] = useState<ProjectAllocation | null>(null);
 
   
   
@@ -97,7 +109,7 @@ export const CalendarView: React.FC = () => {
     const isWeekend = day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
     
     // Debug logging for weekend detection
-    console.log(`Date: ${format(date, 'yyyy-MM-dd')}, Day: ${day}, DayName: ${getDayName(date)}, IsWeekend: ${isWeekend}`);
+    console.log(`Weekend Check - Date: ${format(date, 'yyyy-MM-dd')}, Day: ${day}, DayName: ${getDayName(date)}, IsWeekend: ${isWeekend}`);
     
     return isWeekend;
   };
@@ -151,7 +163,7 @@ export const CalendarView: React.FC = () => {
     const monthEnd = endOfMonth(currentDate);
     
     const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
-    return employeeAllocations.reduce((total, allocation) => {
+    const totalHours = employeeAllocations.reduce((total, allocation) => {
       const allocationStart = new Date(allocation.startDate);
       const allocationEnd = new Date(allocation.endDate);
       
@@ -174,8 +186,25 @@ export const CalendarView: React.FC = () => {
         currentDate = addDays(currentDate, 1);
       }
       
-      return total + (allocation.hoursPerDay * workingDays);
+      const allocationHours = allocation.hoursPerDay * workingDays;
+      
+      // Debug: Log allocation calculation
+      console.log(`Allocation calculation for ${allocation.id}:`, {
+        allocationStart: format(allocationStart, 'yyyy-MM-dd'),
+        allocationEnd: format(allocationEnd, 'yyyy-MM-dd'),
+        effectiveStart: format(effectiveStart, 'yyyy-MM-dd'),
+        effectiveEnd: format(effectiveEnd, 'yyyy-MM-dd'),
+        workingDays,
+        hoursPerDay: allocation.hoursPerDay,
+        allocationHours,
+        totalSoFar: total + allocationHours
+      });
+      
+      return total + allocationHours;
     }, 0);
+    
+    console.log(`Total monthly hours for employee ${employeeId}: ${totalHours}`);
+    return totalHours;
   };
 
   // Update employee's allocated hours
@@ -279,6 +308,97 @@ export const CalendarView: React.FC = () => {
     setDragOverCell(null);
   };
 
+  const handleAllocationDoubleClick = (allocation: ProjectAllocation) => {
+    setEditingAllocation(allocation);
+    setEditStartDate(new Date(allocation.startDate));
+    setEditEndDate(new Date(allocation.endDate));
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveAllocation = async () => {
+    if (!editingAllocation || !editStartDate || !editEndDate) return;
+    
+    if (editEndDate < editStartDate) {
+      toast({
+        title: "Invalid Dates",
+        description: "End date cannot be before start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      await projectAllocationsApi.update(parseInt(editingAllocation.id.toString()), {
+        startDate: format(editStartDate, 'yyyy-MM-dd'),
+        endDate: format(editEndDate, 'yyyy-MM-dd')
+      });
+      
+      // Update local state
+      setAllocations(prev => prev.map(allocation => 
+        allocation.id === editingAllocation.id 
+          ? { ...allocation, startDate: format(editStartDate, 'yyyy-MM-dd'), endDate: format(editEndDate, 'yyyy-MM-dd') }
+          : allocation
+      ));
+      
+      // Update employee's allocated hours
+      await updateEmployeeAllocatedHours(editingAllocation.employeeId);
+      
+      toast({
+        title: "Success",
+        description: "Allocation updated successfully.",
+      });
+      
+      setEditDialogOpen(false);
+      setEditingAllocation(null);
+      
+    } catch (error) {
+      console.error('Error updating allocation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update allocation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAllocation = () => {
+    if (!editingAllocation) return;
+    setDeletingAllocation(editingAllocation);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteAllocation = async () => {
+    if (!deletingAllocation) return;
+    
+    try {
+      await projectAllocationsApi.delete(deletingAllocation.id);
+      
+      // Update local state
+      setAllocations(prev => prev.filter(allocation => allocation.id !== deletingAllocation.id));
+      
+      // Update employee's allocated hours
+      await updateEmployeeAllocatedHours(deletingAllocation.employeeId);
+      
+      toast({
+        title: "Success",
+        description: "Allocation deleted successfully.",
+      });
+      
+      setDeleteDialogOpen(false);
+      setDeletingAllocation(null);
+      setEditDialogOpen(false);
+      setEditingAllocation(null);
+      
+    } catch (error) {
+      console.error('Error deleting allocation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete allocation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDragOver = (event: React.DragEvent, employeeId: string, date: Date) => {
     event.preventDefault();
     setDragOverCell({ employeeId, date });
@@ -333,6 +453,17 @@ export const CalendarView: React.FC = () => {
       const weeklyHours = getWorkingHoursForCountry(employee.country);
       const hoursPerDay = isWeekendAllocation ? 0 : weeklyHours / 5; // 0 hours for weekends, normal hours for weekdays
       
+      // Debug: Log allocation creation details
+      console.log('Allocation Creation Details:', {
+        date: format(date, 'yyyy-MM-dd'),
+        dayName: getDayName(date),
+        dayNumber: getDay(date),
+        isWeekend: isWeekendAllocation,
+        weeklyHours,
+        hoursPerDay,
+        employeeCountry: employee.country
+      });
+      
       const newAllocation = {
         employeeId: employeeId,
         projectId: dragItem.id.toString(),
@@ -345,7 +476,15 @@ export const CalendarView: React.FC = () => {
       const createdAllocation = await projectAllocationsApi.create(newAllocation);
       
       // Update local allocations state immediately
-      setAllocations(prev => [...prev, createdAllocation]);
+      setAllocations(prev => {
+        const updatedAllocations = [...prev, createdAllocation];
+        console.log('Allocations state updated:', {
+          previousCount: prev.length,
+          newCount: updatedAllocations.length,
+          newAllocation: createdAllocation
+        });
+        return updatedAllocations;
+      });
       
       // Update employee's allocated hours
       await updateEmployeeAllocatedHours(employeeId);
@@ -357,7 +496,8 @@ export const CalendarView: React.FC = () => {
         date: format(date, 'yyyy-MM-dd'),
         hoursPerDay,
         isWeekend: isWeekendAllocation,
-        totalAllocatedHours: calculateEmployeeAllocatedHoursForMonth(employeeId)
+        totalAllocatedHours: calculateEmployeeAllocatedHoursForMonth(employeeId),
+        allocationsCount: allocations.length + 1
       });
       
       toast({
@@ -603,6 +743,21 @@ export const CalendarView: React.FC = () => {
   
 
   
+  // Debug: Monitor allocations state changes
+  useEffect(() => {
+    console.log('Allocations state changed:', {
+      totalAllocations: allocations.length,
+      allocations: allocations.map(a => ({
+        id: a.id,
+        employeeId: a.employeeId,
+        projectId: a.projectId,
+        startDate: a.startDate,
+        endDate: a.endDate,
+        hoursPerDay: a.hoursPerDay
+      }))
+    });
+  }, [allocations]);
+
   // Load data on component mount
   useEffect(() => {
     const loadData = async () => {
@@ -927,7 +1082,8 @@ export const CalendarView: React.FC = () => {
                                  )}
                                  style={{ backgroundColor: project?.color || '#3b82f6' }}
                                  onMouseDown={(e) => handleAllocationDragStart(e, allocation)}
-                                 title={isWeekendAllocation ? "Weekend allocation (no working hours)" : "Drag horizontally to move allocation (same employee only)"}
+                                 onDoubleClick={() => handleAllocationDoubleClick(allocation)}
+                                 title={isWeekendAllocation ? "Weekend allocation (no working hours) - Double-click to edit" : "Drag horizontally to move allocation (same employee only) - Double-click to edit"}
                                >
                                  <div className="flex items-center justify-between">
                                    <span className="text-xs">{project?.name || 'Unknown Project'}</span>
@@ -989,11 +1145,105 @@ export const CalendarView: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Edit Allocation Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Allocation</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              {editingAllocation && (
+                <>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="project" className="text-right">
+                      Project
+                    </Label>
+                    <div className="col-span-3">
+                      <Badge 
+                        style={{ 
+                          backgroundColor: projects.find(p => p.id.toString() === editingAllocation.projectId)?.color || '#3b82f6',
+                          color: 'white'
+                        }}
+                      >
+                        {projects.find(p => p.id.toString() === editingAllocation.projectId)?.name || 'Unknown Project'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="employee" className="text-right">
+                      Employee
+                    </Label>
+                    <div className="col-span-3">
+                      {employees.find(e => e.id === editingAllocation.employeeId)?.name || 'Unknown Employee'}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="startDate" className="text-right">
+                      Start Date
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={editStartDate ? format(editStartDate, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => setEditStartDate(e.target.value ? new Date(e.target.value) : undefined)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="endDate" className="text-right">
+                      End Date
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={editEndDate ? format(editEndDate, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => setEditEndDate(e.target.value ? new Date(e.target.value) : undefined)}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="destructive" onClick={handleDeleteAllocation}>
+                Delete
+              </Button>
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveAllocation}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-
-      
-
-
-    </div>
-  );
-};
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Allocation</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this allocation? This action cannot be undone.
+                {deletingAllocation && (
+                  <div className="mt-2 p-2 bg-muted rounded">
+                    <strong>Project:</strong> {projects.find(p => p.id.toString() === deletingAllocation.projectId)?.name || 'Unknown Project'}<br />
+                    <strong>Employee:</strong> {employees.find(e => e.id === deletingAllocation.employeeId)?.name || 'Unknown Employee'}<br />
+                    <strong>Period:</strong> {format(new Date(deletingAllocation.startDate), 'MMM dd, yyyy')} - {format(new Date(deletingAllocation.endDate), 'MMM dd, yyyy')}
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteAllocation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  };
