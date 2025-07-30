@@ -17,4 +17,56 @@
     box-shadow: var(--shadow-medium);
     transform: translateY(-1px);
   }
+  
+  /* Unified Allocation Rectangle Styles */
+  .weekend-cell {
+    background-color: #f8f9fa;
+  }
+  
+  .weekend-allocation {
+    opacity: 0.7;
+    background-color: #6c757d !important;
+  }
+  
+  /* Unified allocation rectangle styles */
+  .unified-allocation {
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .unified-allocation:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+  }
+  
+  .unified-allocation.dragging {
+    opacity: 0.5;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .unified-allocation.resizing {
+    opacity: 0.75;
+  }
+  
+  /* Resize handle styles */
+  .resize-handle {
+    background-color: rgba(255, 255, 255, 0.3);
+    transition: background-color 0.2s ease;
+  }
+  
+  .resize-handle:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  /* Delete button styles */
+  .drag-to-delete {
+    transition: all 0.2s ease;
+  }
+  
+  .drag-to-delete:hover {
+    background-color: #ef4444 !important;
+    color: white !important;
+  }
 }

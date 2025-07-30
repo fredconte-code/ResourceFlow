@@ -276,6 +276,94 @@ export const CalendarView: React.FC = () => {
         return aId - bId; // First created (smaller ID) comes first
       });
   };
+
+  // New function to get unified allocations for an employee across the entire month
+  const getUnifiedAllocationsForEmployee = (employeeId: string) => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    
+    // Get all allocations for this employee that overlap with the current month
+    const employeeAllocations = allocations
+      .filter(allocation => allocation.employeeId === employeeId)
+      .filter(allocation => {
+        const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+        const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
+        return allocationEnd >= monthStart && allocationStart <= monthEnd;
+      })
+      .sort((a, b) => {
+        // Sort by creation time (id is timestamp-based)
+        const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+        const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+        return aId - bId; // First created (smaller ID) comes first
+      });
+
+    return employeeAllocations;
+  };
+
+  // New function to calculate the visual position and dimensions for unified allocations
+  const getUnifiedAllocationStyle = (allocation: ProjectAllocation, index: number, totalAllocations: number) => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    const calendarDays = getCalendarDays();
+    
+    // Calculate the effective start and end dates within the current month view
+    const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+    const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
+    
+    const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
+    const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
+    
+    // Find the column indices for start and end dates
+    const startColIndex = calendarDays.findIndex(date => isSameDay(date, effectiveStart));
+    const endColIndex = calendarDays.findIndex(date => isSameDay(date, effectiveEnd));
+    
+    if (startColIndex === -1 || endColIndex === -1) {
+      return { display: 'none' };
+    }
+    
+    // Calculate position and width
+    const left = `${startColIndex * 60}px`; // 60px per day column
+    const width = `${(endColIndex - startColIndex + 1) * 60}px`; // Width spans all days
+    
+    // Calculate vertical position for stacking - start from top of calendar cell
+    const allocationHeight = 24; // Height of each allocation rectangle
+    const verticalSpacing = 4; // Spacing between allocations
+    const top = `${index * (allocationHeight + verticalSpacing)}px`; // Start from top-left corner of calendar cell
+    
+    const style = {
+      position: 'absolute' as const,
+      left,
+      top,
+      width,
+      height: `${allocationHeight}px`,
+      zIndex: 10 + index, // Higher index allocations appear on top
+    };
+    
+    return style;
+  };
+
+  // New function to calculate the total height needed for an employee row
+  const getEmployeeRowHeight = (employeeId: string) => {
+    // For the new approach, we need to find the maximum number of allocations on any single day
+    const calendarDays = getCalendarDays();
+    let maxAllocationsPerDay = 0;
+    
+    calendarDays.forEach(date => {
+      const dayAllocations = getAllocationsForCell(employeeId, date);
+      maxAllocationsPerDay = Math.max(maxAllocationsPerDay, dayAllocations.length);
+    });
+    
+    if (maxAllocationsPerDay === 0) {
+      return 40; // Minimum height for empty rows
+    }
+    
+    const allocationHeight = 24;
+    const verticalSpacing = 4;
+    const baseHeight = 40; // Base height for the row (employee info area)
+    
+    // Calculate total height: base height + space for maximum allocations on any day
+    return baseHeight + (maxAllocationsPerDay * (allocationHeight + verticalSpacing)) - verticalSpacing;
+  };
   
   // Get allocation that starts on a specific date (for left edge resize)
   const getAllocationStartingOnDate = (employeeId: string, date: Date) => {
@@ -477,6 +565,30 @@ export const CalendarView: React.FC = () => {
       // Only allow dragging within the same employee row
       if (draggingAllocation.allocation.employeeId === employeeId) {
         setDragOverCell({ employeeId, date });
+      }
+    }
+  };
+
+  // New function to handle unified allocation drag over
+  const handleUnifiedAllocationDragOver = (event: React.MouseEvent, employeeId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (draggingAllocation) {
+      // Only allow dragging within the same employee row
+      if (draggingAllocation.allocation.employeeId === employeeId) {
+        // Find the date under the mouse cursor
+        const calendarContainer = document.querySelector('[data-calendar-container]') as HTMLElement;
+        if (calendarContainer) {
+          const rect = calendarContainer.getBoundingClientRect();
+          const x = event.clientX - rect.left - 150; // Subtract employee column width
+          const dayIndex = Math.floor(x / 60); // 60px per day column
+          const calendarDays = getCalendarDays();
+          
+          if (dayIndex >= 0 && dayIndex < calendarDays.length) {
+            const targetDate = calendarDays[dayIndex];
+            setDragOverCell({ employeeId, date: targetDate });
+          }
+        }
       }
     }
   };
@@ -1128,237 +1240,269 @@ export const CalendarView: React.FC = () => {
                  </div>
 
                  {/* Employee rows */}
-                 {employees.map((employee) => (
-                   <div
-                     key={employee.id}
-                     data-employee={employee.id}
-                     className="grid"
-                     style={{ gridTemplateColumns: `150px repeat(${calendarDays.length}, 60px)` }}
-                   >
-                                         <div className="p-0.5 border-b border-r bg-muted/10">
-                       <div className="font-medium text-xs">{employee.name}</div>
-                       <div className="text-xs text-muted-foreground truncate">{employee.role}</div>
-                       <div className="mt-1">
-                         <div className="w-full bg-gray-200 rounded-full h-1.5">
-                           <div
-                             className={cn(
-                               "h-1.5 rounded-full transition-all duration-300",
-                               getAllocationColor(getEmployeeAllocationPercentage(employee))
-                             )}
-                             style={{ width: `${getEmployeeAllocationPercentage(employee)}%` }}
-                           />
-                         </div>
-                         <div className="text-xs text-muted-foreground mt-0.5">
-                           {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getWorkingHoursForCountry(employee.country) * 4.33)}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                 {employees.map((employee) => {
+                   const unifiedAllocations = getUnifiedAllocationsForEmployee(employee.id);
+                   const rowHeight = getEmployeeRowHeight(employee.id);
+                   
+                   return (
+                     <div
+                       key={employee.id}
+                       data-employee={employee.id}
+                       className="grid relative"
+                       style={{ 
+                         gridTemplateColumns: `150px repeat(${calendarDays.length}, 60px)`,
+                         minHeight: `${rowHeight}px`
+                       }}
+                     >
+                       {/* Employee info column */}
+                       <div className="p-0.5 border-b border-r bg-muted/10">
+                         <div className="font-medium text-xs">{employee.name}</div>
+                         <div className="text-xs text-muted-foreground truncate">{employee.role}</div>
+                         <div className="mt-1">
+                           <div className="w-full bg-gray-200 rounded-full h-1.5">
+                             <div
+                               className={cn(
+                                 "h-1.5 rounded-full transition-all duration-300",
+                                 getAllocationColor(getEmployeeAllocationPercentage(employee))
+                               )}
+                               style={{ width: `${getEmployeeAllocationPercentage(employee)}%` }}
+                             />
+                           </div>
+                           <div className="text-xs text-muted-foreground mt-0.5">
+                             {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getWorkingHoursForCountry(employee.country) * 4.33)}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                           </div>
                          </div>
                        </div>
-                     </div>
-                     {calendarDays.map((date) => {
-                       const allocations = getAllocationsForCell(employee.id, date);
-                       const vacation = getVacationForCell(employee.id, date);
-                       const holiday = getHolidayForDate(date);
-                       const isWeekendCell = isWeekendDay(date);
-                       const isDragOver = dragOverCell?.employeeId === employee.id && isSameDay(dragOverCell.date, date);
                        
-                       return (
-                         <div
-                           key={`${employee.id}-${date.toISOString()}`}
-                           data-date={format(date, 'yyyy-MM-dd')}
-                           className={cn(
-                             "p-0.5 border-b border-r min-h-[40px] relative transition-all duration-200",
-                             holiday && "bg-amber-50",
-                             isWeekendCell && "weekend-cell",
-                             "hover:bg-muted/30"
-                           )}
-                           onDragOver={(e) => handleDragOver(e, employee.id, date)}
-                           onDrop={(e) => handleDrop(e, employee.id, date)}
-                           onDragLeave={handleDragLeave}
-                           onMouseOver={(e) => draggingAllocation && handleAllocationDragOver(e, employee.id, date)}
-                           onMouseUp={(e) => draggingAllocation && handleAllocationDrop(e, employee.id, date)}
-                         >
-                           {/* Drag shadow preview */}
-                           {isDragOver && (dragItem || draggingAllocation) && (
-                             <div
-                               className="absolute inset-1 rounded-md border-2 border-dashed opacity-50 z-10 pointer-events-none"
-                               style={{ 
-                                 borderColor: dragItem?.color || '#3b82f6'
-                               }}
-                             >
-                                                                <div 
-                                   className="p-0.5 text-xs font-medium truncate flex items-center justify-center h-full text-gray-800"
-                                 >
-                                 <span className="drop-shadow-sm">
-                                   {dragItem?.name || 'Moving allocation'}
-                                 </span>
-                               </div>
-                             </div>
-                           )}
-                           {/* Heatmap View */}
-                           {heatmapMode ? (
-                             <div 
-                               className="relative w-full h-full"
-                               title={(() => {
-                                 const dailyPercentage = getDailyAllocationPercentage(employee.id, date);
-                                 const dayAllocations = getAllocationsForCell(employee.id, date);
-                                 const dailyHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
-                                 const employeeData = employees.find(e => e.id === employee.id);
-                                 const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
-                                 
-                                 if (dailyPercentage === -1) {
-                                   return "Weekend allocation (no working hours)";
-                                 }
-                                 
-                                 if (dailyPercentage === 0) {
-                                   if (isWeekendCell) return "Weekend - No working hours";
-                                   if (holiday) return `Holiday: ${holiday.name}`;
-                                   if (vacation) return `Vacation: ${vacation.type}`;
-                                   return "No allocations";
-                                 }
-                                 
-                                 return `${Math.round(dailyPercentage)}% allocated – ${formatHours(dailyHours)} out of ${formatHours(maxDailyHours)} hours used`;
-                               })()}
-                             >
-                               {/* Background progress bar */}
-                               {(() => {
-                                 const dailyPercentage = getDailyAllocationPercentage(employee.id, date);
-                                 const dayAllocations = getAllocationsForCell(employee.id, date);
-                                 const dailyHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
-                                 const employeeData = employees.find(e => e.id === employee.id);
-                                 const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
-                                 
-                                 // Handle weekend allocations (dailyPercentage = -1)
-                                 if (dailyPercentage === -1) {
+                       {/* Calendar day columns */}
+                       {calendarDays.map((date) => {
+                         const allocations = getAllocationsForCell(employee.id, date);
+                         const vacation = getVacationForCell(employee.id, date);
+                         const holiday = getHolidayForDate(date);
+                         const isWeekendCell = isWeekendDay(date);
+                         const isDragOver = dragOverCell?.employeeId === employee.id && isSameDay(dragOverCell.date, date);
+                         
+                         return (
+                           <div
+                             key={`${employee.id}-${date.toISOString()}`}
+                             data-date={format(date, 'yyyy-MM-dd')}
+                             className={cn(
+                               "p-0.5 border-b border-r relative transition-all duration-200",
+                               holiday && "bg-amber-50",
+                               isWeekendCell && "weekend-cell",
+                               "hover:bg-muted/30"
+                             )}
+                             style={{ minHeight: `${rowHeight}px` }}
+                             onDragOver={(e) => handleDragOver(e, employee.id, date)}
+                             onDrop={(e) => handleDrop(e, employee.id, date)}
+                             onDragLeave={handleDragLeave}
+                             onMouseOver={(e) => draggingAllocation && handleAllocationDragOver(e, employee.id, date)}
+                             onMouseUp={(e) => draggingAllocation && handleAllocationDrop(e, employee.id, date)}
+                           >
+                                                                                         {/* Drag shadow preview */}
+                              {isDragOver && (dragItem || draggingAllocation) && (
+                                <div
+                                  className="absolute inset-1 rounded-md border-2 border-dashed opacity-50 z-10 pointer-events-none"
+                                  style={{ 
+                                    borderColor: '#6b7280' // Grey color for drag shadow
+                                  }}
+                                >
+                                  <div 
+                                    className="p-0.5 text-xs font-medium truncate flex items-center justify-center h-full text-gray-800"
+                                  >
+                                    <span className="drop-shadow-sm">
+                                      {dragItem ? dragItem.name : 'Moving allocation'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                             
+                             {/* Heatmap View */}
+                             {heatmapMode ? (
+                               <div 
+                                 className="relative w-full h-full"
+                                 title={(() => {
+                                   const dailyPercentage = getDailyAllocationPercentage(employee.id, date);
+                                   const dayAllocations = getAllocationsForCell(employee.id, date);
+                                   const dailyHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
+                                   const employeeData = employees.find(e => e.id === employee.id);
+                                   const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
+                                   
+                                   if (dailyPercentage === -1) {
+                                     return "Weekend allocation (no working hours)";
+                                   }
+                                   
+                                   if (dailyPercentage === 0) {
+                                     if (isWeekendCell) return "Weekend - No working hours";
+                                     if (holiday) return `Holiday: ${holiday.name}`;
+                                     if (vacation) return `Vacation: ${vacation.type}`;
+                                     return "No allocations";
+                                   }
+                                   
+                                   return `${Math.round(dailyPercentage)}% allocated – ${formatHours(dailyHours)} out of ${formatHours(maxDailyHours)} hours used`;
+                                 })()}
+                               >
+                                 {/* Background progress bar */}
+                                 {(() => {
+                                   const dailyPercentage = getDailyAllocationPercentage(employee.id, date);
+                                   const dayAllocations = getAllocationsForCell(employee.id, date);
+                                   const dailyHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
+                                   const employeeData = employees.find(e => e.id === employee.id);
+                                   const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
+                                   
+                                   // Handle weekend allocations (dailyPercentage = -1)
+                                   if (dailyPercentage === -1) {
+                                     return (
+                                       <>
+                                         {/* Weekend allocation indicator */}
+                                         <div className="absolute bottom-0 left-0 right-0 bg-gray-300 rounded-sm overflow-hidden">
+                                           <div
+                                             className="bg-gray-400 transition-all duration-300"
+                                             style={{ 
+                                               height: "20%",
+                                               width: '100%'
+                                             }}
+                                           />
+                                         </div>
+                                         {/* Weekend text overlay */}
+                                         <div className="absolute inset-0 flex items-center justify-center z-10">
+                                           <span className="text-xs font-bold text-gray-800 drop-shadow-sm">
+                                             Weekend
+                                           </span>
+                                         </div>
+                                       </>
+                                     );
+                                   }
+                                   
+                                   if (dailyPercentage === 0) return null;
+                                   
                                    return (
                                      <>
-                                       {/* Weekend allocation indicator */}
-                                       <div className="absolute bottom-0 left-0 right-0 bg-gray-300 rounded-sm overflow-hidden">
+                                       {/* Vertical progress bar */}
+                                       <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-sm overflow-hidden">
                                          <div
-                                           className="bg-gray-400 transition-all duration-300"
+                                           className={cn(
+                                             "transition-all duration-300",
+                                             getDailyAllocationColor(dailyPercentage)
+                                           )}
                                            style={{ 
-                                             height: "20%",
+                                             height: `${dailyPercentage}%`,
                                              width: '100%'
                                            }}
                                          />
                                        </div>
-                                       {/* Weekend text overlay */}
+                                       {/* Percentage text overlay */}
                                        <div className="absolute inset-0 flex items-center justify-center z-10">
                                          <span className="text-xs font-bold text-gray-800 drop-shadow-sm">
-                                           Weekend
+                                           {Math.round(dailyPercentage)}%
                                          </span>
                                        </div>
                                      </>
                                    );
-                                 }
-                                 
-                                 if (dailyPercentage === 0) return null;
-                                 
-                                 return (
-                                   <>
-                                     {/* Vertical progress bar */}
-                                     <div className="absolute bottom-0 left-0 right-0 bg-gray-200 rounded-sm overflow-hidden">
-                                       <div
-                                         className={cn(
-                                           "transition-all duration-300",
-                                           getDailyAllocationColor(dailyPercentage)
-                                         )}
-                                         style={{ 
-                                           height: `${dailyPercentage}%`,
-                                           width: '100%'
-                                         }}
-                                       />
+                                 })()}
+                               </div>
+                                                            ) : (
+                                 /* Normal View - Show vacation/holiday info only */
+                                 <>
+                                   {vacation && allocations.length === 0 && (
+                                     <div className="p-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                       {vacation.type}
                                      </div>
-                                     {/* Percentage text overlay */}
-                                     <div className="absolute inset-0 flex items-center justify-center z-10">
-                                       <span className="text-xs font-bold text-gray-800 drop-shadow-sm">
-                                         {Math.round(dailyPercentage)}%
-                                       </span>
+                                   )}
+                                   {holiday && allocations.length === 0 && !vacation && (
+                                     <div className="p-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                       {holiday.name}
                                      </div>
-                                   </>
-                                 );
-                               })()}
-                             </div>
-                           ) : (
-                             /* Normal View - Multiple allocations stacked vertically */
-                             allocations.map((allocation, index) => {
-                               const project = projects.find(p => p.id.toString() === allocation.projectId);
-                               const isStartDate = isSameDay(new Date(allocation.startDate + 'T00:00:00'), date);
-                               const isEndDate = isSameDay(new Date(allocation.endDate + 'T00:00:00'), date);
-                               const isResizing = resizingAllocation?.allocationId === allocation.id.toString();
-                               const isDragging = draggingAllocation?.allocation.id === allocation.id;
-                               const isWeekendAllocation = isWeekendDay(date);
-                               
-                               return (
-                                 <div
-                                   key={allocation.id}
-                                   className={cn(
-                                     "p-0.5 rounded text-xs font-medium text-white truncate mb-0.5 relative cursor-ew-resize transition-all duration-200",
-                                     isResizing && "opacity-75",
-                                     isDragging && "opacity-50 scale-105 shadow-lg",
-                                     isWeekendAllocation && "weekend-allocation"
                                    )}
-                                   style={{ backgroundColor: project?.color || '#3b82f6' }}
-                                   onMouseDown={(e) => handleAllocationDragStart(e, allocation)}
-                                   onDoubleClick={() => handleAllocationDoubleClick(allocation)}
-                                   title={isWeekendAllocation ? "Weekend allocation (no working hours) - Double-click to edit" : "Drag horizontally to move allocation (same employee only) - Double-click to edit"}
-                                 >
-                                   <div className="flex items-center justify-between pointer-events-none">
-                                     <span className="text-xs">{project?.name || 'Unknown Project'}</span>
-                                     {/* Delete button */}
-                                     <button
-                                       className="drag-to-delete ml-1 w-3 h-3 bg-white/40 rounded cursor-pointer hover:bg-red-400 hover:scale-110 transition-all duration-200 pointer-events-auto flex items-center justify-center"
-                                       onClick={(e) => {
-                                         e.stopPropagation();
-                                         setDeletingAllocation(allocation);
-                                         setDeleteDialogOpen(true);
-                                       }}
-                                       title="Click to delete allocation"
-                                     >
-                                       <span className="text-[8px] text-gray-700 font-bold">×</span>
-                                     </button>
-                                   </div>
-                                   
-                                   {/* Invisible left resize area */}
-                                   {isStartDate && (
-                                     <div
-                                       className="resize-handle absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
-                                       onMouseDown={(e) => {
-                                         e.stopPropagation();
-                                         handleResizeStart(e, allocation, true);
-                                       }}
-                                       title="Drag to resize start date"
-                                     />
-                                   )}
-                                   
-                                   {/* Invisible right resize area */}
-                                   {isEndDate && (
-                                     <div
-                                       className="resize-handle absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
-                                       onMouseDown={(e) => {
-                                         e.stopPropagation();
-                                         handleResizeStart(e, allocation, false);
-                                       }}
-                                       title="Drag to resize end date"
-                                     />
-                                   )}
-                                 </div>
-                               );
-                             })
-                           )}
-                           {vacation && allocations.length === 0 && (
-                             <div className="p-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                               {vacation.type}
-                             </div>
-                           )}
-                           {holiday && allocations.length === 0 && !vacation && (
-                             <div className="p-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                               {holiday.name}
-                             </div>
-                           )}
-                         </div>
-                       );
-                     })}
-                  </div>
-                ))}
+                                 </>
+                               )}
+                           </div>
+                         );
+                       })}
+                       
+                        {/* Unified Allocation Rectangles - Positioned absolutely over the calendar */}
+                        {!heatmapMode && (
+                          <div 
+                            className="absolute pointer-events-none" 
+                            style={{ 
+                              left: '150px', 
+                              right: 0,
+                              top: '0px'
+                            }}
+                            onMouseOver={(e) => handleUnifiedAllocationDragOver(e, employee.id)}
+                          >
+                            {unifiedAllocations.map((allocation, index) => {
+                              const project = projects.find(p => p.id.toString() === allocation.projectId);
+                              const isResizing = resizingAllocation?.allocationId === allocation.id.toString();
+                              const isDragging = draggingAllocation?.allocation.id === allocation.id;
+                              const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+                              const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
+                              const isStartDate = calendarDays.some(date => isSameDay(date, allocationStart));
+                              const isEndDate = calendarDays.some(date => isSameDay(date, allocationEnd));
+                              
+                              return (
+                                <div
+                                  key={allocation.id}
+                                  className={cn(
+                                    "unified-allocation text-xs font-medium text-white truncate relative cursor-move pointer-events-auto",
+                                    isResizing && "resizing",
+                                    isDragging && "dragging"
+                                  )}
+                                  style={{
+                                    ...getUnifiedAllocationStyle(allocation, index, unifiedAllocations.length),
+                                    backgroundColor: project?.color || '#3b82f6'
+                                  }}
+                                  onMouseDown={(e) => handleAllocationDragStart(e, allocation)}
+                                  onDoubleClick={() => handleAllocationDoubleClick(allocation)}
+                                  title={`${project?.name || 'Unknown Project'} - Drag to move, Double-click to edit`}
+                                >
+                                  <div className="flex items-center justify-between h-full px-1">
+                                    <span className="text-xs truncate">{project?.name || 'Unknown Project'}</span>
+                                    {/* Delete button */}
+                                    <button
+                                      className="drag-to-delete ml-1 w-3 h-3 bg-white/40 rounded cursor-pointer hover:bg-red-400 hover:scale-110 transition-all duration-200 flex items-center justify-center"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletingAllocation(allocation);
+                                        setDeleteDialogOpen(true);
+                                      }}
+                                      title="Click to delete allocation"
+                                    >
+                                      <span className="text-[8px] text-gray-700 font-bold">×</span>
+                                    </button>
+                                  </div>
+                                  
+                                  {/* Invisible left resize area */}
+                                  {isStartDate && (
+                                    <div
+                                      className="resize-handle absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        handleResizeStart(e, allocation, true);
+                                      }}
+                                      title="Drag to resize start date"
+                                    />
+                                  )}
+                                  
+                                  {/* Invisible right resize area */}
+                                  {isEndDate && (
+                                    <div
+                                      className="resize-handle absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        handleResizeStart(e, allocation, false);
+                                      }}
+                                      title="Drag to resize end date"
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                     </div>
+                   );
+                 })}
               </div>
             </div>
           </CardContent>
