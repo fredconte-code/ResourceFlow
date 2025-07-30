@@ -899,12 +899,43 @@ export const TimeOffManagement: React.FC = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={vacationForm.startDate}
-                      onSelect={(date) => date && setVacationForm({ ...vacationForm, startDate: date })}
-                      initialFocus
-                    />
+                    <div className="p-3">
+                      <Calendar
+                        mode="single"
+                        selected={vacationForm.startDate}
+                        onSelect={(date) => date && setVacationForm({ ...vacationForm, startDate: date })}
+                        initialFocus
+                      />
+                      <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Close the popover
+                            const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                            if (popover) {
+                              const closeEvent = new Event('pointerdown', { bubbles: true });
+                              popover.dispatchEvent(closeEvent);
+                            }
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            // Close the popover
+                            const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                            if (popover) {
+                              const closeEvent = new Event('pointerdown', { bubbles: true });
+                              popover.dispatchEvent(closeEvent);
+                            }
+                          }}
+                        >
+                          OK
+                        </Button>
+                      </div>
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>
@@ -924,12 +955,43 @@ export const TimeOffManagement: React.FC = () => {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={vacationForm.endDate}
-                      onSelect={(date) => date && setVacationForm({ ...vacationForm, endDate: date })}
-                      initialFocus
-                    />
+                    <div className="p-3">
+                      <Calendar
+                        mode="single"
+                        selected={vacationForm.endDate}
+                        onSelect={(date) => date && setVacationForm({ ...vacationForm, endDate: date })}
+                        initialFocus
+                      />
+                      <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Close the popover
+                            const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                            if (popover) {
+                              const closeEvent = new Event('pointerdown', { bubbles: true });
+                              popover.dispatchEvent(closeEvent);
+                            }
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            // Close the popover
+                            const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                            if (popover) {
+                              const closeEvent = new Event('pointerdown', { bubbles: true });
+                              popover.dispatchEvent(closeEvent);
+                            }
+                          }}
+                        >
+                          OK
+                        </Button>
+                      </div>
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>

@@ -217,17 +217,54 @@ export const CalendarView: React.FC = () => {
     const monthEnd = endOfMonth(currentDate);
     let holidayHours = 0;
     
+    console.log('Holiday calculation debug:', {
+      employeeId: employee.id,
+      employeeCountry: employee.country,
+      monthStart: monthStart.toISOString(),
+      monthEnd: monthEnd.toISOString(),
+      totalHolidays: holidays.length,
+      holidays: holidays.map(h => ({ name: h.name, date: h.date, country: h.country }))
+    });
+    
     holidays.forEach(holiday => {
       const holidayDate = new Date(holiday.date);
+      console.log('Processing holiday:', { 
+        name: holiday.name, 
+        originalDate: holiday.date, 
+        parsedDate: holidayDate.toISOString(),
+        dayOfMonth: holidayDate.getDate(),
+        isWeekend: isWeekendDay(holidayDate),
+        country: holiday.country,
+        employeeCountry: employee.country
+      });
+      
       if (holidayDate >= monthStart && holidayDate <= monthEnd) {
         // Check if holiday applies to employee's country
         if (holiday.country === 'Both' || holiday.country === employee.country) {
           // Only count if it's a working day (not weekend)
           if (!isWeekendDay(holidayDate)) {
             holidayHours += dailyHours;
+            console.log('✅ Holiday counted:', { name: holiday.name, date: holiday.date, hours: dailyHours, totalHolidayHours: holidayHours });
+          } else {
+            console.log('❌ Holiday skipped (weekend):', { name: holiday.name, date: holiday.date });
           }
+        } else {
+          console.log('❌ Holiday skipped (country mismatch):', { name: holiday.name, date: holiday.date, holidayCountry: holiday.country, employeeCountry: employee.country });
         }
+      } else {
+        console.log('❌ Holiday skipped (outside month):', { name: holiday.name, date: holiday.date, monthStart: monthStart.toISOString(), monthEnd: monthEnd.toISOString() });
       }
+    });
+    
+    console.log('Final holiday hours:', holidayHours);
+    
+    // Special debug for day 7
+    const day7Date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 7);
+    console.log('Day 7 debug:', {
+      date: day7Date.toISOString(),
+      dayOfWeek: day7Date.getDay(), // 0 = Sunday, 1 = Monday, etc.
+      isWeekend: isWeekendDay(day7Date),
+      dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day7Date.getDay()]
     });
     
     // Calculate vacation hours for the current month
@@ -1525,6 +1562,12 @@ export const CalendarView: React.FC = () => {
                                                <span className="font-medium">-{formatHours(breakdown.holidayHours)}</span>
                                              </div>
                                            )}
+                                           {breakdown.holidayHours === 0 && holidays.length > 0 && (
+                                             <div className="flex justify-between text-gray-500 text-xs">
+                                               <span>No holiday hours deducted</span>
+                                               <span className="font-medium">(0h)</span>
+                                             </div>
+                                           )}
                                            {breakdown.vacationHours > 0 && (
                                              <div className="flex justify-between text-blue-600">
                                                <span>Deducted vacation hours:</span>
@@ -1838,16 +1881,32 @@ export const CalendarView: React.FC = () => {
                       </div>
                       {startDatePickerOpen && (
                         <div className="absolute top-full left-0 z-50 mt-1 bg-background border rounded-md shadow-lg">
-                          <Calendar
-                            mode="single"
-                            selected={editStartDate}
-                            onSelect={(date) => {
-                              setEditStartDate(date);
-                              setStartDatePickerOpen(false);
-                            }}
-                            className="rounded-md"
-                            disabled={(date) => editEndDate ? date > editEndDate : false}
-                          />
+                          <div className="p-3">
+                            <Calendar
+                              mode="single"
+                              selected={editStartDate}
+                              onSelect={(date) => {
+                                setEditStartDate(date);
+                              }}
+                              className="rounded-md"
+                              disabled={(date) => editEndDate ? date > editEndDate : false}
+                            />
+                            <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setStartDatePickerOpen(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => setStartDatePickerOpen(false)}
+                              >
+                                OK
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1868,16 +1927,32 @@ export const CalendarView: React.FC = () => {
                       </div>
                       {endDatePickerOpen && (
                         <div className="absolute top-full left-0 z-50 mt-1 bg-background border rounded-md shadow-lg">
-                          <Calendar
-                            mode="single"
-                            selected={editEndDate}
-                            onSelect={(date) => {
-                              setEditEndDate(date);
-                              setEndDatePickerOpen(false);
-                            }}
-                            className="rounded-md"
-                            disabled={(date) => editStartDate ? date < editStartDate : false}
-                          />
+                          <div className="p-3">
+                            <Calendar
+                              mode="single"
+                              selected={editEndDate}
+                              onSelect={(date) => {
+                                setEditEndDate(date);
+                              }}
+                              className="rounded-md"
+                              disabled={(date) => editStartDate ? date < editStartDate : false}
+                            />
+                            <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setEndDatePickerOpen(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => setEndDatePickerOpen(false)}
+                              >
+                                OK
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -280,12 +280,43 @@ export const Projects = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={form.startDate}
-                    onSelect={(date) => handleDateChange('startDate', date)}
-                    initialFocus
-                  />
+                  <div className="p-3">
+                    <Calendar
+                      mode="single"
+                      selected={form.startDate}
+                      onSelect={(date) => handleDateChange('startDate', date)}
+                      initialFocus
+                    />
+                    <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Close the popover
+                          const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                          if (popover) {
+                            const closeEvent = new Event('pointerdown', { bubbles: true });
+                            popover.dispatchEvent(closeEvent);
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          // Close the popover
+                          const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                          if (popover) {
+                            const closeEvent = new Event('pointerdown', { bubbles: true });
+                            popover.dispatchEvent(closeEvent);
+                          }
+                        }}
+                      >
+                        OK
+                      </Button>
+                    </div>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
@@ -306,12 +337,43 @@ export const Projects = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={form.endDate}
-                    onSelect={(date) => handleDateChange('endDate', date)}
-                    initialFocus
-                  />
+                  <div className="p-3">
+                    <Calendar
+                      mode="single"
+                      selected={form.endDate}
+                      onSelect={(date) => handleDateChange('endDate', date)}
+                      initialFocus
+                    />
+                    <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Close the popover
+                          const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                          if (popover) {
+                            const closeEvent = new Event('pointerdown', { bubbles: true });
+                            popover.dispatchEvent(closeEvent);
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          // Close the popover
+                          const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                          if (popover) {
+                            const closeEvent = new Event('pointerdown', { bubbles: true });
+                            popover.dispatchEvent(closeEvent);
+                          }
+                        }}
+                      >
+                        OK
+                      </Button>
+                    </div>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
@@ -458,12 +520,43 @@ export const Projects = () => {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={editForm.startDate}
-                        onSelect={(date) => handleEditDateChange('startDate', date)}
-                        initialFocus
-                      />
+                      <div className="p-3">
+                        <Calendar
+                          mode="single"
+                          selected={editForm.startDate}
+                          onSelect={(date) => handleEditDateChange('startDate', date)}
+                          initialFocus
+                        />
+                        <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Close the popover
+                              const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                              if (popover) {
+                                const closeEvent = new Event('pointerdown', { bubbles: true });
+                                popover.dispatchEvent(closeEvent);
+                              }
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              // Close the popover
+                              const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                              if (popover) {
+                                const closeEvent = new Event('pointerdown', { bubbles: true });
+                                popover.dispatchEvent(closeEvent);
+                              }
+                            }}
+                          >
+                            OK
+                          </Button>
+                        </div>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -483,12 +576,43 @@ export const Projects = () => {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={editForm.endDate}
-                        onSelect={(date) => handleEditDateChange('endDate', date)}
-                        initialFocus
-                      />
+                      <div className="p-3">
+                        <Calendar
+                          mode="single"
+                          selected={editForm.endDate}
+                          onSelect={(date) => handleEditDateChange('endDate', date)}
+                          initialFocus
+                        />
+                        <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Close the popover
+                              const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                              if (popover) {
+                                const closeEvent = new Event('pointerdown', { bubbles: true });
+                                popover.dispatchEvent(closeEvent);
+                              }
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              // Close the popover
+                              const popover = document.querySelector('[data-radix-popper-content-wrapper]');
+                              if (popover) {
+                                const closeEvent = new Event('pointerdown', { bubbles: true });
+                                popover.dispatchEvent(closeEvent);
+                              }
+                            }}
+                          >
+                            OK
+                          </Button>
+                        </div>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </div>
