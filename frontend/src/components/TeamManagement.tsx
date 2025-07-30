@@ -254,16 +254,16 @@ export const TeamManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Team Management</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl font-bold tracking-tight">Team Management</h2>
+          <p className="text-muted-foreground text-sm">
             Manage your team members and their allocations
           </p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)}>
+        <Button onClick={() => setShowAddForm(!showAddForm)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Team Member
         </Button>
@@ -272,11 +272,11 @@ export const TeamManagement = () => {
       {/* Add Member Form */}
       {showAddForm && (
         <Card>
-          <CardHeader>
-            <CardTitle>Add New Team Member</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Add New Team Member</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="name">Name *</Label>
                 <Input
@@ -338,11 +338,11 @@ export const TeamManagement = () => {
             </div>
             
             <div className="flex gap-2">
-              <Button onClick={handleAddMember}>
+              <Button onClick={handleAddMember} size="sm">
                 <Save className="h-4 w-4 mr-2" />
                 Add Team Member
               </Button>
-              <Button variant="outline" onClick={() => {
+              <Button variant="outline" size="sm" onClick={() => {
                 setShowAddForm(false);
                 setNewMember({ name: '', role: '', country: 'Canada' });
                 setShowCustomRole(false);
@@ -357,7 +357,7 @@ export const TeamManagement = () => {
       )}
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
           <Input
             placeholder="Search team members..."
@@ -369,17 +369,17 @@ export const TeamManagement = () => {
       </div>
 
       {/* Team Members List */}
-      <div className="grid gap-4">
+      <div className="grid gap-3">
         {filteredMembers.length === 0 ? (
           <Card>
-            <CardContent className="flex items-center justify-center h-32">
+            <CardContent className="flex items-center justify-center h-24">
               <div className="text-center">
-                <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">
+                <Users className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground text-sm">
                   {search ? 'No team members found matching your search.' : 'No team members yet.'}
                 </p>
                 {!search && (
-                  <Button onClick={() => setShowAddForm(true)} className="mt-2">
+                  <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
                     Add your first team member
                   </Button>
                 )}
@@ -389,17 +389,17 @@ export const TeamManagement = () => {
         ) : (
           filteredMembers.map((member) => (
             <Card key={member.id}>
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarFallback>
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs">
                         {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">{member.name}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <h3 className="font-semibold text-sm">{member.name}</h3>
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         <span>{member.role}</span>
                         <span>•</span>
                         <span>{countryFlags[member.country]} {member.country}</span>
@@ -409,20 +409,20 @@ export const TeamManagement = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(member)}
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteClick(member)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>

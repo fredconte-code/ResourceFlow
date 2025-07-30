@@ -549,12 +549,12 @@ export const CalendarView: React.FC = () => {
   const calendarDays = getCalendarDays();
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Resource Calendar</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl font-bold tracking-tight">Resource Calendar</h2>
+          <p className="text-muted-foreground text-sm">
             Drag projects from the sidebar to assign team members to tasks.
           </p>
         </div>
@@ -563,7 +563,7 @@ export const CalendarView: React.FC = () => {
 
       {/* Projects Sidebar - Top */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg">Projects - Drag to Calendar</CardTitle>
         </CardHeader>
         <CardContent

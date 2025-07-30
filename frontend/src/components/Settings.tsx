@@ -345,24 +345,24 @@ export const Settings = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl font-bold tracking-tight">Settings</h2>
+        <p className="text-muted-foreground text-sm">
           Configure your resource scheduler settings
         </p>
       </div>
 
       {/* Settings Cards Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Working Hours Settings */}
         <Card>
-          <CardHeader>
-            <CardTitle>Working Hours Configuration</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Working Hours Configuration</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="buffer">Buffer Time (%)</Label>
                 <Input
@@ -429,11 +429,11 @@ export const Settings = () => {
 
         {/* Data Management */}
         <Card>
-          <CardHeader>
-            <CardTitle>Data Management</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Data Management</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
+          <CardContent className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="outline" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" />
                 Export data to Excel

@@ -347,11 +347,11 @@ export const TimeOffManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Time Off Management</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-xl font-bold tracking-tight">Time Off Management</h2>
+            <p className="text-muted-foreground text-sm">
               Manage holidays and vacation schedules that affect team availability.
             </p>
           </div>
@@ -366,11 +366,11 @@ export const TimeOffManagement: React.FC = () => {
 
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Time Off Management</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-xl font-bold tracking-tight">Time Off Management</h2>
+            <p className="text-muted-foreground text-sm">
               Manage holidays and vacation schedules that affect team availability.
             </p>
           </div>
@@ -388,12 +388,12 @@ export const TimeOffManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Time Off Management</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl font-bold tracking-tight">Time Off Management</h2>
+          <p className="text-muted-foreground text-sm">
             Manage holidays and vacation schedules that affect team availability.
           </p>
         </div>
@@ -411,11 +411,11 @@ export const TimeOffManagement: React.FC = () => {
 
       {/* Filters */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="space-y-2">
               <Label htmlFor="search">Search</Label>
               <div className="relative">
@@ -464,7 +464,7 @@ export const TimeOffManagement: React.FC = () => {
       </Card>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="holidays">Holidays</TabsTrigger>
@@ -472,8 +472,8 @@ export const TimeOffManagement: React.FC = () => {
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TabsContent value="overview" className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Holidays</CardTitle>

@@ -252,12 +252,12 @@ export const Projects = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl font-bold tracking-tight">Projects</h2>
+          <p className="text-muted-foreground text-sm">
             Manage your projects and their timelines
           </p>
         </div>
@@ -265,7 +265,7 @@ export const Projects = () => {
 
       {/* Add Project Button */}
       <div className="flex items-center gap-4">
-        <Button onClick={() => setShowAddForm(true)}>
+        <Button onClick={() => setShowAddForm(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Project
         </Button>
@@ -274,11 +274,11 @@ export const Projects = () => {
       {/* Add Project Form */}
       {showAddForm && (
         <Card>
-          <CardHeader>
-            <CardTitle>Add New Project</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Add New Project</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="space-y-2">
               <Label htmlFor="name">Project Name *</Label>
               <Input
@@ -364,11 +364,11 @@ export const Projects = () => {
           </div>
           
           <div className="flex gap-2">
-            <Button onClick={handleAdd}>
+            <Button onClick={handleAdd} size="sm">
               <Save className="h-4 w-4 mr-2" />
               Add Project
             </Button>
-            <Button variant="outline" onClick={() => {
+            <Button variant="outline" size="sm" onClick={() => {
               setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
               setShowAddForm(false);
             }}>
@@ -381,13 +381,13 @@ export const Projects = () => {
       )}
 
       {/* Projects List */}
-      <div className="grid gap-4">
+      <div className="grid gap-3">
         {projects.length === 0 ? (
           <Card>
-            <CardContent className="flex items-center justify-center h-32">
+            <CardContent className="flex items-center justify-center h-24">
               <div className="text-center">
-                <p className="text-muted-foreground">No projects yet.</p>
-                <Button onClick={() => setShowAddForm(true)} className="mt-2">
+                <p className="text-muted-foreground text-sm">No projects yet.</p>
+                <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
                   Add your first project
                 </Button>
               </div>
@@ -396,16 +396,16 @@ export const Projects = () => {
         ) : (
           projects.map((project) => (
             <Card key={project.id}>
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3">
                     <div 
-                      className="w-4 h-4 rounded-full" 
+                      className="w-3 h-3 rounded-full" 
                       style={{ backgroundColor: project.color }}
                     />
                     <div>
-                      <h3 className="font-semibold">{project.name}</h3>
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <h3 className="font-semibold text-sm">{project.name}</h3>
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         {project.startDate && (
                           <>
                             <span>Start: {format(new Date(project.startDate), 'MMM dd, yyyy')}</span>
@@ -425,20 +425,20 @@ export const Projects = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(project)}
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteClick(project)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
