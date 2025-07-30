@@ -30,7 +30,7 @@
   
   /* Unified allocation rectangle styles */
   .unified-allocation {
-    border-radius: 4px;
+    border-radius: 6px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
   }
@@ -50,14 +50,16 @@
     opacity: 0.75;
   }
   
-  /* Resize handle styles */
+    /* Resize handle styles */
   .resize-handle {
-    background-color: rgba(255, 255, 255, 0.3);
-    transition: background-color 0.2s ease;
-  }
-  
-  .resize-handle:hover {
     background-color: rgba(255, 255, 255, 0.5);
+    transition: all 0.2s ease;
+    border-radius: 3px;
+  }
+
+  .resize-handle:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+    transform: scaleX(1.2);
   }
   
   /* Delete button styles */

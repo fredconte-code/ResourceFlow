@@ -301,6 +301,27 @@ export const CalendarView: React.FC = () => {
     return employeeAllocations;
   };
 
+  // New function to get only overlapping allocations for rendering
+  const getOverlappingAllocationsForEmployee = (employeeId: string) => {
+    const calendarDays = getCalendarDays();
+    const overlappingAllocations = new Set<ProjectAllocation>();
+    
+    // Find all allocations that overlap on any day
+    calendarDays.forEach(date => {
+      const dayAllocations = getAllocationsForCell(employeeId, date);
+      dayAllocations.forEach(allocation => {
+        overlappingAllocations.add(allocation);
+      });
+    });
+    
+    // Convert to array and sort by creation time
+    return Array.from(overlappingAllocations).sort((a, b) => {
+      const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+      const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+      return aId - bId;
+    });
+  };
+
   // New function to calculate the visual position and dimensions for unified allocations
   const getUnifiedAllocationStyle = (allocation: ProjectAllocation, index: number, totalAllocations: number) => {
     const monthStart = startOfMonth(currentDate);
@@ -345,16 +366,16 @@ export const CalendarView: React.FC = () => {
 
   // New function to calculate the total height needed for an employee row
   const getEmployeeRowHeight = (employeeId: string) => {
-    // For the new approach, we need to find the maximum number of allocations on any single day
+    // Find the maximum number of overlapping allocations on any single day in the current month
     const calendarDays = getCalendarDays();
-    let maxAllocationsPerDay = 0;
+    let maxOverlappingAllocations = 0;
     
     calendarDays.forEach(date => {
       const dayAllocations = getAllocationsForCell(employeeId, date);
-      maxAllocationsPerDay = Math.max(maxAllocationsPerDay, dayAllocations.length);
+      maxOverlappingAllocations = Math.max(maxOverlappingAllocations, dayAllocations.length);
     });
     
-    if (maxAllocationsPerDay === 0) {
+    if (maxOverlappingAllocations === 0) {
       return 40; // Minimum height for empty rows
     }
     
@@ -362,8 +383,8 @@ export const CalendarView: React.FC = () => {
     const verticalSpacing = 4;
     const baseHeight = 40; // Base height for the row (employee info area)
     
-    // Calculate total height: base height + space for maximum allocations on any day
-    return baseHeight + (maxAllocationsPerDay * (allocationHeight + verticalSpacing)) - verticalSpacing;
+    // Calculate total height: base height + space for maximum overlapping allocations on any day
+    return baseHeight + (maxOverlappingAllocations * (allocationHeight + verticalSpacing)) - verticalSpacing;
   };
   
   // Get allocation that starts on a specific date (for left edge resize)
@@ -879,7 +900,7 @@ export const CalendarView: React.FC = () => {
     event.preventDefault();
     event.stopPropagation();
     
-
+    console.log('Resize start:', { isLeftEdge, allocation: allocation.id });
     
     setResizingAllocation({
       allocationId: allocation.id.toString(),
@@ -899,10 +920,18 @@ export const CalendarView: React.FC = () => {
     if (cell) {
       const dateStr = cell.getAttribute('data-date');
       if (dateStr) {
-        const targetDate = new Date(dateStr + 'T00:00:00'); // Fix timezone issue
+        const targetDate = new Date(dateStr + 'T00:00:00');
+        
+        console.log('Resize move:', { 
+          isLeftEdge: resizingAllocation.isLeftEdge, 
+          targetDate: dateStr,
+          currentStart: format(resizingAllocation.startDate, 'yyyy-MM-dd'),
+          currentEnd: format(resizingAllocation.endDate, 'yyyy-MM-dd')
+        });
         
         if (resizingAllocation.isLeftEdge) {
           // Resizing left edge - update start date
+          // Allow moving the start date in any direction as long as it doesn't go past the end date
           if (targetDate <= resizingAllocation.endDate) {
             setResizingAllocation({
               ...resizingAllocation,
@@ -911,6 +940,7 @@ export const CalendarView: React.FC = () => {
           }
         } else {
           // Resizing right edge - update end date
+          // Allow moving the end date in any direction as long as it doesn't go before the start date
           if (targetDate >= resizingAllocation.startDate) {
             setResizingAllocation({
               ...resizingAllocation,
@@ -1234,7 +1264,7 @@ export const CalendarView: React.FC = () => {
 
                  {/* Employee rows */}
                  {employees.map((employee) => {
-                   const unifiedAllocations = getUnifiedAllocationsForEmployee(employee.id);
+                   const overlappingAllocations = getOverlappingAllocationsForEmployee(employee.id);
                    const rowHeight = getEmployeeRowHeight(employee.id);
                    
                    return (
@@ -1429,7 +1459,7 @@ export const CalendarView: React.FC = () => {
                             }}
                             onMouseOver={(e) => handleUnifiedAllocationDragOver(e, employee.id)}
                           >
-                            {unifiedAllocations.map((allocation, index) => {
+                            {overlappingAllocations.map((allocation, index) => {
                               const project = projects.find(p => p.id.toString() === allocation.projectId);
                               const isResizing = resizingAllocation?.allocationId === allocation.id.toString();
                               const isDragging = draggingAllocation?.allocation.id === allocation.id;
@@ -1447,34 +1477,23 @@ export const CalendarView: React.FC = () => {
                                     isDragging && "dragging"
                                   )}
                                   style={{
-                                    ...getUnifiedAllocationStyle(allocation, index, unifiedAllocations.length),
+                                    ...getUnifiedAllocationStyle(allocation, index, overlappingAllocations.length),
                                     backgroundColor: project?.color || '#3b82f6'
                                   }}
                                   onMouseDown={(e) => handleAllocationDragStart(e, allocation)}
                                   onDoubleClick={() => handleAllocationDoubleClick(allocation)}
                                   title={`${project?.name || 'Unknown Project'} - Drag to move, Double-click to edit`}
                                 >
-                                  <div className="flex items-center justify-between h-full px-1">
+                                  <div className="flex items-center justify-center h-full px-1">
                                     <span className="text-xs truncate">{project?.name || 'Unknown Project'}</span>
-                                    {/* Delete button */}
-                                    <button
-                                      className="drag-to-delete ml-1 w-3 h-3 bg-white/40 rounded cursor-pointer hover:bg-red-400 hover:scale-110 transition-all duration-200 flex items-center justify-center"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeletingAllocation(allocation);
-                                        setDeleteDialogOpen(true);
-                                      }}
-                                      title="Click to delete allocation"
-                                    >
-                                      <span className="text-[8px] text-gray-700 font-bold">×</span>
-                                    </button>
                                   </div>
                                   
-                                  {/* Invisible left resize area */}
+                                  {/* Left resize area */}
                                   {isStartDate && (
                                     <div
-                                      className="resize-handle absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
+                                      className="resize-handle absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize z-10"
                                       onMouseDown={(e) => {
+                                        e.preventDefault();
                                         e.stopPropagation();
                                         handleResizeStart(e, allocation, true);
                                       }}
@@ -1482,11 +1501,12 @@ export const CalendarView: React.FC = () => {
                                     />
                                   )}
                                   
-                                  {/* Invisible right resize area */}
+                                  {/* Right resize area */}
                                   {isEndDate && (
                                     <div
-                                      className="resize-handle absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
+                                      className="resize-handle absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize z-10"
                                       onMouseDown={(e) => {
+                                        e.preventDefault();
                                         e.stopPropagation();
                                         handleResizeStart(e, allocation, false);
                                       }}
