@@ -64,6 +64,20 @@ export const EmployeeCard = ({ employee }: EmployeeCardProps) => {
     };
   }, [employee.id]);
 
+  // Listen for settings updates to trigger recalculations
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      // Force re-render by updating project allocations state
+      setProjectAllocations(prev => [...prev]);
+    };
+
+    window.addEventListener('settingsUpdate', handleSettingsUpdate);
+    
+    return () => {
+      window.removeEventListener('settingsUpdate', handleSettingsUpdate);
+    };
+  }, []);
+
   return (
     <Card className="hover:shadow-md transition-all duration-300 border-border/50 text-xs p-1 w-full max-w-md">
       <CardHeader className="pb-2 p-2">

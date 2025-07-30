@@ -32,11 +32,7 @@ import {
   WEEKS_PER_MONTH,
   WORKING_DAYS_PER_WEEK
 } from "@/lib/calendar-utils";
-
-const countryFlags = {
-  'Canada': '🇨🇦',
-  'Brazil': '🇧🇷'
-};
+import { COUNTRY_FLAGS, DRAG_THRESHOLD } from "@/lib/constants";
 
 export const CalendarView: React.FC = () => {
   const { toast } = useToast();
@@ -103,7 +99,9 @@ export const CalendarView: React.FC = () => {
     maxDailyHours: number;
     conflictingAllocations: ProjectAllocation[];
   } | null>(null);
-  const [allocationHours, setAllocationHours] = useState<{[key: string]: number}>({});
+
+  // Overallocation hours tracking
+  const [overallocationHours, setOverallocationHours] = useState<{[key: string]: number}>({});
 
   // Double-click detection state
   const [doubleClickTimeout, setDoubleClickTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -111,7 +109,6 @@ export const CalendarView: React.FC = () => {
 
   // Drag distance tracking
   const [dragStartPosition, setDragStartPosition] = useState<{x: number, y: number} | null>(null);
-  const DRAG_THRESHOLD = 5; // Minimum pixels to move before considering it a drag
 
   // Check for overallocation when adding a new project
   const checkForOverallocation = (employeeId: string, date: Date, projectId: string, hoursPerDay: number) => {
@@ -680,7 +677,7 @@ export const CalendarView: React.FC = () => {
         // Set hours for the new allocation
         hoursMap['new'] = hoursPerDay;
         
-        setAllocationHours(hoursMap);
+        setOverallocationHours(hoursMap);
         setOverallocationData(overallocationInfo);
         setOverallocationDialogOpen(true);
         setDragItem(null);
@@ -869,7 +866,7 @@ export const CalendarView: React.FC = () => {
         projectId: overallocationData.projectId,
         startDate: format(overallocationData.date, 'yyyy-MM-dd'),
         endDate: format(overallocationData.date, 'yyyy-MM-dd'),
-        hoursPerDay: allocationHours['new'] || 0,
+        hoursPerDay: overallocationHours['new'] || 0,
         status: 'active'
       };
 
@@ -883,7 +880,7 @@ export const CalendarView: React.FC = () => {
       
       toast({
         title: "Allocation Created",
-        description: `${overallocationData.projectName} assigned to ${overallocationData.employeeName} with ${allocationHours['new'] || 0}h/day.`,
+        description: `${overallocationData.projectName} assigned to ${overallocationData.employeeName} with ${overallocationHours['new'] || 0}h/day.`,
       });
       
     } catch (error) {
@@ -896,14 +893,14 @@ export const CalendarView: React.FC = () => {
     } finally {
       setOverallocationDialogOpen(false);
       setOverallocationData(null);
-      setAllocationHours({});
+      setOverallocationHours({});
     }
   };
 
   const handleOverallocationCancel = () => {
-    setOverallocationDialogOpen(false);
-    setOverallocationData(null);
-    setAllocationHours({});
+            setOverallocationDialogOpen(false);
+        setOverallocationData(null);
+        setOverallocationHours({});
   };
   
   // Resize handlers
@@ -1042,6 +1039,20 @@ export const CalendarView: React.FC = () => {
 
     loadData();
   }, [toast]);
+
+  // Listen for settings updates to trigger recalculations
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      // Force re-render by updating a state that triggers recalculation
+      setCurrentDate(new Date(currentDate));
+    };
+
+    window.addEventListener('settingsUpdate', handleSettingsUpdate);
+    
+    return () => {
+      window.removeEventListener('settingsUpdate', handleSettingsUpdate);
+    };
+  }, [currentDate]);
 
   // Cleanup double-click timeout on unmount
   useEffect(() => {
@@ -1317,7 +1328,7 @@ export const CalendarView: React.FC = () => {
                            <div className="flex-1 min-w-0">
                              <div className="font-medium text-sm truncate flex items-center space-x-1">
                                <span>{employee.name}</span>
-                               <span>{countryFlags[employee.country]}</span>
+                               <span>{COUNTRY_FLAGS[employee.country]}</span>
                              </div>
                              <div className="text-xs text-muted-foreground truncate">
                                <span>{employee.role}</span>

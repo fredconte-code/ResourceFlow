@@ -16,11 +16,7 @@ import { useWorkingHours } from "@/lib/working-hours";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, addMonths, subMonths, startOfMonth } from "date-fns";
 import { teamMembersApi, TeamMember } from "@/lib/api";
-
-const countryFlags = {
-  'Canada': '🇨🇦',
-  'Brazil': '🇧🇷'
-};
+import { COUNTRY_FLAGS, DEFAULT_ROLES } from "@/lib/constants";
 
 export const TeamManagement = () => {
   const { toast } = useToast();
@@ -74,18 +70,7 @@ export const TeamManagement = () => {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const defaultRoles = [
-    'Developer',
-    'Designer', 
-    'Scrum Master',
-    'QA Engineering',
-    'Team Leader',
-    'Project Manager',
-    'Business Analyst',
-    'DevOps Engineer',
-    'UX Designer',
-    'Product Owner'
-  ];
+
 
   const handleAddMember = async () => {
     if (!newMember.name || !newMember.role || !newMember.country) {
@@ -299,7 +284,7 @@ export const TeamManagement = () => {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {defaultRoles.map(role => (
+                    {DEFAULT_ROLES.map(role => (
                       <SelectItem key={role} value={role}>{role}</SelectItem>
                     ))}
                     <SelectItem value="custom">Custom Role</SelectItem>
@@ -430,7 +415,7 @@ export const TeamManagement = () => {
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         <span>{member.role}</span>
                         <span>•</span>
-                        <span>{countryFlags[member.country]} {member.country}</span>
+                        <span>{COUNTRY_FLAGS[member.country]} {member.country}</span>
                         <span>•</span>
                         <span>{getWorkingHoursForCountry(member.country)}h/week</span>
                       </div>

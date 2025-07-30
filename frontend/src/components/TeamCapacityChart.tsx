@@ -3,11 +3,25 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Responsive
 import { getCurrentEmployeesSync } from "@/lib/employee-data";
 import { TrendingUp, Users, Clock, Target, Activity } from "lucide-react";
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useSettings } from "@/context/SettingsContext";
 
 export const TeamCapacityChart = () => {
   const { canadaHours, brazilHours, buffer } = useSettings();
+
+  // Listen for settings updates to trigger recalculations
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      // Force re-render by updating a state that triggers recalculation
+      // The component will re-render when settings change due to useSettings hook
+    };
+
+    window.addEventListener('settingsUpdate', handleSettingsUpdate);
+    
+    return () => {
+      window.removeEventListener('settingsUpdate', handleSettingsUpdate);
+    };
+  }, []);
   // Mock stats since getTeamStats doesn't exist
   const stats = {
     overallAllocation: 75,

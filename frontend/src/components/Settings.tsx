@@ -7,11 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Download, Upload, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert } from "lucide-react";
+import { Check, Loader2, Download, Upload, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert, Code } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { employees as allEmployees } from "@/lib/employee-data";
 import { checkDataConsistency } from "@/lib/employee-data";
 import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection, ExportData } from "@/lib/api";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 export const Settings = () => {
   const { toast } = useToast();
@@ -24,6 +26,8 @@ export const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+
 
   // Server status state
   const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
@@ -96,6 +100,8 @@ export const Settings = () => {
     setLocalBrazilHours(brazilHours);
   }, [brazilHours]);
 
+
+
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showClearDataDialog, setShowClearDataDialog] = useState(false);
@@ -118,6 +124,9 @@ export const Settings = () => {
       setBuffer(localBuffer);
       setCanadaHours(localCanadaHours);
       setBrazilHours(localBrazilHours);
+      
+      // Dispatch custom event to notify other components about settings change
+      window.dispatchEvent(new CustomEvent('settingsUpdate'));
       
       toast({
         title: "Settings Saved",
@@ -359,7 +368,7 @@ export const Settings = () => {
         {/* Working Hours Settings */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Working Hours Configuration</CardTitle>
+            <CardTitle className="text-lg">Global Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 gap-3">
@@ -368,17 +377,20 @@ export const Settings = () => {
                 <Input
                   id="buffer"
                   type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
                   value={localBuffer || ''}
                   onChange={(e) => setLocalBuffer(e.target.value === '' ? 0 : Number(e.target.value))}
-                  placeholder="20"
+                  placeholder="0"
                 />
                 <p className="text-sm text-muted-foreground">
-                  Percentage of time reserved for unexpected tasks (default: 20%)
+                  Percentage of time reserved for unexpected tasks. Average usage is 15-25%.
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="canadaHours">Canada Working Hours /Week</Label>
+                <Label htmlFor="canadaHours">Canada Max. Working Hours / Week</Label>
                 <Input
                   id="canadaHours"
                   type="number"
@@ -393,7 +405,7 @@ export const Settings = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="brazilHours">Brazil Working Hours /Week</Label>
+                <Label htmlFor="brazilHours">Brazil Max. Working Hours / Week</Label>
                 <Input
                   id="brazilHours"
                   type="number"
@@ -546,6 +558,515 @@ export const Settings = () => {
         </CardContent>
       </Card>
       </div>
+
+      {/* Under the Hood Section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Under the Hood</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="variables">
+              <AccordionTrigger className="text-left">
+                <div className="flex items-center gap-2">
+                  <Code className="h-4 w-4" />
+                  <span>Application Variables</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                  <div className="space-y-6">
+                    {/* Header */}
+                    <div className="border-b border-gray-700 pb-2">
+                      <h3 className="text-blue-400 font-semibold"># Resource Scheduler - Application Variables</h3>
+                      <p className="text-gray-400 text-xs mt-1">Documentation of all application variables and their scope</p>
+                    </div>
+
+                                         {/* Global Variables Section */}
+                     <div>
+                       <h4 className="text-green-400 font-semibold mb-3">## 🌍 Global Variables</h4>
+                       <p className="text-gray-400 text-xs mb-3">Variables that affect the entire application</p>
+                       
+                       <div className="space-y-2">
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">buffer</span> = <span className="text-orange-400">number</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Buffer time percentage for unexpected tasks</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">canadaHours</span> = <span className="text-orange-400">number</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Canadian employees</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">brazilHours</span> = <span className="text-orange-400">number</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Brazilian employees</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">theme</span> = <span className="text-orange-400">'light' | 'dark' | 'system'</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Application theme setting</p>
+                         </div>
+                       </div>
+                     </div>
+
+                                         {/* Local Variables Section */}
+                     <div>
+                       <h4 className="text-purple-400 font-semibold mb-3">## 🏠 Local Variables</h4>
+                       <p className="text-gray-400 text-xs mb-3">Component-specific state variables</p>
+                       
+                       <div className="space-y-2">
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">currentDate</span> = <span className="text-orange-400">Date</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Currently selected date in calendar view</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">heatmapMode</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Heatmap visualization mode state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragItem</span> = <span className="text-orange-400">Project | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Currently dragged project item</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">resizingAllocation</span> = <span className="text-orange-400">Allocation | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being resized in calendar</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editDialogOpen</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Edit allocation dialog visibility state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">serverStatus</span> = <span className="text-orange-400">'online' | 'offline' | 'checking'</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Backend server connection status</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">loading</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Component loading state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">error</span> = <span className="text-orange-400">string | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Error state for API operations</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">saving</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Save operation in progress state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">showImportDialog</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Import dialog visibility state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">showClearDataDialog</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Clear data confirmation dialog state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">selectedFile</span> = <span className="text-orange-400">File | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Selected file for import operation</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">lastChecked</span> = <span className="text-orange-400">Date | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Last server status check timestamp</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragOverCell</span> = <span className="text-orange-400">{'{employeeId: string, date: Date}'} | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Calendar cell being dragged over</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">draggingAllocation</span> = <span className="text-orange-400">Allocation | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being dragged in calendar</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editingAllocation</span> = <span className="text-orange-400">ProjectAllocation | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being edited in dialog</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editStartDate</span> = <span className="text-orange-400">Date | undefined</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Start date in edit allocation dialog</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editEndDate</span> = <span className="text-orange-400">Date | undefined</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// End date in edit allocation dialog</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">startDatePickerOpen</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Start date picker visibility state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">endDatePickerOpen</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// End date picker visibility state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">deleteDialogOpen</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Delete confirmation dialog state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">deletingAllocation</span> = <span className="text-orange-400">ProjectAllocation | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being deleted</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">overallocationDialogOpen</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Overallocation warning dialog state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">overallocationData</span> = <span className="text-orange-400">OverallocationData | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Overallocation warning data</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragStartPosition</span> = <span className="text-orange-400">{'{x: number, y: number}'} | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Mouse position when drag started</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">doubleClickTimeout</span> = <span className="text-orange-400">NodeJS.Timeout | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Timeout for double-click detection</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">isDoubleClicking</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Double-click detection state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragOverProjectsBox</span> = <span className="text-orange-400">boolean</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Projects box drag over state</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">draggingAllocationFromTimeline</span> = <span className="text-orange-400">ProjectAllocation | null</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being dragged from timeline</p>
+                         </div>
+                       </div>
+                     </div>
+
+                                         {/* Data Variables Section */}
+                     <div>
+                       <h4 className="text-cyan-400 font-semibold mb-3">## 📊 Data Variables</h4>
+                       <p className="text-gray-400 text-xs mb-3">Application data arrays and objects</p>
+                       
+                       <div className="space-y-2">
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">employees</span> = <span className="text-orange-400">Employee[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of team member data</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">projects</span> = <span className="text-orange-400">Project[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project data</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">allocations</span> = <span className="text-orange-400">ProjectAllocation[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project allocation data</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">holidays</span> = <span className="text-orange-400">Holiday[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of holiday data</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">vacations</span> = <span className="text-orange-400">Vacation[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of vacation data</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">members</span> = <span className="text-orange-400">TeamMember[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of team member data (TeamManagement)</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">projectAllocations</span> = <span className="text-orange-400">ProjectAllocation[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project allocations (EmployeeCard)</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">employeeProjectNames</span> = <span className="text-orange-400">string[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project names for employee</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">stats</span> = <span className="text-orange-400">TeamStats</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Team statistics object</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">weeklyData</span> = <span className="text-orange-400">WeeklyData[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Weekly capacity data for charts</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">monthlyTrends</span> = <span className="text-orange-400">MonthlyTrend[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Monthly trend data for charts</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">performanceMetrics</span> = <span className="text-orange-400">PerformanceMetric[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Team performance metrics array</p>
+                         </div>
+                       </div>
+                     </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-gray-700 pt-2 mt-6">
+                      <p className="text-gray-400 text-xs">Last updated: {new Date().toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
 
       {/* Import Confirmation Dialog */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>

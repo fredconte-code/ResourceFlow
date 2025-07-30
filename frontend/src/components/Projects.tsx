@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { projectsApi, Project } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { PROJECT_COLORS } from "@/lib/constants";
 
 export const Projects = () => {
   const { toast } = useToast();
@@ -21,33 +22,6 @@ export const Projects = () => {
   
   // State for showing/hiding add form
   const [showAddForm, setShowAddForm] = useState(false);
-  
-  // Predefined color palette for projects (20 colors - strong and light variants)
-  const projectColors = [
-    // Row 1: Strong Colors
-    '#3b82f6', // Blue
-    '#ef4444', // Red
-    '#10b981', // Green
-    '#f59e0b', // Amber
-    '#8b5cf6', // Purple
-    '#ec4899', // Pink
-    '#06b6d4', // Cyan
-    '#84cc16', // Lime
-    '#f97316', // Orange
-    '#6366f1', // Indigo
-    
-    // Row 2: Light Colors (corresponding to strong colors above)
-    '#93c5fd', // Light Blue
-    '#fca5a5', // Light Red
-    '#86efac', // Light Green
-    '#fcd34d', // Light Amber
-    '#c4b5fd', // Light Purple
-    '#f9a8d4', // Light Pink
-    '#67e8f9', // Light Cyan
-    '#bef264', // Light Lime
-    '#fdba74', // Light Orange
-    '#a5b4fc', // Light Indigo
-  ];
   
   // State for editing
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -345,7 +319,7 @@ export const Projects = () => {
                           <div className="space-y-2">
                 <Label>Project Color</Label>
                 <div className="grid grid-cols-10 gap-2">
-                  {projectColors.map((color) => (
+                  {PROJECT_COLORS.map((color) => (
                     <button
                       key={color}
                       type="button"
@@ -523,7 +497,7 @@ export const Projects = () => {
               <div className="space-y-2">
                 <Label>Project Color</Label>
                 <div className="grid grid-cols-10 gap-2">
-                  {projectColors.map((color) => (
+                  {PROJECT_COLORS.map((color) => (
                     <button
                       key={color}
                       type="button"

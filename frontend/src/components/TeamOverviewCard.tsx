@@ -1,13 +1,81 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { getTeamStats } from "@/lib/employee-data";
+import { getCurrentEmployeesSync } from "@/lib/employee-data";
 import { Users, Clock, MapPin, TrendingUp, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
+import { useState, useEffect } from "react";
 
 export const TeamOverviewCard = () => {
   const { canadaHours, brazilHours, buffer } = useSettings();
-  const stats = getTeamStats(canadaHours, brazilHours, buffer);
+  
+  // Calculate team stats
+  const calculateTeamStats = () => {
+    const employees = getCurrentEmployeesSync();
+    const canadianEmployees = employees.filter(e => e.country === 'Canada').length;
+    const brazilianEmployees = employees.filter(e => e.country === 'Brazil').length;
+    
+    // Calculate total allocated hours
+    const totalAllocated = employees.reduce((sum, emp) => sum + emp.allocatedHours, 0);
+    
+    // Calculate total available hours
+    const totalAvailable = employees.reduce((sum, emp) => {
+      const weeklyHours = emp.country === 'Canada' ? canadaHours : brazilHours;
+      const totalHours = weeklyHours * 4; // 4 weeks
+      const bufferHours = (totalHours * buffer) / 100;
+      return sum + (totalHours - bufferHours);
+    }, 0);
+    
+    const overallAllocation = totalAvailable > 0 ? (totalAllocated / totalAvailable) * 100 : 0;
+    
+    // Calculate allocation status distribution
+    const allocationByStatus = employees.reduce((acc, emp) => {
+      const weeklyHours = emp.country === 'Canada' ? canadaHours : brazilHours;
+      const totalHours = weeklyHours * 4;
+      const bufferHours = (totalHours * buffer) / 100;
+      const availableHours = totalHours - bufferHours;
+      const percentage = availableHours > 0 ? (emp.allocatedHours / availableHours) * 100 : 0;
+      
+      let status = 'optimal';
+      if (percentage < 60) status = 'low';
+      else if (percentage >= 60 && percentage <= 90) status = 'optimal';
+      else if (percentage > 90 && percentage <= 100) status = 'high';
+      else status = 'over';
+      
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return {
+      totalEmployees: employees.length,
+      canadianEmployees,
+      brazilianEmployees,
+      totalAllocated,
+      totalAvailable,
+      overallAllocation,
+      allocationByStatus
+    };
+  };
+  
+  const [stats, setStats] = useState(calculateTeamStats());
+
+  // Update stats when settings change
+  useEffect(() => {
+    setStats(calculateTeamStats());
+  }, [canadaHours, brazilHours, buffer]);
+
+  // Listen for settings updates to trigger recalculations
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      setStats(calculateTeamStats());
+    };
+
+    window.addEventListener('settingsUpdate', handleSettingsUpdate);
+    
+    return () => {
+      window.removeEventListener('settingsUpdate', handleSettingsUpdate);
+    };
+  }, [canadaHours, brazilHours, buffer]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
