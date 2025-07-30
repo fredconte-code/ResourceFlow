@@ -40,9 +40,10 @@ export const getDailyAllocationColor = (percentage: number) => {
 
 export const getAllocationColor = (percentage: number) => {
   if (percentage <= 60) return 'bg-green-500';
-  if (percentage <= 80) return 'bg-blue-500';
-  if (percentage <= 100) return 'bg-yellow-500';
-  return 'bg-red-500';
+  if (percentage <= 80) return 'bg-yellow-500';
+  if (percentage <= 90) return 'bg-orange-500';
+  if (percentage <= 100) return 'bg-red-500';
+  return 'bg-red-600'; // Darker red for overallocation (>100%)
 };
 
 // Data filtering functions

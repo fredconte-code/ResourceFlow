@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +16,7 @@ import { useWorkingHours } from "@/lib/working-hours";
 import { useSettings } from "@/context/SettingsContext";
 import { useHolidays } from "@/context/HolidayContext";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown, Filter } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
@@ -91,6 +92,11 @@ export const CalendarView: React.FC = () => {
   // Heatmap view state
   const [heatmapMode, setHeatmapMode] = useState(false);
 
+  // Filter state
+  const [filterProject, setFilterProject] = useState<string>('all');
+  const [filterCountry, setFilterCountry] = useState<string>('all');
+  const [filterRole, setFilterRole] = useState<string>('all');
+
   // Overallocation warning state
   const [overallocationDialogOpen, setOverallocationDialogOpen] = useState(false);
   
@@ -156,6 +162,45 @@ export const CalendarView: React.FC = () => {
     return eachDayOfInterval({ start, end });
   };
 
+  // Get unique roles from employees
+  const getUniqueRoles = () => {
+    return Array.from(new Set(employees.map(emp => emp.role))).sort();
+  };
+
+  // Filter employees based on selected filters
+  const getFilteredEmployees = () => {
+    return employees.filter(employee => {
+      // Filter by country
+      if (filterCountry !== 'all' && employee.country !== filterCountry) {
+        return false;
+      }
+      
+      // Filter by role
+      if (filterRole !== 'all' && employee.role !== filterRole) {
+        return false;
+      }
+      
+      // Filter by project (check if employee has allocations for the selected project)
+      if (filterProject !== 'all') {
+        const hasProjectAllocation = allocations.some(allocation => 
+          allocation.employeeId === employee.id && allocation.projectId === filterProject
+        );
+        if (!hasProjectAllocation) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilterProject('all');
+    setFilterCountry('all');
+    setFilterRole('all');
+  };
+
 
 
   // Calculate daily allocation percentage for a specific employee and date
@@ -193,7 +238,7 @@ export const CalendarView: React.FC = () => {
     // Calculate percentage based on total available hours (after all deductions)
     const percentage = breakdown.totalAvailableHours > 0 ? (allocatedHours / breakdown.totalAvailableHours) * 100 : 0;
     
-    return Math.min(percentage, 100);
+    return percentage; // Allow percentages over 100% for overallocation
   };
 
   // Helper function to get available hours for an employee (after buffer deduction)
@@ -205,8 +250,13 @@ export const CalendarView: React.FC = () => {
   // Function to calculate detailed breakdown for tooltip
   const getEmployeeBreakdown = (employee: Employee) => {
     const weeklyHours = getWorkingHoursForCountry(employee.country);
-    const monthlyHours = weeklyHours * WEEKS_PER_MONTH;
     const dailyHours = weeklyHours / 5; // Assuming 5 working days per week
+    
+    // Calculate total calendar hours for the month (including weekends)
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    const totalDaysInMonth = differenceInDays(monthEnd, monthStart) + 1;
+    const monthlyHours = totalDaysInMonth * dailyHours; // Total calendar hours including weekends
     
     // Get buffer from settings context
     const { buffer } = useSettings();
@@ -215,8 +265,6 @@ export const CalendarView: React.FC = () => {
     const bufferHours = (monthlyHours * buffer) / 100;
     
     // Calculate holiday hours for the current month
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
     let holidayHours = 0;
     
     console.log('Holiday calculation debug:', {
@@ -296,8 +344,18 @@ export const CalendarView: React.FC = () => {
       }
     });
     
+    // Calculate weekend hours for the current month
+    let weekendHours = 0;
+    let weekendDate = new Date(monthStart);
+    while (weekendDate <= monthEnd) {
+      if (isWeekendDay(weekendDate)) {
+        weekendHours += dailyHours;
+      }
+      weekendDate = addDays(weekendDate, 1);
+    }
+    
     // Calculate total available hours
-    const totalAvailableHours = monthlyHours - bufferHours - holidayHours - vacationHours;
+    const totalAvailableHours = monthlyHours - bufferHours - holidayHours - vacationHours - weekendHours;
     
     return {
       maxHoursPerMonth: monthlyHours,
@@ -306,6 +364,7 @@ export const CalendarView: React.FC = () => {
       bufferHours,
       holidayHours,
       vacationHours,
+      weekendHours,
       totalAvailableHours
     };
   };
@@ -677,19 +736,7 @@ export const CalendarView: React.FC = () => {
       return;
     }
 
-    // Validate hours per day
-    const employee = employees.find(e => e.id === editingAllocation.employeeId);
-    if (employee) {
-      const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
-      if (editHoursPerDay > maxDailyHours) {
-        toast({
-          title: "Invalid Hours Per Day",
-          description: `Hours per day cannot exceed ${formatHours(maxDailyHours)}h for ${employee.country} employees.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
+
     
     try {
       await projectAllocationsApi.update(parseInt(editingAllocation.id.toString()), {
@@ -1461,6 +1508,60 @@ export const CalendarView: React.FC = () => {
                 </Button>
               </div>
               <div className="flex items-center space-x-2">
+                {/* Filter dropdowns */}
+                <div className="flex items-center space-x-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Select value={filterProject} onValueChange={setFilterProject}>
+                    <SelectTrigger className="w-[140px] h-8">
+                      <SelectValue placeholder="Project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Projects</SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id.toString()}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={filterCountry} onValueChange={setFilterCountry}>
+                    <SelectTrigger className="w-[120px] h-8">
+                      <SelectValue placeholder="Country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Countries</SelectItem>
+                      <SelectItem value="Canada">Canada</SelectItem>
+                      <SelectItem value="Brazil">Brazil</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={filterRole} onValueChange={setFilterRole}>
+                    <SelectTrigger className="w-[120px] h-8">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      {getUniqueRoles().map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {role}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {(filterProject !== 'all' || filterCountry !== 'all' || filterRole !== 'all') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="h-8 px-2"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                
                 <Button
                   variant={heatmapMode ? "default" : "outline"}
                   size="sm"
@@ -1477,7 +1578,7 @@ export const CalendarView: React.FC = () => {
                          <div className="overflow-x-auto">
                <div className="min-w-max" data-calendar-container>
                  {/* Header row with dates */}
-                 <div className="grid" style={{ gridTemplateColumns: `180px repeat(${calendarDays.length}, 60px)` }}>
+                 <div className="grid" style={{ gridTemplateColumns: `220px repeat(${calendarDays.length}, 60px)` }}>
                    <div className="p-0.5 font-medium text-xs border-b border-r bg-muted/30">
                      Team Members
                    </div>
@@ -1501,7 +1602,21 @@ export const CalendarView: React.FC = () => {
                  </div>
 
                  {/* Employee rows */}
-                 {employees.map((employee) => {
+                 {getFilteredEmployees().length === 0 ? (
+                   <div className="col-span-full p-8 text-center text-muted-foreground">
+                     <p>No employees match the selected filters.</p>
+                     <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2">
+                       Clear Filters
+                     </Button>
+                   </div>
+                 ) : (
+                   <>
+                     {(filterProject !== 'all' || filterCountry !== 'all' || filterRole !== 'all') && (
+                       <div className="col-span-full p-2 bg-muted/30 border-b text-xs text-muted-foreground">
+                         Showing {getFilteredEmployees().length} of {employees.length} employees
+                       </div>
+                     )}
+                     {getFilteredEmployees().map((employee) => {
                    try {
                      const overlappingAllocations = getOverlappingAllocationsForEmployee(employee.id);
                      const rowHeight = getEmployeeRowHeight(employee.id);
@@ -1512,7 +1627,7 @@ export const CalendarView: React.FC = () => {
                        data-employee={employee.id}
                        className="grid relative"
                        style={{ 
-                         gridTemplateColumns: `180px repeat(${calendarDays.length}, 60px)`,
+                         gridTemplateColumns: `220px repeat(${calendarDays.length}, 60px)`,
                          minHeight: `${rowHeight}px`
                        }}
                      >
@@ -1541,12 +1656,15 @@ export const CalendarView: React.FC = () => {
                                  "h-1.5 rounded-full transition-all duration-300",
                                  getAllocationColor(getEmployeeAllocationPercentage(employee))
                                )}
-                               style={{ width: `${getEmployeeAllocationPercentage(employee)}%` }}
+                               style={{ width: `${Math.min(getEmployeeAllocationPercentage(employee), 100)}%` }}
                              />
                            </div>
                            <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center justify-between">
-                             <span>
+                             <span className={cn(
+                               getEmployeeAllocationPercentage(employee) > 100 && "text-red-600 font-medium"
+                             )}>
                                {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getEmployeeAvailableHours(employee))}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                               {getEmployeeAllocationPercentage(employee) > 100 && " ⚠️"}
                              </span>
                              <TooltipProvider>
                                <Tooltip open={openTooltipId === employee.id} onOpenChange={(open) => setOpenTooltipId(open ? employee.id : null)}>
@@ -1583,10 +1701,18 @@ export const CalendarView: React.FC = () => {
                                              <span>Max hours / day:</span>
                                              <span className="font-medium">{formatHours(breakdown.maxHoursPerDay)}</span>
                                            </div>
-                                           <div className="flex justify-between text-amber-600">
-                                             <span>Deducted buffer time:</span>
-                                             <span className="font-medium">-{formatHours(breakdown.bufferHours)}</span>
-                                           </div>
+                                           {breakdown.bufferHours > 0 && (
+                                             <div className="flex justify-between text-red-600">
+                                               <span>Deducted buffer time:</span>
+                                               <span className="font-medium">-{formatHours(breakdown.bufferHours)}</span>
+                                             </div>
+                                           )}
+                                           {breakdown.bufferHours === 0 && (
+                                             <div className="flex justify-between text-red-600">
+                                               <span>Deducted buffer time:</span>
+                                               <span className="font-medium">0</span>
+                                             </div>
+                                           )}
                                            {breakdown.holidayHours > 0 && (
                                              <div className="flex justify-between text-red-600">
                                                <span>Deducted holiday time:</span>
@@ -1605,9 +1731,32 @@ export const CalendarView: React.FC = () => {
                                                <span className="font-medium">-{formatHours(breakdown.vacationHours)}</span>
                                              </div>
                                            )}
+                                           <div className="flex justify-between text-red-600">
+                                             <span>Deducted weekends time:</span>
+                                             <span className="font-medium">-{formatHours(breakdown.weekendHours)}</span>
+                                           </div>
                                            <div className="flex justify-between border-t pt-1">
                                              <span>Total available hours:</span>
                                              <span className="font-medium">{formatHours(breakdown.totalAvailableHours)}</span>
+                                           </div>
+                                           <div className="flex justify-between border-t pt-1">
+                                             <span>Allocated hours:</span>
+                                             <span className={cn(
+                                               "font-medium",
+                                               getEmployeeAllocationPercentage(employee) > 100 ? "text-red-600" : "text-green-600"
+                                             )}>
+                                               {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}
+                                             </span>
+                                           </div>
+                                           <div className="flex justify-between">
+                                             <span>Allocation percentage:</span>
+                                             <span className={cn(
+                                               "font-medium",
+                                               getEmployeeAllocationPercentage(employee) > 100 ? "text-red-600" : "text-green-600"
+                                             )}>
+                                               {Math.round(getEmployeeAllocationPercentage(employee))}%
+                                               {getEmployeeAllocationPercentage(employee) > 100 && " (OVERALLOCATED)"}
+                                             </span>
                                            </div>
                                          </div>
                                        );
@@ -1754,7 +1903,7 @@ export const CalendarView: React.FC = () => {
                           <div 
                             className="absolute pointer-events-none" 
                                        style={{
-             left: '180px',
+             left: '220px',
              right: 0,
              top: '0px'
            }}
@@ -1842,6 +1991,8 @@ export const CalendarView: React.FC = () => {
                      return null;
                    }
                  })}
+                   </>
+                 )}
               </div>
             </div>
           </CardContent>
@@ -1976,11 +2127,10 @@ export const CalendarView: React.FC = () => {
                       Hours/Day
                     </Label>
                     <div className="col-span-3">
-                                             <Input
+                                                                    <Input
                          id="hoursPerDay"
                          type="number"
                          min="0"
-                         max="24"
                          step="0.5"
                          value={editHoursPerDay}
                          onChange={(e) => setEditHoursPerDay(parseFloat(e.target.value) || 0)}
@@ -1988,23 +2138,23 @@ export const CalendarView: React.FC = () => {
                            const employee = employees.find(e => e.id === editingAllocation.employeeId);
                            if (employee) {
                              const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
-                             return `Max: ${formatHours(maxDailyHours)}h`;
+                             return `Recommended: ${formatHours(maxDailyHours)}h`;
                            }
                            return "Enter hours per day";
                          })()}
                        />
-                      {(() => {
-                        const employee = employees.find(e => e.id === editingAllocation.employeeId);
-                        if (employee) {
-                          const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
-                          return (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Maximum daily hours for {employee.country}: {formatHours(maxDailyHours)}h
-                            </p>
-                          );
-                        }
-                        return null;
-                      })()}
+                       {(() => {
+                         const employee = employees.find(e => e.id === editingAllocation.employeeId);
+                         if (employee) {
+                           const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
+                           return (
+                             <p className="text-xs text-muted-foreground mt-1">
+                               Recommended daily hours for {employee.country}: {formatHours(maxDailyHours)}h (can be exceeded)
+                             </p>
+                           );
+                         }
+                         return null;
+                       })()}
                     </div>
                   </div>
                 </>

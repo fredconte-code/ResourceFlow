@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useHolidays } from "@/context/HolidayContext";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, Holiday as ApiHoliday, Vacation as ApiVacation } from "@/lib/api";
+import { COUNTRY_FLAGS } from "@/lib/constants";
 
 // Types - Using existing API interfaces and extending them
 interface HolidayItem {
@@ -589,7 +590,19 @@ export const TimeOffManagement: React.FC = () => {
                               {holiday.type}
                             </Badge>
                             <span>•</span>
-                            <span>{holiday.country}</span>
+                            <span className="flex items-center space-x-1">
+                              {holiday.country === 'Both' ? (
+                                <>
+                                  <span>🌎</span>
+                                  <span>Global</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>{COUNTRY_FLAGS[holiday.country]}</span>
+                                  <span>{holiday.country}</span>
+                                </>
+                              )}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -768,9 +781,24 @@ export const TimeOffManagement: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Canada">Canada</SelectItem>
-                  <SelectItem value="Brazil">Brazil</SelectItem>
-                  <SelectItem value="Both">Both Countries</SelectItem>
+                  <SelectItem value="Canada">
+                    <div className="flex items-center space-x-2">
+                      <span>{COUNTRY_FLAGS['Canada']}</span>
+                      <span>Canada</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Brazil">
+                    <div className="flex items-center space-x-2">
+                      <span>{COUNTRY_FLAGS['Brazil']}</span>
+                      <span>Brazil</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Both">
+                    <div className="flex items-center space-x-2">
+                      <span>🌎</span>
+                      <span>Global</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -893,9 +921,24 @@ export const TimeOffManagement: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Canada">Canada</SelectItem>
-                  <SelectItem value="Brazil">Brazil</SelectItem>
-                  <SelectItem value="Both">Both Countries</SelectItem>
+                  <SelectItem value="Canada">
+                    <div className="flex items-center space-x-2">
+                      <span>{COUNTRY_FLAGS['Canada']}</span>
+                      <span>Canada</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Brazil">
+                    <div className="flex items-center space-x-2">
+                      <span>{COUNTRY_FLAGS['Brazil']}</span>
+                      <span>Brazil</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Both">
+                    <div className="flex items-center space-x-2">
+                      <span>🌎</span>
+                      <span>Global</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

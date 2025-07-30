@@ -649,6 +649,25 @@ export const Settings = () => {
                          </div>
                        </div>
                      </div>
+                     {/* Inserted: Monthly Hours Calculation Explanation */}
+                     <div className="bg-gray-800 rounded p-3 border-l-4 border-yellow-500 my-4">
+                       <h4 className="text-yellow-300 font-semibold mb-2">How Total Monthly Hours Are Calculated</h4>
+                                               <p className="text-gray-200 text-xs mb-2">
+                          <strong>Total monthly hours</strong> for each employee are calculated as:
+                        </p>
+                        <ul className="list-disc pl-6 text-gray-200 text-xs mb-2">
+                          <li><strong>Daily Hours</strong>: Weekly hours ÷ 5 (Canada: 7.5h/day, Brazil: 8.8h/day)</li>
+                          <li><strong>Total Days in Month</strong>: Actual calendar days in the month (28-31 days)</li>
+                          <li><strong>Formula</strong>: <code>monthlyHours = totalDaysInMonth × dailyHours</code></li>
+                        </ul>
+                        <p className="text-gray-200 text-xs mb-2">
+                          For example, a Canadian employee in a 30-day month: <code>30 × 7.5 = 225 hours/month</code>.<br/>
+                          This represents total calendar hours (including weekends), which are then deducted separately.
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          This approach provides accurate monthly capacity by accounting for the actual number of days in each month.
+                        </p>
+                     </div>
 
                                          {/* Local Variables Section */}
                      <div>
