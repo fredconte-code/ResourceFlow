@@ -1,5 +1,6 @@
 import { format, getDay, addDays, differenceInDays, startOfMonth, endOfMonth } from "date-fns";
-import { Employee, ProjectAllocation, ApiHoliday, ApiVacation } from "@/lib/api";
+import { ProjectAllocation, Holiday, Vacation } from "@/lib/api";
+import { Employee } from "@/lib/employee-data";
 
 // Constants
 export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -29,12 +30,12 @@ export const formatHours = (hours: number) => {
 
 // Color functions
 export const getDailyAllocationColor = (percentage: number) => {
-  if (percentage === 0) return 'bg-green-500/60'; // Green for no allocation
-  if (percentage <= 25) return 'bg-green-400/60';
-  if (percentage <= 50) return 'bg-green-300/60';
-  if (percentage <= 75) return 'bg-yellow-500/60';
-  if (percentage <= 100) return 'bg-orange-500/60';
-  return 'bg-red-600/60'; // Red for overallocated days (>100%)
+  if (percentage === 0) return 'bg-gradient-to-br from-green-400/60 to-green-500/60'; // Green for no allocation
+  if (percentage <= 25) return 'bg-gradient-to-br from-green-300/60 to-green-400/60';
+  if (percentage <= 50) return 'bg-gradient-to-br from-green-200/60 to-green-300/60';
+  if (percentage <= 75) return 'bg-gradient-to-br from-yellow-400/60 to-yellow-500/60';
+  if (percentage <= 100) return 'bg-gradient-to-br from-orange-400/60 to-orange-500/60';
+  return 'bg-gradient-to-br from-red-500/60 to-red-600/60'; // Red for overallocated days (>100%)
 };
 
 export const getAllocationColor = (percentage: number) => {
@@ -60,12 +61,12 @@ export const getAllocationsForCell = (
     .sort((a, b) => {
       const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
       const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
-      return aId - bId;
+      return Number(aId) - Number(bId);
     });
 };
 
 export const getVacationForCell = (
-  vacations: ApiVacation[], 
+  vacations: Vacation[], 
   employeeId: string, 
   date: Date
 ) => {
@@ -77,7 +78,7 @@ export const getVacationForCell = (
   );
 };
 
-export const getHolidayForDate = (holidays: ApiHoliday[], date: Date) => {
+export const getHolidayForDate = (holidays: Holiday[], date: Date) => {
   const dateStr = format(date, 'yyyy-MM-dd');
   return holidays.find(holiday => holiday.date === dateStr);
 };
@@ -145,7 +146,7 @@ export const hasAllocationConflict = (
   excludeAllocationId?: string
 ) => {
   return allocations.some(allocation => 
-    allocation.id !== excludeAllocationId &&
+    allocation.id.toString() !== excludeAllocationId &&
     allocation.employeeId === employeeId && 
     allocation.projectId === projectId &&
     (

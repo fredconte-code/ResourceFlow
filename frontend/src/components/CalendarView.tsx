@@ -80,6 +80,7 @@ export const CalendarView: React.FC = () => {
   const [editingAllocation, setEditingAllocation] = useState<ProjectAllocation | null>(null);
   const [editStartDate, setEditStartDate] = useState<Date | undefined>(undefined);
   const [editEndDate, setEditEndDate] = useState<Date | undefined>(undefined);
+  const [editHoursPerDay, setEditHoursPerDay] = useState<number>(0);
   const [startDatePickerOpen, setStartDatePickerOpen] = useState(false);
   const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
   
@@ -163,7 +164,7 @@ export const CalendarView: React.FC = () => {
     if (!employee) return 0;
     
     // Skip holidays and vacations
-    if (getHolidayForDate(date) || getVacationForCell(employeeId, date)) {
+    if (getHolidayForEmployeeAndDate(employee, date) || getVacationForCell(employeeId, date)) {
       return 0;
     }
     
@@ -313,16 +314,19 @@ export const CalendarView: React.FC = () => {
 
   // Calculate total allocated hours for an employee
   const calculateEmployeeAllocatedHours = (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return 0;
+    
     const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
     return employeeAllocations.reduce((total, allocation) => {
       const startDate = parseISO(allocation.startDate);
       const endDate = parseISO(allocation.endDate);
       
-      // Count only working days (exclude weekends)
+      // Count only working days (exclude weekends and holidays)
       let workingDays = 0;
       let currentDate = new Date(startDate);
       while (currentDate <= endDate) {
-        if (!isWeekendDay(currentDate)) {
+        if (!isWeekendDay(currentDate) && !getHolidayForEmployeeAndDate(employee, currentDate)) {
           workingDays++;
         }
         currentDate = addDays(currentDate, 1);
@@ -334,6 +338,9 @@ export const CalendarView: React.FC = () => {
 
   // Calculate allocated hours for an employee for the current month only
   const calculateEmployeeAllocatedHoursForMonth = (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return 0;
+    
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
     
@@ -351,11 +358,11 @@ export const CalendarView: React.FC = () => {
       const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
       const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
       
-      // Count only working days (exclude weekends)
+      // Count only working days (exclude weekends and holidays)
       let workingDays = 0;
       let currentDate = new Date(effectiveStart);
       while (currentDate <= effectiveEnd) {
-        if (!isWeekendDay(currentDate)) {
+        if (!isWeekendDay(currentDate) && !getHolidayForEmployeeAndDate(employee, currentDate)) {
           workingDays++;
         }
         currentDate = addDays(currentDate, 1);
@@ -650,6 +657,8 @@ export const CalendarView: React.FC = () => {
     // Fix timezone issue by parsing dates correctly
     setEditStartDate(new Date(allocation.startDate + 'T00:00:00'));
     setEditEndDate(new Date(allocation.endDate + 'T00:00:00'));
+    // Set hours per day from allocation
+    setEditHoursPerDay(allocation.hoursPerDay);
     // Reset date picker states
     setStartDatePickerOpen(false);
     setEndDatePickerOpen(false);
@@ -667,17 +676,32 @@ export const CalendarView: React.FC = () => {
       });
       return;
     }
+
+    // Validate hours per day
+    const employee = employees.find(e => e.id === editingAllocation.employeeId);
+    if (employee) {
+      const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
+      if (editHoursPerDay > maxDailyHours) {
+        toast({
+          title: "Invalid Hours Per Day",
+          description: `Hours per day cannot exceed ${formatHours(maxDailyHours)}h for ${employee.country} employees.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     
     try {
       await projectAllocationsApi.update(parseInt(editingAllocation.id.toString()), {
         startDate: format(editStartDate, 'yyyy-MM-dd'),
-        endDate: format(editEndDate, 'yyyy-MM-dd')
+        endDate: format(editEndDate, 'yyyy-MM-dd'),
+        hoursPerDay: editHoursPerDay
       });
       
       // Update local state
       setAllocations(prev => prev.map(allocation => 
         allocation.id === editingAllocation.id 
-          ? { ...allocation, startDate: format(editStartDate, 'yyyy-MM-dd'), endDate: format(editEndDate, 'yyyy-MM-dd') }
+          ? { ...allocation, startDate: format(editStartDate, 'yyyy-MM-dd'), endDate: format(editEndDate, 'yyyy-MM-dd'), hoursPerDay: editHoursPerDay }
           : allocation
       ));
       
@@ -812,12 +836,14 @@ export const CalendarView: React.FC = () => {
         throw new Error('Employee not found');
       }
       
-      // Check if the allocation is on a weekend
+      // Check if the allocation is on a weekend or holiday
       const isWeekendAllocation = isWeekendDay(date);
+      const holiday = getHolidayForEmployeeAndDate(employee, date);
+      const isHolidayAllocation = holiday !== null;
       
-      // Calculate hours per day based on country working hours (0 for weekends)
+      // Calculate hours per day based on country working hours (0 for weekends and holidays)
       const weeklyHours = getWorkingHoursForCountry(employee.country);
-      const hoursPerDay = isWeekendAllocation ? 0 : weeklyHours / 5; // 0 hours for weekends, normal hours for weekdays
+      const hoursPerDay = (isWeekendAllocation || isHolidayAllocation) ? 0 : weeklyHours / 5; // 0 hours for weekends and holidays, normal hours for weekdays
       
       // Check for overallocation
       const overallocationInfo = checkForOverallocation(employeeId, date, dragItem.id.toString(), hoursPerDay);
@@ -863,7 +889,7 @@ export const CalendarView: React.FC = () => {
       
       toast({
         title: "Success",
-        description: `${dragItem.name} assigned to ${employees.find(e => e.id === employeeId)?.name} on ${format(date, 'MMM dd, yyyy')} ${isWeekendAllocation ? '(weekend - no working hours)' : `(${formatHours(hoursPerDay)}h/day)`}`,
+        description: `${dragItem.name} assigned to ${employees.find(e => e.id === employeeId)?.name} on ${format(date, 'MMM dd, yyyy')} ${isWeekendAllocation ? '(weekend - no working hours)' : isHolidayAllocation ? `(holiday - no working hours)` : `(${formatHours(hoursPerDay)}h/day)`}`,
       });
       
     } catch (error) {
@@ -1493,7 +1519,7 @@ export const CalendarView: React.FC = () => {
                        {/* Employee info column */}
                        <div className="p-2 border-b border-r bg-muted/10">
                          <div className="flex items-center space-x-2 mb-2">
-                           <Avatar className="h-6 w-6">
+                           <Avatar className="h-8 w-8">
                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
                                {employee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                              </AvatarFallback>
@@ -1647,14 +1673,19 @@ export const CalendarView: React.FC = () => {
                                    const employeeData = employees.find(e => e.id === employee.id);
                                    const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
                                    
-                                   if (dailyPercentage === -1) {
-                                     return "Weekend allocation (no working hours)";
+                                   if (isWeekendCell) {
+                                     return "Weekend - No working hours";
+                                   }
+                                   
+                                   if (holiday) {
+                                     return `Holiday: ${holiday.name}`;
+                                   }
+                                   
+                                   if (vacation) {
+                                     return `Vacation: ${vacation.type}`;
                                    }
                                    
                                    if (dailyPercentage === 0) {
-                                     if (isWeekendCell) return "Weekend - No working hours";
-                                     if (holiday) return `Holiday: ${holiday.name}`;
-                                     if (vacation) return `Vacation: ${vacation.type}`;
                                      return "No allocations";
                                    }
                                    
@@ -1669,43 +1700,17 @@ export const CalendarView: React.FC = () => {
                                    const employeeData = employees.find(e => e.id === employee.id);
                                    const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
                                    
-                                   // Handle weekend allocations (dailyPercentage = -1)
-                                   if (dailyPercentage === -1) {
-                                     return (
-                                       <>
-                                         {/* Weekend allocation indicator */}
-                                         <div className="absolute inset-0 bg-gray-400/80 rounded-sm transition-all duration-300" />
-                                         {/* Weekend text overlay */}
-                                         <div className="absolute inset-0 flex items-center justify-center z-10">
-                                           <span className="text-xs heatmap-text">
-                                             Weekend
-                                           </span>
-                                         </div>
-                                       </>
-                                     );
+                                   // Handle weekends - show empty cell (no background, no text)
+                                   if (isWeekendCell) {
+                                     return null;
                                    }
                                    
-                                   // Show color for 0% allocation (no allocation)
-                                   if (dailyPercentage === 0) {
-                                     return (
-                                       <>
-                                         {/* Full cell background color for no allocation */}
-                                         <div 
-                                           className={cn(
-                                             "absolute inset-0 rounded-sm transition-all duration-300",
-                                             getDailyAllocationColor(dailyPercentage)
-                                           )}
-                                         />
-                                         {/* Percentage text overlay */}
-                                         <div className="absolute inset-0 flex items-center justify-center z-10">
-                                           <span className="text-xs heatmap-text">
-                                             0%
-                                           </span>
-                                         </div>
-                                       </>
-                                     );
+                                   // Handle holidays - show empty cell (no background, no text)
+                                   if (holiday) {
+                                     return null;
                                    }
                                    
+                                   // Handle regular allocation percentages (including vacations)
                                    return (
                                      <>
                                        {/* Full cell background color */}
@@ -1964,6 +1969,42 @@ export const CalendarView: React.FC = () => {
                           </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="hoursPerDay" className="text-right">
+                      Hours/Day
+                    </Label>
+                    <div className="col-span-3">
+                                             <Input
+                         id="hoursPerDay"
+                         type="number"
+                         min="0"
+                         max="24"
+                         step="0.5"
+                         value={editHoursPerDay}
+                         onChange={(e) => setEditHoursPerDay(parseFloat(e.target.value) || 0)}
+                         placeholder={(() => {
+                           const employee = employees.find(e => e.id === editingAllocation.employeeId);
+                           if (employee) {
+                             const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
+                             return `Max: ${formatHours(maxDailyHours)}h`;
+                           }
+                           return "Enter hours per day";
+                         })()}
+                       />
+                      {(() => {
+                        const employee = employees.find(e => e.id === editingAllocation.employeeId);
+                        if (employee) {
+                          const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
+                          return (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Maximum daily hours for {employee.country}: {formatHours(maxDailyHours)}h
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                 </>

@@ -595,7 +595,7 @@ export const Settings = () => {
                                <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
                              </div>
                            </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Buffer time percentage for unexpected tasks</p>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Buffer time percentage (0-100%) for unexpected tasks</p>
                          </div>
                          
                          <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
@@ -605,7 +605,7 @@ export const Settings = () => {
                                <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
                              </div>
                            </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Canadian employees</p>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Canadian employees (default: 37.5)</p>
                          </div>
                          
                          <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
@@ -615,7 +615,7 @@ export const Settings = () => {
                                <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
                              </div>
                            </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Brazilian employees</p>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Brazilian employees (default: 44)</p>
                          </div>
                          
                          <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
@@ -626,6 +626,26 @@ export const Settings = () => {
                              </div>
                            </div>
                            <p className="text-gray-300 text-xs mt-1 ml-4">// Application theme setting</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">holidays</span> = <span className="text-orange-400">ApiHoliday[]</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global holiday data from HolidayContext (id, name, date, country)</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">refreshHolidays</span> = <span className="text-orange-400">() =&gt; Promise&lt;void&gt;</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Function to refresh global holiday data from API</p>
                          </div>
                        </div>
                      </div>
@@ -928,6 +948,54 @@ export const Settings = () => {
                        </div>
                      </div>
 
+                                         {/* Context Variables Section */}
+                     <div>
+                       <h4 className="text-blue-400 font-semibold mb-3">## 🔄 Context Variables</h4>
+                       <p className="text-gray-400 text-xs mb-3">React Context providers and state management</p>
+                       
+                       <div className="space-y-2">
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">SettingsContext</span> = <span className="text-orange-400">createContext</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-blue-600">Context</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global settings context (buffer, working hours, theme)</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">HolidayContext</span> = <span className="text-orange-400">createContext</span>
+                               <Badge variant="secondary" className="ml-2 text-xs bg-blue-600">Context</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global holiday context (holidays array, refreshHolidays function)</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">useSettings</span> = <span className="text-orange-400">() =&gt; SettingsContextType</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-blue-500 text-blue-400">Hook</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Hook to access settings context</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">useHolidays</span> = <span className="text-orange-400">() =&gt; HolidayContextType</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-blue-500 text-blue-400">Hook</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Hook to access holiday context</p>
+                         </div>
+                       </div>
+                     </div>
+
                                          {/* Data Variables Section */}
                      <div>
                        <h4 className="text-cyan-400 font-semibold mb-3">## 📊 Data Variables</h4>
@@ -967,11 +1035,11 @@ export const Settings = () => {
                          <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
                            <div className="flex items-start justify-between">
                              <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">holidays</span> = <span className="text-orange-400">Holiday[]</span>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">holidays</span> = <span className="text-orange-400">HolidayItem[]</span>
                                <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
                              </div>
                            </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of holiday data</p>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of holiday data (TimeOffManagement component)</p>
                          </div>
                          
                          <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
@@ -1053,12 +1121,42 @@ export const Settings = () => {
                            </div>
                            <p className="text-gray-300 text-xs mt-1 ml-4">// Team performance metrics array</p>
                          </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">globalHolidays</span> = <span className="text-orange-400">ApiHoliday[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global holidays from HolidayContext (TimeOffManagement)</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">vacations</span> = <span className="text-orange-400">VacationItem[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of vacation data (TimeOffManagement component)</p>
+                         </div>
+                         
+                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <span className="text-yellow-400">const</span> <span className="text-blue-400">employees</span> = <span className="text-orange-400">Employee[]</span>
+                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
+                             </div>
+                           </div>
+                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of employee data (TimeOffManagement component)</p>
+                         </div>
                        </div>
                      </div>
 
                     {/* Footer */}
                     <div className="border-t border-gray-700 pt-2 mt-6">
-                      <p className="text-gray-400 text-xs">Last updated: {new Date().toLocaleDateString()}</p>
+                      <p className="text-gray-400 text-xs">Last updated: {new Date().toLocaleDateString()} - Holiday calculation fixes & global state management</p>
                     </div>
                   </div>
                 </div>
