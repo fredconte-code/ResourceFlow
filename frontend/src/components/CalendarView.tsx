@@ -287,7 +287,10 @@ export const CalendarView: React.FC = () => {
   const handleAllocationDragOver = (event: React.MouseEvent, employeeId: string, date: Date) => {
     event.preventDefault();
     if (draggingAllocation) {
-      setDragOverCell({ employeeId, date });
+      // Only allow dragging within the same employee row
+      if (draggingAllocation.allocation.employeeId === employeeId) {
+        setDragOverCell({ employeeId, date });
+      }
     }
   };
 
@@ -378,6 +381,18 @@ export const CalendarView: React.FC = () => {
   const handleAllocationDrop = async (event: React.MouseEvent, employeeId: string, date: Date) => {
     if (!draggingAllocation) return;
     
+    // Only allow horizontal movement (same employee)
+    if (draggingAllocation.allocation.employeeId !== employeeId) {
+      toast({
+        title: "Invalid Move",
+        description: "Allocations can only be moved horizontally within the same employee row. To assign a project to a different employee, drag from the Projects box above.",
+        variant: "destructive",
+      });
+      setDraggingAllocation(null);
+      setDragOverCell(null);
+      return;
+    }
+    
     // Calculate the new position based on the drop target
     const allocationDuration = differenceInDays(
       new Date(draggingAllocation.originalEndDate), 
@@ -414,17 +429,13 @@ export const CalendarView: React.FC = () => {
     
     try {
       await projectAllocationsApi.update(parseInt(draggingAllocation.allocation.id.toString()), {
-        employeeId: employeeId, // Use the new employee ID from the drop target
+        employeeId: employeeId, // Same employee (horizontal movement only)
         projectId: draggingAllocation.allocation.projectId,
         startDate: format(newStartDate, 'yyyy-MM-dd'),
         endDate: format(newEndDate, 'yyyy-MM-dd')
       });
       
-      // Update allocated hours for both old and new employee (if different)
-      const oldEmployeeId = draggingAllocation.allocation.employeeId;
-      if (oldEmployeeId !== employeeId) {
-        await updateEmployeeAllocatedHours(oldEmployeeId);
-      }
+      // Update allocated hours for the employee
       await updateEmployeeAllocatedHours(employeeId);
       
       toast({
@@ -909,14 +920,14 @@ export const CalendarView: React.FC = () => {
                                <div
                                  key={allocation.id}
                                  className={cn(
-                                   "p-0.5 rounded text-xs font-medium text-white truncate mb-0.5 relative cursor-move",
+                                   "p-0.5 rounded text-xs font-medium text-white truncate mb-0.5 relative cursor-ew-resize",
                                    isResizing && "opacity-75",
                                    isDragging && "opacity-50",
                                    isWeekendAllocation && "weekend-allocation"
                                  )}
                                  style={{ backgroundColor: project?.color || '#3b82f6' }}
                                  onMouseDown={(e) => handleAllocationDragStart(e, allocation)}
-                                 title={isWeekendAllocation ? "Weekend allocation (no working hours)" : "Drag to move allocation"}
+                                 title={isWeekendAllocation ? "Weekend allocation (no working hours)" : "Drag horizontally to move allocation (same employee only)"}
                                >
                                  <div className="flex items-center justify-between">
                                    <span className="text-xs">{project?.name || 'Unknown Project'}</span>
