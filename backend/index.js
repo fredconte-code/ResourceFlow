@@ -58,7 +58,7 @@ db.serialize(() => {
     project_id TEXT NOT NULL,
     start_date TEXT NOT NULL,
     end_date TEXT NOT NULL,
-    hours_per_day INTEGER DEFAULT 8,
+    hours_per_day REAL DEFAULT 8.0,
     status TEXT DEFAULT 'active'
   )`);
 
@@ -344,23 +344,37 @@ app.put('/api/project-allocations/:id', (req, res) => {
   const { id } = req.params;
   const { employeeId, projectId, startDate, endDate, hoursPerDay, status } = req.body;
   
-  db.run(
-    'UPDATE project_allocations SET employee_id = ?, project_id = ?, start_date = ?, end_date = ?, hours_per_day = ?, status = ? WHERE id = ?',
-    [employeeId, projectId, startDate, endDate, hoursPerDay || 8, status || 'active', id],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      if (this.changes === 0) return res.status(404).json({ error: 'Project allocation not found' });
-      res.json({ 
-        id, 
-        employeeId, 
-        projectId, 
-        startDate, 
-        endDate,
-        hoursPerDay: hoursPerDay || 8, 
-        status: status || 'active' 
-      });
-    }
-  );
+  // First, get the current allocation to preserve existing values
+  db.get('SELECT * FROM project_allocations WHERE id = ?', [id], (err, currentAllocation) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!currentAllocation) return res.status(404).json({ error: 'Project allocation not found' });
+    
+    // Use provided values or keep existing ones
+    const updatedEmployeeId = employeeId !== undefined ? employeeId : currentAllocation.employee_id;
+    const updatedProjectId = projectId !== undefined ? projectId : currentAllocation.project_id;
+    const updatedStartDate = startDate !== undefined ? startDate : currentAllocation.start_date;
+    const updatedEndDate = endDate !== undefined ? endDate : currentAllocation.end_date;
+    const updatedHoursPerDay = hoursPerDay !== undefined ? hoursPerDay : currentAllocation.hours_per_day;
+    const updatedStatus = status !== undefined ? status : currentAllocation.status;
+    
+    db.run(
+      'UPDATE project_allocations SET employee_id = ?, project_id = ?, start_date = ?, end_date = ?, hours_per_day = ?, status = ? WHERE id = ?',
+      [updatedEmployeeId, updatedProjectId, updatedStartDate, updatedEndDate, updatedHoursPerDay, updatedStatus, id],
+      function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'Project allocation not found' });
+        res.json({ 
+          id, 
+          employeeId: updatedEmployeeId, 
+          projectId: updatedProjectId, 
+          startDate: updatedStartDate, 
+          endDate: updatedEndDate,
+          hoursPerDay: updatedHoursPerDay, 
+          status: updatedStatus 
+        });
+      }
+    );
+  });
 });
 
 app.delete('/api/project-allocations/:id', (req, res) => {

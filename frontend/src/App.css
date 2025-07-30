@@ -78,4 +78,20 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     font-weight: 600;
   }
+  
+  /* Date picker animations */
+  .date-picker-container .absolute {
+    animation: slideDown 0.2s ease-out;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

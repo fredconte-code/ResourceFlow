@@ -12,7 +12,7 @@ import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, teamMembersApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
 import { useWorkingHours } from "@/lib/working-hours";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay } from "date-fns";
-import { ChevronLeft, ChevronRight, GripVertical, Flame } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   getContrastColor,
@@ -75,6 +75,8 @@ export const CalendarView: React.FC = () => {
   const [editingAllocation, setEditingAllocation] = useState<ProjectAllocation | null>(null);
   const [editStartDate, setEditStartDate] = useState<Date | undefined>(undefined);
   const [editEndDate, setEditEndDate] = useState<Date | undefined>(undefined);
+  const [startDatePickerOpen, setStartDatePickerOpen] = useState(false);
+  const [endDatePickerOpen, setEndDatePickerOpen] = useState(false);
   
   // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -488,6 +490,9 @@ export const CalendarView: React.FC = () => {
     // Fix timezone issue by parsing dates correctly
     setEditStartDate(new Date(allocation.startDate + 'T00:00:00'));
     setEditEndDate(new Date(allocation.endDate + 'T00:00:00'));
+    // Reset date picker states
+    setStartDatePickerOpen(false);
+    setEndDatePickerOpen(false);
     setEditDialogOpen(true);
   };
 
@@ -496,8 +501,8 @@ export const CalendarView: React.FC = () => {
     
     if (editEndDate < editStartDate) {
       toast({
-        title: "Invalid Dates",
-        description: "End date cannot be before start date.",
+        title: "Invalid Date Range",
+        description: "End date cannot be before start date. Please select a valid date range.",
         variant: "destructive",
       });
       return;
@@ -1111,6 +1116,24 @@ export const CalendarView: React.FC = () => {
     }
   }, [resizingAllocation, draggingAllocation]);
 
+  // Handle clicking outside date pickers to close them
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.date-picker-container')) {
+        setStartDatePickerOpen(false);
+        setEndDatePickerOpen(false);
+      }
+    };
+
+    if (startDatePickerOpen || endDatePickerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [startDatePickerOpen, endDatePickerOpen]);
+
   if (loading) {
     return (
       <div className="p-6">
@@ -1528,7 +1551,7 @@ export const CalendarView: React.FC = () => {
 
         {/* Edit Allocation Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Edit Allocation</DialogTitle>
             </DialogHeader>
@@ -1562,41 +1585,77 @@ export const CalendarView: React.FC = () => {
                     <Label htmlFor="startDate" className="text-right">
                       Start Date
                     </Label>
-                    <div className="col-span-3">
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={editStartDate ? format(editStartDate, 'yyyy-MM-dd') : ''}
-                        onChange={(e) => setEditStartDate(e.target.value ? new Date(e.target.value) : undefined)}
-                      />
+                    <div className="col-span-3 relative date-picker-container">
+                      <div
+                        className="flex items-center justify-between p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setStartDatePickerOpen(!startDatePickerOpen)}
+                      >
+                        <span className="text-sm">
+                          {editStartDate ? format(editStartDate, 'dd/MM/yyyy') : 'Select start date'}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${startDatePickerOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                      {startDatePickerOpen && (
+                        <div className="absolute top-full left-0 z-50 mt-1 bg-background border rounded-md shadow-lg">
+                          <Calendar
+                            mode="single"
+                            selected={editStartDate}
+                            onSelect={(date) => {
+                              setEditStartDate(date);
+                              setStartDatePickerOpen(false);
+                            }}
+                            className="rounded-md"
+                            disabled={(date) => editEndDate ? date > editEndDate : false}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="endDate" className="text-right">
                       End Date
                     </Label>
-                    <div className="col-span-3">
-                      <Input
-                        id="endDate"
-                        type="date"
-                        value={editEndDate ? format(editEndDate, 'yyyy-MM-dd') : ''}
-                        onChange={(e) => setEditEndDate(e.target.value ? new Date(e.target.value) : undefined)}
-                      />
+                    <div className="col-span-3 relative date-picker-container">
+                      <div
+                        className="flex items-center justify-between p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setEndDatePickerOpen(!endDatePickerOpen)}
+                      >
+                        <span className="text-sm">
+                          {editEndDate ? format(editEndDate, 'dd/MM/yyyy') : 'Select end date'}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${endDatePickerOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                      {endDatePickerOpen && (
+                        <div className="absolute top-full left-0 z-50 mt-1 bg-background border rounded-md shadow-lg">
+                          <Calendar
+                            mode="single"
+                            selected={editEndDate}
+                            onSelect={(date) => {
+                              setEditEndDate(date);
+                              setEndDatePickerOpen(false);
+                            }}
+                            className="rounded-md"
+                            disabled={(date) => editStartDate ? date < editStartDate : false}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
               )}
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-between">
               <Button variant="destructive" onClick={handleDeleteAllocation}>
                 Delete
               </Button>
-              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveAllocation}>
-                Save Changes
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveAllocation}>
+                  Save Changes
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
