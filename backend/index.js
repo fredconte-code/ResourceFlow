@@ -230,6 +230,15 @@ app.get('/api/holidays', (req, res) => {
   });
 });
 
+app.get('/api/holidays/:id', (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT * FROM holidays WHERE id = ?', [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Holiday not found' });
+    res.json(row);
+  });
+});
+
 app.post('/api/holidays', (req, res) => {
   const { name, date, country } = req.body;
   if (!name || !date || !country) {
@@ -332,6 +341,26 @@ app.get('/api/project-allocations', (req, res) => {
       status: row.status || 'active'
     }));
     res.json(transformedRows);
+  });
+});
+
+app.get('/api/project-allocations/:id', (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT * FROM project_allocations WHERE id = ?', [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Project allocation not found' });
+    
+    // Transform the data to match the expected API format
+    const transformedRow = {
+      id: row.id,
+      employeeId: row.employee_id,
+      projectId: row.project_id,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      hoursPerDay: row.hours_per_day || 8,
+      status: row.status || 'active'
+    };
+    res.json(transformedRow);
   });
 });
 

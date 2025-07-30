@@ -216,26 +216,7 @@ Previous theme variables (for rollback):
     );
   }
 
-  /* Holiday hatching pattern */
-  .holiday-cell {
-    background-image: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.05) 2px,
-      rgba(0, 0, 0, 0.05) 4px
-    );
-  }
 
-  .dark .holiday-cell {
-    background-image: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.05) 2px,
-      rgba(255, 255, 255, 0.05) 4px
-    );
-  }
 
   .weekend-allocation {
     background-image: repeating-linear-gradient(

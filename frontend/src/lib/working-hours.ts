@@ -1,7 +1,7 @@
 import { useSettings } from "@/context/SettingsContext";
 import { Employee } from "./employee-data";
 import { Holiday, Vacation, ProjectAllocation } from "./api";
-import { format, isWithinInterval, isSameDay, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { format, isWithinInterval, isSameDay, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
 
 // Default values for working hours per country
 export const DEFAULT_WORKING_HOURS = {
@@ -196,7 +196,7 @@ export const calculateTimeOffDays = (
   const periodEnd = endDate || endOfMonth(new Date());
   
   holidays.forEach(holiday => {
-    const holidayDate = new Date(holiday.date);
+    const holidayDate = parseISO(holiday.date);
     
     if (isWithinInterval(holidayDate, { start: periodStart, end: periodEnd })) {
       // Check if holiday applies to employee's country

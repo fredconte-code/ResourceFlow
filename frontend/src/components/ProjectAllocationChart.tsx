@@ -3,8 +3,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Ba
 import { getCurrentEmployeesSync } from "@/lib/employee-data";
 import { getProjectsSync } from "@/lib/project-data";
 import { Calendar, TrendingUp, Users, Clock } from "lucide-react";
-import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, eachDayOfInterval } from "date-fns";
+import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, parseISO } from "date-fns";
 import { useState, useEffect, useMemo } from "react";
+import { useHolidays } from "@/context/HolidayContext";
 
 interface Holiday {
   id: string;
@@ -25,25 +26,25 @@ interface Vacation {
 }
 
 export const ProjectAllocationChart = () => {
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const { holidays: globalHolidays } = useHolidays();
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [activeTab, setActiveTab] = useState<'attendance' | 'projects' | 'trends'>('attendance');
+  
+  // Convert global holidays to local format
+  const holidays: Holiday[] = globalHolidays.map(holiday => ({
+    id: holiday.id.toString(),
+    name: holiday.name,
+    date: parseISO(holiday.date),
+    country: holiday.country,
+    type: 'Company' as const
+  }));
   
   const today = useMemo(() => new Date(), []);
   const monthStart = useMemo(() => startOfMonth(today), [today]);
   const monthEnd = useMemo(() => endOfMonth(today), [today]);
 
-  // Load holidays and vacations from localStorage
+  // Load vacations from localStorage
   useEffect(() => {
-    const storedHolidays = localStorage.getItem('holidays');
-    if (storedHolidays) {
-      const parsed = JSON.parse(storedHolidays);
-      setHolidays(parsed.map((holiday: { id: string; name: string; date: string; country?: 'Canada' | 'Brazil' | 'Both'; type: 'National' | 'Company' | 'Regional' }) => ({
-        ...holiday,
-        date: new Date(holiday.date)
-      })));
-    }
-
     const storedVacations = localStorage.getItem('vacations');
     if (storedVacations) {
       const parsed = JSON.parse(storedVacations);

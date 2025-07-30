@@ -13,7 +13,8 @@ import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, teamMembersApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
 import { useWorkingHours } from "@/lib/working-hours";
 import { useSettings } from "@/context/SettingsContext";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay } from "date-fns";
+import { useHolidays } from "@/context/HolidayContext";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -39,13 +40,13 @@ import { COUNTRY_FLAGS, DRAG_THRESHOLD } from "@/lib/constants";
 export const CalendarView: React.FC = () => {
   const { toast } = useToast();
   const { getWorkingHoursForCountry } = useWorkingHours();
+  const { holidays, refreshHolidays } = useHolidays();
   
   // Basic state management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [holidays, setHolidays] = useState<ApiHoliday[]>([]);
   const [vacations, setVacations] = useState<ApiVacation[]>([]);
   const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);
   
@@ -227,7 +228,7 @@ export const CalendarView: React.FC = () => {
     });
     
     holidays.forEach(holiday => {
-      const holidayDate = new Date(holiday.date);
+      const holidayDate = parseISO(holiday.date);
       console.log('Processing holiday:', { 
         name: holiday.name, 
         originalDate: holiday.date, 
@@ -271,8 +272,8 @@ export const CalendarView: React.FC = () => {
     let vacationHours = 0;
     vacations.forEach(vacation => {
       if (vacation.employeeId === employee.id) {
-        const vacationStart = new Date(vacation.startDate);
-        const vacationEnd = new Date(vacation.endDate);
+        const vacationStart = parseISO(vacation.startDate);
+        const vacationEnd = parseISO(vacation.endDate);
         
         // Calculate overlap with current month
         if (vacationEnd >= monthStart && vacationStart <= monthEnd) {
@@ -314,8 +315,8 @@ export const CalendarView: React.FC = () => {
   const calculateEmployeeAllocatedHours = (employeeId: string) => {
     const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
     return employeeAllocations.reduce((total, allocation) => {
-      const startDate = new Date(allocation.startDate + 'T00:00:00');
-      const endDate = new Date(allocation.endDate + 'T00:00:00');
+      const startDate = parseISO(allocation.startDate);
+      const endDate = parseISO(allocation.endDate);
       
       // Count only working days (exclude weekends)
       let workingDays = 0;
@@ -567,6 +568,19 @@ export const CalendarView: React.FC = () => {
   const getHolidayForDate = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return holidays.find(holiday => holiday.date === dateStr);
+  };
+
+  const getHolidayForEmployeeAndDate = (employee: Employee, date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const holiday = holidays.find(holiday => holiday.date === dateStr);
+    if (!holiday) return null;
+    
+    // Check if the holiday applies to this employee's country
+    if (holiday.country === 'Both' || holiday.country === employee.country) {
+      return holiday;
+    }
+    
+    return null;
   };
   
   // Drag and drop handlers
@@ -1153,8 +1167,7 @@ export const CalendarView: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const [holidaysData, vacationsData, employeesData, projectsData, allocationsData] = await Promise.all([
-          holidaysApi.getAll(),
+        const [vacationsData, employeesData, projectsData, allocationsData] = await Promise.all([
           vacationsApi.getAll(),
           getCurrentEmployees(),
           projectsApi.getAll(),
@@ -1163,7 +1176,6 @@ export const CalendarView: React.FC = () => {
         
         setEmployees(employeesData);
         setProjects(projectsData);
-        setHolidays(holidaysData);
         setVacations(vacationsData);
         setAllocations(allocationsData);
         
@@ -1190,12 +1202,20 @@ export const CalendarView: React.FC = () => {
       setCurrentDate(new Date(currentDate));
     };
 
+    const handleHolidaysUpdate = () => {
+      // Refresh holidays and force re-render
+      refreshHolidays();
+      setCurrentDate(new Date(currentDate));
+    };
+
     window.addEventListener('settingsUpdate', handleSettingsUpdate);
+    window.addEventListener('holidaysUpdate', handleHolidaysUpdate);
 
     return () => {
       window.removeEventListener('settingsUpdate', handleSettingsUpdate);
+      window.removeEventListener('holidaysUpdate', handleHolidaysUpdate);
     };
-  }, [currentDate]);
+  }, [currentDate, refreshHolidays]);
 
   // Close tooltip when clicking outside
   useEffect(() => {
@@ -1444,26 +1464,11 @@ export const CalendarView: React.FC = () => {
                          className={cn(
                            "p-0.5 text-center text-xs border-b border-r bg-muted/30",
                            isSameDay(date, new Date()) && "bg-primary/10 font-semibold",
-                           isWeekendCell && "weekend-cell",
-                           holiday && "holiday-cell"
+                           isWeekendCell && "weekend-cell"
                          )}
                        >
                          <div className="text-xs text-muted-foreground font-medium">{getDayName(date)}</div>
                          <div className="font-medium">{getDate(date)}</div>
-                         {holiday && (
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <div className="text-xs text-amber-600 font-medium cursor-help">
-                                   Holiday
-                                 </div>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p className="text-xs">{holiday.name}</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                         )}
                        </div>
                      );
                    })}
@@ -1541,15 +1546,15 @@ export const CalendarView: React.FC = () => {
                                        return (
                                          <div className="space-y-1 text-xs">
                                            <div className="flex justify-between">
-                                             <span>Max hours per month:</span>
+                                             <span>Max hours / month:</span>
                                              <span className="font-medium">{formatHours(breakdown.maxHoursPerMonth)}</span>
                                            </div>
                                            <div className="flex justify-between">
-                                             <span>Max hours per week:</span>
+                                             <span>Max hours / week:</span>
                                              <span className="font-medium">{formatHours(breakdown.maxHoursPerWeek)}</span>
                                            </div>
                                            <div className="flex justify-between">
-                                             <span>Max hours per day:</span>
+                                             <span>Max hours / day:</span>
                                              <span className="font-medium">{formatHours(breakdown.maxHoursPerDay)}</span>
                                            </div>
                                            <div className="flex justify-between text-amber-600">
@@ -1558,14 +1563,14 @@ export const CalendarView: React.FC = () => {
                                            </div>
                                            {breakdown.holidayHours > 0 && (
                                              <div className="flex justify-between text-red-600">
-                                               <span>Deducted holiday hours:</span>
+                                               <span>Deducted holiday time:</span>
                                                <span className="font-medium">-{formatHours(breakdown.holidayHours)}</span>
                                              </div>
                                            )}
-                                           {breakdown.holidayHours === 0 && holidays.length > 0 && (
-                                             <div className="flex justify-between text-gray-500 text-xs">
-                                               <span>No holiday hours deducted</span>
-                                               <span className="font-medium">(0h)</span>
+                                           {breakdown.holidayHours === 0 && (
+                                             <div className="flex justify-between text-red-600">
+                                               <span>Deducted holiday time:</span>
+                                               <span className="font-medium">0</span>
                                              </div>
                                            )}
                                            {breakdown.vacationHours > 0 && (
@@ -1574,7 +1579,7 @@ export const CalendarView: React.FC = () => {
                                                <span className="font-medium">-{formatHours(breakdown.vacationHours)}</span>
                                              </div>
                                            )}
-                                           <div className="flex justify-between font-semibold border-t pt-1">
+                                           <div className="flex justify-between border-t pt-1">
                                              <span>Total available hours:</span>
                                              <span className="font-medium">{formatHours(breakdown.totalAvailableHours)}</span>
                                            </div>
@@ -1593,7 +1598,7 @@ export const CalendarView: React.FC = () => {
                        {calendarDays.map((date) => {
                          const allocations = getAllocationsForCell(employee.id, date);
                          const vacation = getVacationForCell(employee.id, date);
-                         const holiday = getHolidayForDate(date);
+                         const holiday = getHolidayForEmployeeAndDate(employee, date);
                          const isWeekendCell = isWeekendDay(date);
                          const isDragOver = dragOverCell?.employeeId === employee.id && isSameDay(dragOverCell.date, date);
                          
@@ -1604,7 +1609,6 @@ export const CalendarView: React.FC = () => {
                              className={cn(
                                "p-0.5 border-b border-r relative transition-all duration-200",
                                isWeekendCell && "weekend-cell",
-                               holiday && "holiday-cell",
                                "hover:bg-muted/30"
                              )}
                              style={{ minHeight: `${rowHeight}px` }}
@@ -1722,11 +1726,16 @@ export const CalendarView: React.FC = () => {
                                  })()}
                                </div>
                                                             ) : (
-                                 /* Normal View - Show vacation info only */
+                                 /* Normal View - Show vacation and holiday info */
                                  <>
                                    {vacation && allocations.length === 0 && (
                                      <div className="p-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                        {vacation.type}
+                                     </div>
+                                   )}
+                                   {holiday && allocations.length === 0 && !vacation && (
+                                     <div className="p-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center justify-center h-full">
+                                       Holiday
                                      </div>
                                    )}
                                  </>

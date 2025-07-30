@@ -12,8 +12,9 @@
     "dev": "npm start"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2",
-    "concurrently": "^8.2.2"
+    "axios": "^1.11.0",
+    "concurrently": "^8.2.2",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

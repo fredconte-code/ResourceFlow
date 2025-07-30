@@ -36,6 +36,7 @@ import {
 import { format, differenceInDays, isAfter, isBefore, addDays, isSameDay, parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useHolidays } from "@/context/HolidayContext";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, Holiday as ApiHoliday, Vacation as ApiVacation } from "@/lib/api";
 
@@ -64,13 +65,23 @@ interface VacationItem {
 
 export const TimeOffManagement: React.FC = () => {
   const { toast } = useToast();
+  const { holidays: globalHolidays, refreshHolidays } = useHolidays();
   
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [holidays, setHolidays] = useState<HolidayItem[]>([]);
   const [vacations, setVacations] = useState<VacationItem[]>([]);
+  
+  // Convert global holidays to local format for display
+  const holidays: HolidayItem[] = globalHolidays.map(holiday => ({
+    id: holiday.id.toString(),
+    name: holiday.name,
+    date: parseISO(holiday.date), // Use parseISO to preserve local date
+    country: holiday.country,
+    type: 'Company' as const, // Default type since API doesn't store this
+    isRecurring: false
+  }));
   
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
@@ -90,6 +101,12 @@ export const TimeOffManagement: React.FC = () => {
   const [showEditHolidayForm, setShowEditHolidayForm] = useState(false);
   const [editHolidayDatePickerOpen, setEditHolidayDatePickerOpen] = useState(false);
   const [tempEditHolidayDate, setTempEditHolidayDate] = useState<Date | undefined>(undefined);
+  
+  // Delete confirmation state
+  const [showDeleteHolidayDialog, setShowDeleteHolidayDialog] = useState(false);
+  const [holidayToDelete, setHolidayToDelete] = useState<HolidayItem | null>(null);
+  const [showDeleteVacationDialog, setShowDeleteVacationDialog] = useState(false);
+  const [vacationToDelete, setVacationToDelete] = useState<VacationItem | null>(null);
   
   // Form State
   const [holidayForm, setHolidayForm] = useState({
@@ -127,27 +144,16 @@ export const TimeOffManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const [holidaysData, vacationsData, employeesData] = await Promise.all([
-        holidaysApi.getAll(),
+      const [vacationsData, employeesData] = await Promise.all([
         vacationsApi.getAll(),
         getCurrentEmployees()
       ]);
       
       console.log('📊 Data loaded:', {
-        holidays: holidaysData.length,
+        holidays: globalHolidays.length,
         vacations: vacationsData.length,
         employees: employeesData.length
       });
-      
-      // Convert API data to component format
-      const convertedHolidays = holidaysData.map((holiday: ApiHoliday) => ({
-        id: holiday.id.toString(),
-        name: holiday.name,
-        date: new Date(holiday.date),
-        country: holiday.country as 'Canada' | 'Brazil' | 'Both',
-        type: 'Company' as 'National' | 'Company' | 'Regional',
-        isRecurring: false
-      }));
       
       const convertedVacations = vacationsData.map((vacation: ApiVacation) => {
         const employee = employeesData.find(emp => emp.id === vacation.employeeId);
@@ -157,16 +163,15 @@ export const TimeOffManagement: React.FC = () => {
           employeeName: vacation.employeeName,
           employeeRole: employee?.role || 'Unknown',
           employeeCountry: employee?.country || 'Unknown',
-          startDate: new Date(vacation.startDate),
-          endDate: new Date(vacation.endDate),
-          days: differenceInDays(new Date(vacation.endDate), new Date(vacation.startDate)) + 1,
+          startDate: parseISO(vacation.startDate),
+          endDate: parseISO(vacation.endDate),
+          days: differenceInDays(parseISO(vacation.endDate), parseISO(vacation.startDate)) + 1,
           type: vacation.type as 'Vacation' | 'Sick Leave' | 'Personal' | 'Other',
           notes: ''
         };
       });
       
       setEmployees(employeesData);
-      setHolidays(convertedHolidays);
       setVacations(convertedVacations);
       
     } catch (error) {
@@ -218,7 +223,9 @@ export const TimeOffManagement: React.FC = () => {
       setTempHolidayDate(undefined);
       setHolidayDatePickerOpen(false);
       
-      loadData(); // Refresh data
+      // Refresh global holidays and dispatch update event
+      await refreshHolidays();
+      window.dispatchEvent(new CustomEvent('holidaysUpdate'));
       
     } catch (error) {
       console.error('Error adding holiday:', error);
@@ -274,7 +281,9 @@ export const TimeOffManagement: React.FC = () => {
       setTempEditHolidayDate(undefined);
       setEditHolidayDatePickerOpen(false);
       
-      loadData(); // Refresh data
+      // Refresh global holidays and dispatch update event
+      await refreshHolidays();
+      window.dispatchEvent(new CustomEvent('holidaysUpdate'));
       
     } catch (error) {
       console.error('Error updating holiday:', error);
@@ -295,7 +304,9 @@ export const TimeOffManagement: React.FC = () => {
         description: "Holiday deleted successfully.",
       });
       
-      loadData(); // Refresh data
+      // Refresh global holidays and dispatch update event
+      await refreshHolidays();
+      window.dispatchEvent(new CustomEvent('holidaysUpdate'));
       
     } catch (error) {
       console.error('Error deleting holiday:', error);
@@ -304,6 +315,39 @@ export const TimeOffManagement: React.FC = () => {
         description: "Failed to delete holiday. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const confirmDeleteHoliday = (holiday: HolidayItem) => {
+    setHolidayToDelete(holiday);
+    setShowDeleteHolidayDialog(true);
+  };
+
+  const executeDeleteHoliday = async () => {
+    if (!holidayToDelete) return;
+    
+    try {
+      await holidaysApi.delete(parseInt(holidayToDelete.id));
+      
+      toast({
+        title: "Success",
+        description: "Holiday deleted successfully.",
+      });
+      
+      // Refresh global holidays and dispatch update event
+      await refreshHolidays();
+      window.dispatchEvent(new CustomEvent('holidaysUpdate'));
+      
+    } catch (error) {
+      console.error('Error deleting holiday:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete holiday. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteHolidayDialog(false);
+      setHolidayToDelete(null);
     }
   };
 
@@ -392,6 +436,37 @@ export const TimeOffManagement: React.FC = () => {
         description: "Failed to delete vacation request. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const confirmDeleteVacation = (vacation: VacationItem) => {
+    setVacationToDelete(vacation);
+    setShowDeleteVacationDialog(true);
+  };
+
+  const executeDeleteVacation = async () => {
+    if (!vacationToDelete) return;
+    
+    try {
+      await vacationsApi.delete(parseInt(vacationToDelete.id));
+      
+      toast({
+        title: "Success",
+        description: "Vacation request deleted successfully.",
+      });
+      
+      loadData(); // Refresh data
+      
+    } catch (error) {
+      console.error('Error deleting vacation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete vacation request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteVacationDialog(false);
+      setVacationToDelete(null);
     }
   };
 
@@ -500,11 +575,11 @@ export const TimeOffManagement: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {holidays
-                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .sort((a, b) => a.date.getTime() - b.date.getTime())
                   .map((holiday) => (
                     <div key={holiday.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                       <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                         <div>
                           <p className="font-medium text-sm">{holiday.name}</p>
                           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
@@ -529,7 +604,7 @@ export const TimeOffManagement: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteHoliday(holiday.id)}
+                          onClick={() => confirmDeleteHoliday(holiday)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -591,7 +666,7 @@ export const TimeOffManagement: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteVacation(vacation.id)}
+                        onClick={() => confirmDeleteVacation(vacation)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -1032,6 +1107,46 @@ export const TimeOffManagement: React.FC = () => {
             </Button>
             <Button onClick={handleAddVacation}>
               Add Vacation Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Holiday Confirmation Dialog */}
+      <Dialog open={showDeleteHolidayDialog} onOpenChange={setShowDeleteHolidayDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Holiday</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{holidayToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteHolidayDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={executeDeleteHoliday}>
+              Delete Holiday
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Vacation Confirmation Dialog */}
+      <Dialog open={showDeleteVacationDialog} onOpenChange={setShowDeleteVacationDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Vacation Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the vacation request for "{vacationToDelete?.employeeName}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteVacationDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={executeDeleteVacation}>
+              Delete Vacation
             </Button>
           </DialogFooter>
         </DialogContent>
