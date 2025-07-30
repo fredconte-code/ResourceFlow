@@ -97,6 +97,10 @@ export const CalendarView: React.FC = () => {
   } | null>(null);
   const [allocationHours, setAllocationHours] = useState<{[key: string]: number}>({});
 
+  // Double-click detection state
+  const [doubleClickTimeout, setDoubleClickTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isDoubleClicking, setIsDoubleClicking] = useState(false);
+
   // Check for overallocation when adding a new project
   const checkForOverallocation = (employeeId: string, date: Date, projectId: string, hoursPerDay: number) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -305,6 +309,11 @@ export const CalendarView: React.FC = () => {
     event.preventDefault();
     event.stopPropagation();
     
+    // Don't start dragging if we're in a double-click state
+    if (isDoubleClicking) {
+      return;
+    }
+    
     // Only start dragging if it's not a resize handle or drag-to-delete handle
     const target = event.target as HTMLElement;
     if (target.closest('.resize-handle') || target.closest('.drag-to-delete')) {
@@ -327,6 +336,22 @@ export const CalendarView: React.FC = () => {
   };
 
   const handleAllocationDoubleClick = (allocation: ProjectAllocation) => {
+    // Set double-clicking state to prevent drag
+    setIsDoubleClicking(true);
+    
+    // Clear any existing timeout
+    if (doubleClickTimeout) {
+      clearTimeout(doubleClickTimeout);
+    }
+    
+    // Reset double-clicking state after a short delay
+    const timeout = setTimeout(() => {
+      setIsDoubleClicking(false);
+    }, 300);
+    
+    setDoubleClickTimeout(timeout);
+    
+    // Open edit dialog
     setEditingAllocation(allocation);
     setEditStartDate(new Date(allocation.startDate));
     setEditEndDate(new Date(allocation.endDate));
@@ -842,6 +867,15 @@ export const CalendarView: React.FC = () => {
 
     loadData();
   }, [toast]);
+
+  // Cleanup double-click timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (doubleClickTimeout) {
+        clearTimeout(doubleClickTimeout);
+      }
+    };
+  }, [doubleClickTimeout]);
 
   // Add resize and drag event listeners
           useEffect(() => {
