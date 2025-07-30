@@ -308,65 +308,88 @@ export const CalendarView: React.FC = () => {
 
   // New function to get only overlapping allocations for rendering
   const getOverlappingAllocationsForEmployee = (employeeId: string) => {
-    const calendarDays = getCalendarDays();
-    const overlappingAllocations = new Set<ProjectAllocation>();
-    
-    // Find all allocations that overlap on any day
-    calendarDays.forEach(date => {
-      const dayAllocations = getAllocationsForCell(employeeId, date);
-      dayAllocations.forEach(allocation => {
-        overlappingAllocations.add(allocation);
+    try {
+      const calendarDays = getCalendarDays();
+      const overlappingAllocations = new Set<ProjectAllocation>();
+      
+      // Find all allocations that overlap on any day
+      calendarDays.forEach(date => {
+        const dayAllocations = getAllocationsForCell(employeeId, date);
+        dayAllocations.forEach(allocation => {
+          overlappingAllocations.add(allocation);
+        });
       });
-    });
-    
-    // Convert to array and sort by creation time
-    return Array.from(overlappingAllocations).sort((a, b) => {
-      const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
-      const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
-      return aId - bId;
-    });
+      
+      // Convert to array and sort by creation time
+      return Array.from(overlappingAllocations).sort((a, b) => {
+        const aId = typeof a.id === 'string' ? parseInt(a.id) : a.id;
+        const bId = typeof b.id === 'string' ? parseInt(b.id) : b.id;
+        return aId - bId;
+      });
+    } catch (error) {
+      console.error('Error getting overlapping allocations for employee:', error, { employeeId });
+      return [];
+    }
   };
 
   // New function to calculate the visual position and dimensions for unified allocations
   const getUnifiedAllocationStyle = (allocation: ProjectAllocation, index: number, totalAllocations: number) => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    const calendarDays = getCalendarDays();
-    
-    // Calculate the effective start and end dates within the current month view
-    const allocationStart = new Date(allocation.startDate + 'T00:00:00');
-    const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
-    
-    const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
-    const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
-    
-    // Find the column indices for start and end dates
-    const startColIndex = calendarDays.findIndex(date => isSameDay(date, effectiveStart));
-    const endColIndex = calendarDays.findIndex(date => isSameDay(date, effectiveEnd));
-    
-    if (startColIndex === -1 || endColIndex === -1) {
+    try {
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      const calendarDays = getCalendarDays();
+      
+      // Calculate the effective start and end dates within the current month view
+      const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+      const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
+      
+      // Validate dates
+      if (isNaN(allocationStart.getTime()) || isNaN(allocationEnd.getTime())) {
+        console.error('Invalid allocation dates:', { startDate: allocation.startDate, endDate: allocation.endDate });
+        return { display: 'none' };
+      }
+      
+      const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
+      const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
+      
+      // Find the column indices for start and end dates
+      const startColIndex = calendarDays.findIndex(date => isSameDay(date, effectiveStart));
+      const endColIndex = calendarDays.findIndex(date => isSameDay(date, effectiveEnd));
+      
+      if (startColIndex === -1 || endColIndex === -1) {
+        console.warn('Allocation outside current month view:', { 
+          allocationId: allocation.id,
+          startColIndex, 
+          endColIndex,
+          effectiveStart: effectiveStart.toISOString(),
+          effectiveEnd: effectiveEnd.toISOString()
+        });
+        return { display: 'none' };
+      }
+      
+      // Calculate position and width
+      const left = `${startColIndex * 60}px`; // 60px per day column
+      const width = `${(endColIndex - startColIndex + 1) * 60}px`; // Width spans all days
+      
+      // Calculate vertical position for stacking - start from top of calendar cell
+      const allocationHeight = 24; // Height of each allocation rectangle
+      const verticalSpacing = 4; // Spacing between allocations
+      const top = `${index * (allocationHeight + verticalSpacing)}px`; // Start from top-left corner of calendar cell
+      
+      const style = {
+        position: 'absolute' as const,
+        left,
+        top,
+        width,
+        height: `${allocationHeight}px`,
+        zIndex: 10 + index, // Higher index allocations appear on top
+      };
+      
+      return style;
+    } catch (error) {
+      console.error('Error calculating unified allocation style:', error, { allocation, index, totalAllocations });
       return { display: 'none' };
     }
-    
-    // Calculate position and width
-    const left = `${startColIndex * 60}px`; // 60px per day column
-    const width = `${(endColIndex - startColIndex + 1) * 60}px`; // Width spans all days
-    
-    // Calculate vertical position for stacking - start from top of calendar cell
-    const allocationHeight = 24; // Height of each allocation rectangle
-    const verticalSpacing = 4; // Spacing between allocations
-    const top = `${index * (allocationHeight + verticalSpacing)}px`; // Start from top-left corner of calendar cell
-    
-    const style = {
-      position: 'absolute' as const,
-      left,
-      top,
-      width,
-      height: `${allocationHeight}px`,
-      zIndex: 10 + index, // Higher index allocations appear on top
-    };
-    
-    return style;
   };
 
   // New function to calculate the total height needed for an employee row
@@ -1304,8 +1327,9 @@ export const CalendarView: React.FC = () => {
 
                  {/* Employee rows */}
                  {employees.map((employee) => {
-                   const overlappingAllocations = getOverlappingAllocationsForEmployee(employee.id);
-                   const rowHeight = getEmployeeRowHeight(employee.id);
+                   try {
+                     const overlappingAllocations = getOverlappingAllocationsForEmployee(employee.id);
+                     const rowHeight = getEmployeeRowHeight(employee.id);
                    
                    return (
                      <div
@@ -1514,15 +1538,27 @@ export const CalendarView: React.FC = () => {
                             onMouseOver={(e) => handleUnifiedAllocationDragOver(e, employee.id)}
                           >
                             {overlappingAllocations.map((allocation, index) => {
-                              const project = projects.find(p => p.id.toString() === allocation.projectId);
-                              const isResizing = resizingAllocation?.allocationId === allocation.id.toString();
-                              const isDragging = draggingAllocation?.allocation.id === allocation.id;
-                              const allocationStart = new Date(allocation.startDate + 'T00:00:00');
-                              const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
-                              const isStartDate = calendarDays.some(date => isSameDay(date, allocationStart));
-                              const isEndDate = calendarDays.some(date => isSameDay(date, allocationEnd));
-                              
-                              return (
+                              try {
+                                const project = projects.find(p => p.id.toString() === allocation.projectId);
+                                const isResizing = resizingAllocation?.allocationId === allocation.id.toString();
+                                const isDragging = draggingAllocation?.allocation.id === allocation.id;
+                                const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+                                const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
+                                
+                                // Validate dates
+                                if (isNaN(allocationStart.getTime()) || isNaN(allocationEnd.getTime())) {
+                                  console.error('Invalid allocation dates in rendering:', { 
+                                    allocationId: allocation.id,
+                                    startDate: allocation.startDate, 
+                                    endDate: allocation.endDate 
+                                  });
+                                  return null;
+                                }
+                                
+                                const isStartDate = calendarDays.some(date => isSameDay(date, allocationStart));
+                                const isEndDate = calendarDays.some(date => isSameDay(date, allocationEnd));
+                                
+                                return (
                                 <div
                                   key={allocation.id}
                                   className={cn(
@@ -1569,11 +1605,19 @@ export const CalendarView: React.FC = () => {
                                   )}
                                 </div>
                               );
+                              } catch (error) {
+                                console.error('Error rendering allocation:', error, { allocation, index });
+                                return null;
+                              }
                             })}
                           </div>
                         )}
                      </div>
                    );
+                   } catch (error) {
+                     console.error('Error rendering employee row:', error, { employeeId: employee.id });
+                     return null;
+                   }
                  })}
               </div>
             </div>
@@ -1752,8 +1796,8 @@ export const CalendarView: React.FC = () => {
                               min="0"
                               max="24"
                               step="0.5"
-                              value={allocationHours[allocation.id.toString()] || 0}
-                              onChange={(e) => setAllocationHours(prev => ({
+                              value={overallocationHours[allocation.id.toString()] || 0}
+                              onChange={(e) => setOverallocationHours(prev => ({
                                 ...prev,
                                 [allocation.id.toString()]: parseFloat(e.target.value) || 0
                               }))}
@@ -1771,8 +1815,8 @@ export const CalendarView: React.FC = () => {
                           min="0"
                           max="24"
                           step="0.5"
-                          value={allocationHours['new'] || 0}
-                          onChange={(e) => setAllocationHours(prev => ({
+                          value={overallocationHours['new'] || 0}
+                          onChange={(e) => setOverallocationHours(prev => ({
                             ...prev,
                             'new': parseFloat(e.target.value) || 0
                           }))}
@@ -1782,7 +1826,7 @@ export const CalendarView: React.FC = () => {
                     </div>
                     
                     <div className="text-xs text-muted-foreground">
-                      Total: {Object.values(allocationHours).reduce((sum, hours) => sum + hours, 0)}h
+                      Total: {Object.values(overallocationHours).reduce((sum, hours) => sum + hours, 0)}h
                     </div>
                   </div>
                 </>
