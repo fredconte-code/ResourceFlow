@@ -256,6 +256,25 @@ app.delete('/api/holidays/:id', (req, res) => {
   });
 });
 
+app.put('/api/holidays/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, date, country } = req.body;
+  
+  if (!name || !date || !country) {
+    return res.status(400).json({ error: 'Name, date, and country are required' });
+  }
+  
+  db.run(
+    'UPDATE holidays SET name = ?, date = ?, country = ? WHERE id = ?',
+    [name, date, country, id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: 'Holiday not found' });
+      res.json({ id: parseInt(id), name, date, country });
+    }
+  );
+});
+
 // --- Vacations API ---
 app.get('/api/vacations', (req, res) => {
   db.all('SELECT * FROM vacations ORDER BY start_date', [], (err, rows) => {

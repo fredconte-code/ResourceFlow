@@ -1407,15 +1407,25 @@ export const CalendarView: React.FC = () => {
                          className={cn(
                            "p-0.5 text-center text-xs border-b border-r bg-muted/30",
                            isSameDay(date, new Date()) && "bg-primary/10 font-semibold",
-                           isWeekendCell && "weekend-cell"
+                           isWeekendCell && "weekend-cell",
+                           holiday && "holiday-cell"
                          )}
                        >
                          <div className="text-xs text-muted-foreground font-medium">{getDayName(date)}</div>
                          <div className="font-medium">{getDate(date)}</div>
                          {holiday && (
-                           <div className="text-xs text-amber-600 font-medium truncate">
-                             {holiday.name}
-                           </div>
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <div className="text-xs text-amber-600 font-medium cursor-help">
+                                   Holiday
+                                 </div>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p className="text-xs">{holiday.name}</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
                          )}
                        </div>
                      );
@@ -1550,8 +1560,8 @@ export const CalendarView: React.FC = () => {
                              data-date={format(date, 'yyyy-MM-dd')}
                              className={cn(
                                "p-0.5 border-b border-r relative transition-all duration-200",
-                               holiday && "bg-amber-50",
                                isWeekendCell && "weekend-cell",
+                               holiday && "holiday-cell",
                                "hover:bg-muted/30"
                              )}
                              style={{ minHeight: `${rowHeight}px` }}
@@ -1669,16 +1679,11 @@ export const CalendarView: React.FC = () => {
                                  })()}
                                </div>
                                                             ) : (
-                                 /* Normal View - Show vacation/holiday info only */
+                                 /* Normal View - Show vacation info only */
                                  <>
                                    {vacation && allocations.length === 0 && (
                                      <div className="p-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                        {vacation.type}
-                                     </div>
-                                   )}
-                                   {holiday && allocations.length === 0 && !vacation && (
-                                     <div className="p-1 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                       {holiday.name}
                                      </div>
                                    )}
                                  </>

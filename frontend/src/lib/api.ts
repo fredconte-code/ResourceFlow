@@ -97,6 +97,12 @@ export const holidaysApi = {
       body: JSON.stringify(holiday),
     }),
   
+  update: (id: number, holiday: Partial<Holiday>): Promise<Holiday> => 
+    apiRequest(`/holidays/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(holiday),
+    }),
+  
   delete: (id: number): Promise<{ message: string }> => 
     apiRequest(`/holidays/${id}`, {
       method: 'DELETE',

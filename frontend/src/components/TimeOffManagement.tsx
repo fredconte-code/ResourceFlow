@@ -81,8 +81,26 @@ export const TimeOffManagement: React.FC = () => {
   const [filterCountry, setFilterCountry] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   
+  // Date picker state
+  const [holidayDatePickerOpen, setHolidayDatePickerOpen] = useState(false);
+  const [tempHolidayDate, setTempHolidayDate] = useState<Date | undefined>(undefined);
+  
+  // Edit state
+  const [editingHoliday, setEditingHoliday] = useState<HolidayItem | null>(null);
+  const [showEditHolidayForm, setShowEditHolidayForm] = useState(false);
+  const [editHolidayDatePickerOpen, setEditHolidayDatePickerOpen] = useState(false);
+  const [tempEditHolidayDate, setTempEditHolidayDate] = useState<Date | undefined>(undefined);
+  
   // Form State
   const [holidayForm, setHolidayForm] = useState({
+    name: '',
+    date: new Date(),
+    country: 'Both' as 'Canada' | 'Brazil' | 'Both',
+    type: 'Company' as 'National' | 'Company' | 'Regional',
+    isRecurring: false
+  });
+  
+  const [editHolidayForm, setEditHolidayForm] = useState({
     name: '',
     date: new Date(),
     country: 'Both' as 'Canada' | 'Brazil' | 'Both',
@@ -197,6 +215,8 @@ export const TimeOffManagement: React.FC = () => {
         type: 'Company',
         isRecurring: false
       });
+      setTempHolidayDate(undefined);
+      setHolidayDatePickerOpen(false);
       
       loadData(); // Refresh data
       
@@ -205,6 +225,62 @@ export const TimeOffManagement: React.FC = () => {
       toast({
         title: "Error",
         description: "Failed to add holiday. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditHoliday = (holiday: HolidayItem) => {
+    setEditingHoliday(holiday);
+    setEditHolidayForm({
+      name: holiday.name,
+      date: holiday.date,
+      country: holiday.country,
+      type: holiday.type,
+      isRecurring: holiday.isRecurring || false
+    });
+    setTempEditHolidayDate(undefined);
+    setShowEditHolidayForm(true);
+  };
+
+  const handleUpdateHoliday = async () => {
+    if (!editingHoliday) return;
+    
+    try {
+      if (!editHolidayForm.name.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Holiday name is required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updatedHoliday = {
+        name: editHolidayForm.name,
+        date: format(editHolidayForm.date, 'yyyy-MM-dd'),
+        country: editHolidayForm.country
+      };
+
+      await holidaysApi.update(parseInt(editingHoliday.id), updatedHoliday);
+      
+      toast({
+        title: "Success",
+        description: "Holiday updated successfully.",
+      });
+      
+      setShowEditHolidayForm(false);
+      setEditingHoliday(null);
+      setTempEditHolidayDate(undefined);
+      setEditHolidayDatePickerOpen(false);
+      
+      loadData(); // Refresh data
+      
+    } catch (error) {
+      console.error('Error updating holiday:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update holiday. Please try again.",
         variant: "destructive",
       });
     }
@@ -336,13 +412,7 @@ export const TimeOffManagement: React.FC = () => {
 
   // Get type badge variant
   const getTypeBadgeVariant = (type: string) => {
-    switch (type) {
-      case 'Vacation': return 'default';
-      case 'Sick Leave': return 'destructive';
-      case 'Personal': return 'secondary';
-      case 'Other': return 'outline';
-      default: return 'outline';
-    }
+    return 'outline';
   };
 
   if (loading) {
@@ -448,13 +518,22 @@ export const TimeOffManagement: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteHoliday(holiday.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditHoliday(holiday)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteHoliday(holiday.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -527,7 +606,13 @@ export const TimeOffManagement: React.FC = () => {
 
 
       {/* Add Holiday Dialog */}
-      <Dialog open={showHolidayForm} onOpenChange={setShowHolidayForm}>
+      <Dialog open={showHolidayForm} onOpenChange={(open) => {
+        setShowHolidayForm(open);
+        if (!open) {
+          setTempHolidayDate(undefined);
+          setHolidayDatePickerOpen(false);
+        }
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add Company Holiday</DialogTitle>
@@ -547,7 +632,7 @@ export const TimeOffManagement: React.FC = () => {
             </div>
             <div className="grid gap-2">
               <Label>Date</Label>
-              <Popover>
+              <Popover open={holidayDatePickerOpen} onOpenChange={setHolidayDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -561,12 +646,38 @@ export const TimeOffManagement: React.FC = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={holidayForm.date}
-                    onSelect={(date) => date && setHolidayForm({ ...holidayForm, date })}
-                    initialFocus
-                  />
+                  <div className="p-3">
+                    <Calendar
+                      mode="single"
+                      selected={tempHolidayDate || holidayForm.date}
+                      onSelect={(date) => setTempHolidayDate(date)}
+                      initialFocus
+                    />
+                    <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTempHolidayDate(undefined);
+                          setHolidayDatePickerOpen(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (tempHolidayDate) {
+                            setHolidayForm({ ...holidayForm, date: tempHolidayDate });
+                          }
+                          setTempHolidayDate(undefined);
+                          setHolidayDatePickerOpen(false);
+                        }}
+                      >
+                        OK
+                      </Button>
+                    </div>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
@@ -613,6 +724,131 @@ export const TimeOffManagement: React.FC = () => {
             </Button>
             <Button onClick={handleAddHoliday}>
               Add Holiday
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Holiday Dialog */}
+      <Dialog open={showEditHolidayForm} onOpenChange={(open) => {
+        setShowEditHolidayForm(open);
+        if (!open) {
+          setTempEditHolidayDate(undefined);
+          setEditHolidayDatePickerOpen(false);
+          setEditingHoliday(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Holiday</DialogTitle>
+            <DialogDescription>
+              Update the holiday information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-holiday-name">Holiday Name</Label>
+              <Input
+                id="edit-holiday-name"
+                value={editHolidayForm.name}
+                onChange={(e) => setEditHolidayForm({ ...editHolidayForm, name: e.target.value })}
+                placeholder="e.g., Christmas Day"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Date</Label>
+              <Popover open={editHolidayDatePickerOpen} onOpenChange={setEditHolidayDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !editHolidayForm.date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {editHolidayForm.date ? format(editHolidayForm.date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <div className="p-3">
+                    <Calendar
+                      mode="single"
+                      selected={tempEditHolidayDate || editHolidayForm.date}
+                      onSelect={(date) => setTempEditHolidayDate(date)}
+                      initialFocus
+                    />
+                    <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTempEditHolidayDate(undefined);
+                          setEditHolidayDatePickerOpen(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (tempEditHolidayDate) {
+                            setEditHolidayForm({ ...editHolidayForm, date: tempEditHolidayDate });
+                          }
+                          setTempEditHolidayDate(undefined);
+                          setEditHolidayDatePickerOpen(false);
+                        }}
+                      >
+                        OK
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-holiday-country">Country</Label>
+              <Select
+                value={editHolidayForm.country}
+                onValueChange={(value: 'Canada' | 'Brazil' | 'Both') =>
+                  setEditHolidayForm({ ...editHolidayForm, country: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Canada">Canada</SelectItem>
+                  <SelectItem value="Brazil">Brazil</SelectItem>
+                  <SelectItem value="Both">Both Countries</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-holiday-type">Type</Label>
+              <Select
+                value={editHolidayForm.type}
+                onValueChange={(value: 'National' | 'Company' | 'Regional') =>
+                  setEditHolidayForm({ ...editHolidayForm, type: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="National">National Holiday</SelectItem>
+                  <SelectItem value="Company">Company Holiday</SelectItem>
+                  <SelectItem value="Regional">Regional Holiday</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditHolidayForm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateHoliday}>
+              Update Holiday
             </Button>
           </DialogFooter>
         </DialogContent>
