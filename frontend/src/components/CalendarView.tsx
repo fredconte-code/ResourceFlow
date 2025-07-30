@@ -101,6 +101,10 @@ export const CalendarView: React.FC = () => {
   const [doubleClickTimeout, setDoubleClickTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isDoubleClicking, setIsDoubleClicking] = useState(false);
 
+  // Drag distance tracking
+  const [dragStartPosition, setDragStartPosition] = useState<{x: number, y: number} | null>(null);
+  const DRAG_THRESHOLD = 5; // Minimum pixels to move before considering it a drag
+
   // Check for overallocation when adding a new project
   const checkForOverallocation = (employeeId: string, date: Date, projectId: string, hoursPerDay: number) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -147,15 +151,20 @@ export const CalendarView: React.FC = () => {
     const employee = employees.find(e => e.id === employeeId);
     if (!employee) return 0;
     
-    // Skip weekends, holidays, and vacations
-    if (isWeekendDay(date) || getHolidayForDate(date) || getVacationForCell(employeeId, date)) {
+    // Skip holidays and vacations
+    if (getHolidayForDate(date) || getVacationForCell(employeeId, date)) {
       return 0;
     }
     
     const dayAllocations = getAllocationsForCell(employeeId, date);
     const totalAllocatedHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
-    const maxDailyHours = getWorkingHoursForCountry(employee.country) / WORKING_DAYS_PER_WEEK;
     
+    // For weekends, return a special value to indicate weekend allocation
+    if (isWeekendDay(date)) {
+      return dayAllocations.length > 0 ? -1 : 0; // -1 indicates weekend allocation
+    }
+    
+    const maxDailyHours = getWorkingHoursForCountry(employee.country) / WORKING_DAYS_PER_WEEK;
     return maxDailyHours > 0 ? Math.min((totalAllocatedHours / maxDailyHours) * 100, 100) : 0;
   };
 
@@ -179,10 +188,20 @@ export const CalendarView: React.FC = () => {
   const calculateEmployeeAllocatedHours = (employeeId: string) => {
     const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
     return employeeAllocations.reduce((total, allocation) => {
-      const startDate = new Date(allocation.startDate);
-      const endDate = new Date(allocation.endDate);
-      const days = differenceInDays(endDate, startDate) + 1;
-      return total + (allocation.hoursPerDay * days);
+      const startDate = new Date(allocation.startDate + 'T00:00:00');
+      const endDate = new Date(allocation.endDate + 'T00:00:00');
+      
+      // Count only working days (exclude weekends)
+      let workingDays = 0;
+      let currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        if (!isWeekendDay(currentDate)) {
+          workingDays++;
+        }
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      return total + (allocation.hoursPerDay * workingDays);
     }, 0);
   };
 
@@ -193,8 +212,8 @@ export const CalendarView: React.FC = () => {
     
     const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
     return employeeAllocations.reduce((total, allocation) => {
-      const allocationStart = new Date(allocation.startDate);
-      const allocationEnd = new Date(allocation.endDate);
+      const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+      const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
       
       // Check if allocation overlaps with current month
       if (allocationEnd < monthStart || allocationStart > monthEnd) {
@@ -314,7 +333,7 @@ export const CalendarView: React.FC = () => {
       return;
     }
     
-    // Only start dragging if it's not a resize handle or drag-to-delete handle
+    // Only start dragging if it's not a resize handle or delete button
     const target = event.target as HTMLElement;
     if (target.closest('.resize-handle') || target.closest('.drag-to-delete')) {
       return;
@@ -326,10 +345,13 @@ export const CalendarView: React.FC = () => {
       return;
     }
     
+    // Record the starting position for drag distance calculation
+    setDragStartPosition({ x: event.clientX, y: event.clientY });
+    
     setDraggingAllocation({
       allocation,
-      originalStartDate: new Date(allocation.startDate),
-      originalEndDate: new Date(allocation.endDate),
+      originalStartDate: new Date(allocation.startDate + 'T00:00:00'),
+      originalEndDate: new Date(allocation.endDate + 'T00:00:00'),
       mouseOffset: { x: event.clientX, y: event.clientY }
     });
     setDragOverCell(null);
@@ -353,8 +375,9 @@ export const CalendarView: React.FC = () => {
     
     // Open edit dialog
     setEditingAllocation(allocation);
-    setEditStartDate(new Date(allocation.startDate));
-    setEditEndDate(new Date(allocation.endDate));
+    // Fix timezone issue by parsing dates correctly
+    setEditStartDate(new Date(allocation.startDate + 'T00:00:00'));
+    setEditEndDate(new Date(allocation.endDate + 'T00:00:00'));
     setEditDialogOpen(true);
   };
 
@@ -747,8 +770,8 @@ export const CalendarView: React.FC = () => {
     
     setResizingAllocation({
       allocationId: allocation.id.toString(),
-      startDate: new Date(allocation.startDate),
-      endDate: new Date(allocation.endDate),
+      startDate: new Date(allocation.startDate + 'T00:00:00'),
+      endDate: new Date(allocation.endDate + 'T00:00:00'),
       isLeftEdge
     });
   };
@@ -756,16 +779,14 @@ export const CalendarView: React.FC = () => {
   const handleResizeMove = (event: MouseEvent) => {
     if (!resizingAllocation) return;
     
-
-    
-    // Find the cell under the mouse cursor
-    const target = event.target as HTMLElement;
-    const cell = target.closest('[data-date]') as HTMLElement;
+    // Find the cell under the mouse cursor using elementFromPoint
+    const elementAtPoint = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement;
+    const cell = elementAtPoint?.closest('[data-date]') as HTMLElement;
     
     if (cell) {
       const dateStr = cell.getAttribute('data-date');
       if (dateStr) {
-        const targetDate = new Date(dateStr);
+        const targetDate = new Date(dateStr + 'T00:00:00'); // Fix timezone issue
         
         if (resizingAllocation.isLeftEdge) {
           // Resizing left edge - update start date
@@ -893,31 +914,47 @@ export const CalendarView: React.FC = () => {
           if (resizingAllocation) {
             handleResizeEnd();
           }
-          if (draggingAllocation) {
-            // Find the cell under the mouse cursor at the exact moment of drop
-            // Use the same offset as the drag preview positioning
-            const adjustedX = e.clientX + 10;
-            const adjustedY = e.clientY - 20;
-            const elementAtPoint = document.elementFromPoint(adjustedX, adjustedY) as HTMLElement;
-            const cell = elementAtPoint?.closest('[data-date]') as HTMLElement;
+          if (draggingAllocation && dragStartPosition) {
+            // Calculate drag distance
+            const dragDistance = Math.sqrt(
+              Math.pow(e.clientX - dragStartPosition.x, 2) + 
+              Math.pow(e.clientY - dragStartPosition.y, 2)
+            );
             
-            if (cell) {
-              const dateStr = cell.getAttribute('data-date');
-              const employeeId = cell.closest('[data-employee]')?.getAttribute('data-employee');
+            // Only process drop if we've moved enough to consider it a drag
+            if (dragDistance >= DRAG_THRESHOLD) {
+              // Find the cell under the mouse cursor at the exact moment of drop
+              // Use the same offset as the drag preview positioning
+              const adjustedX = e.clientX + 10;
+              const adjustedY = e.clientY - 20;
+              const elementAtPoint = document.elementFromPoint(adjustedX, adjustedY) as HTMLElement;
+              const cell = elementAtPoint?.closest('[data-date]') as HTMLElement;
               
-              if (dateStr && employeeId) {
-                const targetDate = new Date(dateStr);
-                handleAllocationDrop(e as unknown as React.MouseEvent, employeeId, targetDate);
+              if (cell) {
+                const dateStr = cell.getAttribute('data-date');
+                const employeeId = cell.closest('[data-employee]')?.getAttribute('data-employee');
+                
+                if (dateStr && employeeId) {
+                  const targetDate = new Date(dateStr);
+                  handleAllocationDrop(e as unknown as React.MouseEvent, employeeId, targetDate);
+                } else {
+                  // If we can't find a valid drop target, cancel the drag
+                  setDraggingAllocation(null);
+                  setDragOverCell(null);
+                }
               } else {
-                // If we can't find a valid drop target, cancel the drag
+                // If we can't find a cell, cancel the drag
                 setDraggingAllocation(null);
                 setDragOverCell(null);
               }
             } else {
-              // If we can't find a cell, cancel the drag
+              // If we haven't moved enough, just cancel the drag without showing any toast
               setDraggingAllocation(null);
               setDragOverCell(null);
             }
+            
+            // Reset drag start position
+            setDragStartPosition(null);
           }
         };
       
@@ -1167,6 +1204,10 @@ export const CalendarView: React.FC = () => {
                                  const employeeData = employees.find(e => e.id === employee.id);
                                  const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
                                  
+                                 if (dailyPercentage === -1) {
+                                   return "Weekend allocation (no working hours)";
+                                 }
+                                 
                                  if (dailyPercentage === 0) {
                                    if (isWeekendCell) return "Weekend - No working hours";
                                    if (holiday) return `Holiday: ${holiday.name}`;
@@ -1184,6 +1225,30 @@ export const CalendarView: React.FC = () => {
                                  const dailyHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
                                  const employeeData = employees.find(e => e.id === employee.id);
                                  const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
+                                 
+                                 // Handle weekend allocations (dailyPercentage = -1)
+                                 if (dailyPercentage === -1) {
+                                   return (
+                                     <>
+                                       {/* Weekend allocation indicator */}
+                                       <div className="absolute bottom-0 left-0 right-0 bg-gray-300 rounded-sm overflow-hidden">
+                                         <div
+                                           className="bg-gray-400 transition-all duration-300"
+                                           style={{ 
+                                             height: "20%",
+                                             width: '100%'
+                                           }}
+                                         />
+                                       </div>
+                                       {/* Weekend text overlay */}
+                                       <div className="absolute inset-0 flex items-center justify-center z-10">
+                                         <span className="text-xs font-bold text-gray-800 drop-shadow-sm">
+                                           Weekend
+                                         </span>
+                                       </div>
+                                     </>
+                                   );
+                                 }
                                  
                                  if (dailyPercentage === 0) return null;
                                  
@@ -1216,8 +1281,8 @@ export const CalendarView: React.FC = () => {
                              /* Normal View - Multiple allocations stacked vertically */
                              allocations.map((allocation, index) => {
                                const project = projects.find(p => p.id.toString() === allocation.projectId);
-                               const isStartDate = isSameDay(new Date(allocation.startDate), date);
-                               const isEndDate = isSameDay(new Date(allocation.endDate), date);
+                               const isStartDate = isSameDay(new Date(allocation.startDate + 'T00:00:00'), date);
+                               const isEndDate = isSameDay(new Date(allocation.endDate + 'T00:00:00'), date);
                                const isResizing = resizingAllocation?.allocationId === allocation.id.toString();
                                const isDragging = draggingAllocation?.allocation.id === allocation.id;
                                const isWeekendAllocation = isWeekendDay(date);
@@ -1238,22 +1303,24 @@ export const CalendarView: React.FC = () => {
                                  >
                                    <div className="flex items-center justify-between pointer-events-none">
                                      <span className="text-xs">{project?.name || 'Unknown Project'}</span>
-                                     {/* Drag to delete handle */}
-                                     <div
-                                       className="drag-to-delete ml-1 w-2 h-2 bg-white/30 rounded cursor-grab hover:bg-white/50 transition-colors pointer-events-auto"
-                                       draggable
-                                       onDragStart={(e) => {
+                                     {/* Delete button */}
+                                     <button
+                                       className="drag-to-delete ml-1 w-3 h-3 bg-white/40 rounded cursor-pointer hover:bg-red-400 hover:scale-110 transition-all duration-200 pointer-events-auto flex items-center justify-center"
+                                       onClick={(e) => {
                                          e.stopPropagation();
-                                         handleAllocationDragStartFromTimeline(e, allocation);
+                                         setDeletingAllocation(allocation);
+                                         setDeleteDialogOpen(true);
                                        }}
-                                       title="Drag to projects box to delete"
-                                     />
+                                       title="Click to delete allocation"
+                                     >
+                                       <span className="text-[8px] text-gray-700 font-bold">×</span>
+                                     </button>
                                    </div>
                                    
-                                   {/* Left resize handle */}
+                                   {/* Invisible left resize area */}
                                    {isStartDate && (
                                      <div
-                                       className="resize-handle absolute left-0 top-0 bottom-0 w-2 bg-white/70 cursor-ew-resize hover:bg-white/90 transition-colors z-10 border-r border-white/50"
+                                       className="resize-handle absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
                                        onMouseDown={(e) => {
                                          e.stopPropagation();
                                          handleResizeStart(e, allocation, true);
@@ -1262,10 +1329,10 @@ export const CalendarView: React.FC = () => {
                                      />
                                    )}
                                    
-                                   {/* Right resize handle */}
+                                   {/* Invisible right resize area */}
                                    {isEndDate && (
                                      <div
-                                       className="resize-handle absolute right-0 top-0 bottom-0 w-2 bg-white/70 cursor-ew-resize hover:bg-white/90 transition-colors z-10 border-l border-white/50"
+                                       className="resize-handle absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize z-10"
                                        onMouseDown={(e) => {
                                          e.stopPropagation();
                                          handleResizeStart(e, allocation, false);
