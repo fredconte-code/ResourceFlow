@@ -13,6 +13,7 @@ import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, teamMemb
 import { useWorkingHours } from "@/lib/working-hours";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay } from "date-fns";
 import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   getContrastColor,
@@ -31,6 +32,11 @@ import {
   WEEKS_PER_MONTH,
   WORKING_DAYS_PER_WEEK
 } from "@/lib/calendar-utils";
+
+const countryFlags = {
+  'Canada': '🇨🇦',
+  'Brazil': '🇧🇷'
+};
 
 export const CalendarView: React.FC = () => {
   const { toast } = useToast();
@@ -1257,7 +1263,7 @@ export const CalendarView: React.FC = () => {
                          <div className="overflow-x-auto">
                <div className="min-w-max" data-calendar-container>
                  {/* Header row with dates */}
-                 <div className="grid" style={{ gridTemplateColumns: `150px repeat(${calendarDays.length}, 60px)` }}>
+                 <div className="grid" style={{ gridTemplateColumns: `180px repeat(${calendarDays.length}, 60px)` }}>
                    <div className="p-0.5 font-medium text-xs border-b border-r bg-muted/30">
                      Team Members
                    </div>
@@ -1296,15 +1302,29 @@ export const CalendarView: React.FC = () => {
                        data-employee={employee.id}
                        className="grid relative"
                        style={{ 
-                         gridTemplateColumns: `150px repeat(${calendarDays.length}, 60px)`,
+                         gridTemplateColumns: `180px repeat(${calendarDays.length}, 60px)`,
                          minHeight: `${rowHeight}px`
                        }}
                      >
                        {/* Employee info column */}
-                       <div className="p-0.5 border-b border-r bg-muted/10">
-                         <div className="font-medium text-xs">{employee.name}</div>
-                         <div className="text-xs text-muted-foreground truncate">{employee.role}</div>
-                         <div className="mt-1">
+                       <div className="p-2 border-b border-r bg-muted/10">
+                         <div className="flex items-center space-x-2 mb-2">
+                           <Avatar className="h-6 w-6">
+                             <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                               {employee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="flex-1 min-w-0">
+                             <div className="font-medium text-sm truncate flex items-center space-x-1">
+                               <span>{employee.name}</span>
+                               <span>{countryFlags[employee.country]}</span>
+                             </div>
+                             <div className="text-xs text-muted-foreground truncate">
+                               <span>{employee.role}</span>
+                             </div>
+                           </div>
+                         </div>
+                         <div className="mt-2">
                            <div className="w-full bg-gray-200 rounded-full h-1.5">
                              <div
                                className={cn(
@@ -1314,7 +1334,7 @@ export const CalendarView: React.FC = () => {
                                style={{ width: `${getEmployeeAllocationPercentage(employee)}%` }}
                              />
                            </div>
-                           <div className="text-xs text-muted-foreground mt-0.5">
+                           <div className="text-[10px] text-muted-foreground mt-0.5">
                              {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getWorkingHoursForCountry(employee.country) * 4.33)}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
                            </div>
                          </div>
@@ -1475,11 +1495,11 @@ export const CalendarView: React.FC = () => {
                         {!heatmapMode && (
                           <div 
                             className="absolute pointer-events-none" 
-                            style={{ 
-                              left: '150px', 
-                              right: 0,
-                              top: '0px'
-                            }}
+                                       style={{
+             left: '180px',
+             right: 0,
+             top: '0px'
+           }}
                             onMouseOver={(e) => handleUnifiedAllocationDragOver(e, employee.id)}
                           >
                             {overlappingAllocations.map((allocation, index) => {
