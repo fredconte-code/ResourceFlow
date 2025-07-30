@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
 import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, Holiday as ApiHoliday, Vacation as ApiVacation, Project, ProjectAllocation } from "@/lib/api";
+import { useWorkingHours } from "@/lib/working-hours";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay } from "date-fns";
 import { ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ const getContrastColor = (hexColor: string): string => {
 export const CalendarView: React.FC = () => {
   console.log('CalendarView component rendering...');
   const { toast } = useToast();
+  const { getWorkingHoursForCountry } = useWorkingHours();
   
   // Basic state management
   const [loading, setLoading] = useState(true);
@@ -86,6 +88,22 @@ export const CalendarView: React.FC = () => {
   const getDayName = (date: Date) => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return dayNames[getDay(date)];
+  };
+
+  // Calculate allocation percentage for an employee
+  const getEmployeeAllocationPercentage = (employee: Employee) => {
+    const weeklyHours = getWorkingHoursForCountry(employee.country);
+    const allocatedHours = employee.allocatedHours || 0;
+    const percentage = weeklyHours > 0 ? (allocatedHours / weeklyHours) * 100 : 0;
+    return Math.min(percentage, 100); // Cap at 100%
+  };
+
+  // Get allocation color based on percentage
+  const getAllocationColor = (percentage: number) => {
+    if (percentage <= 60) return 'bg-green-500';
+    if (percentage <= 80) return 'bg-blue-500';
+    if (percentage <= 100) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
   
   // Get allocations for a specific employee and date
@@ -687,6 +705,20 @@ export const CalendarView: React.FC = () => {
                                          <div className="p-0.5 border-b border-r bg-muted/10">
                        <div className="font-medium text-xs">{employee.name}</div>
                        <div className="text-xs text-muted-foreground truncate">{employee.role}</div>
+                       <div className="mt-1">
+                         <div className="w-full bg-gray-200 rounded-full h-1.5">
+                           <div
+                             className={cn(
+                               "h-1.5 rounded-full transition-all duration-300",
+                               getAllocationColor(getEmployeeAllocationPercentage(employee))
+                             )}
+                             style={{ width: `${getEmployeeAllocationPercentage(employee)}%` }}
+                           />
+                         </div>
+                         <div className="text-xs text-muted-foreground mt-0.5">
+                           {employee.allocatedHours || 0}h / {getWorkingHoursForCountry(employee.country)}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                         </div>
+                       </div>
                      </div>
                      {calendarDays.map((date) => {
                        const allocations = getAllocationsForCell(employee.id, date);
