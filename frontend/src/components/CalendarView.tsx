@@ -83,9 +83,47 @@ export const CalendarView: React.FC = () => {
   // Heatmap view state
   const [heatmapMode, setHeatmapMode] = useState(false);
 
-  
-  
-  
+  // Overallocation warning state
+  const [overallocationDialogOpen, setOverallocationDialogOpen] = useState(false);
+  const [overallocationData, setOverallocationData] = useState<{
+    employeeId: string;
+    employeeName: string;
+    date: Date;
+    projectId: string;
+    projectName: string;
+    currentAllocatedHours: number;
+    maxDailyHours: number;
+    conflictingAllocations: ProjectAllocation[];
+  } | null>(null);
+  const [allocationHours, setAllocationHours] = useState<{[key: string]: number}>({});
+
+  // Check for overallocation when adding a new project
+  const checkForOverallocation = (employeeId: string, date: Date, projectId: string, hoursPerDay: number) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return null;
+
+    const maxDailyHours = getWorkingHoursForCountry(employee.country) / 5;
+    const existingAllocations = getAllocationsForCell(employeeId, date);
+    const currentAllocatedHours = existingAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
+    const newTotalHours = currentAllocatedHours + hoursPerDay;
+
+    if (newTotalHours > maxDailyHours) {
+      const project = projects.find(p => p.id.toString() === projectId);
+      return {
+        employeeId,
+        employeeName: employee.name,
+        date,
+        projectId,
+        projectName: project?.name || 'Unknown Project',
+        currentAllocatedHours,
+        maxDailyHours,
+        conflictingAllocations: existingAllocations
+      };
+    }
+
+    return null;
+  };
+
   // Calendar navigation
   const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
@@ -106,11 +144,12 @@ export const CalendarView: React.FC = () => {
     if (!employee) return 0;
     
     // Skip weekends, holidays, and vacations
-    if (isWeekendDay(date) || getHolidayForDate(holidays, date) || getVacationForCell(vacations, employeeId, date)) {
+    if (isWeekendDay(date) || getHolidayForDate(date) || getVacationForCell(employeeId, date)) {
       return 0;
     }
     
-    const totalAllocatedHours = getDailyAllocatedHours(allocations, employeeId, date);
+    const dayAllocations = getAllocationsForCell(employeeId, date);
+    const totalAllocatedHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
     const maxDailyHours = getWorkingHoursForCountry(employee.country) / WORKING_DAYS_PER_WEEK;
     
     return maxDailyHours > 0 ? Math.min((totalAllocatedHours / maxDailyHours) * 100, 100) : 0;
@@ -433,7 +472,28 @@ export const CalendarView: React.FC = () => {
       const weeklyHours = getWorkingHoursForCountry(employee.country);
       const hoursPerDay = isWeekendAllocation ? 0 : weeklyHours / 5; // 0 hours for weekends, normal hours for weekdays
       
-
+      // Check for overallocation
+      const overallocationInfo = checkForOverallocation(employeeId, date, dragItem.id.toString(), hoursPerDay);
+      
+      if (overallocationInfo) {
+        // Initialize hours for all allocations including the new one
+        const hoursMap: {[key: string]: number} = {};
+        
+        // Set hours for existing allocations
+        overallocationInfo.conflictingAllocations.forEach(allocation => {
+          hoursMap[allocation.id.toString()] = allocation.hoursPerDay;
+        });
+        
+        // Set hours for the new allocation
+        hoursMap['new'] = hoursPerDay;
+        
+        setAllocationHours(hoursMap);
+        setOverallocationData(overallocationInfo);
+        setOverallocationDialogOpen(true);
+        setDragItem(null);
+        setDragOverCell(null);
+        return;
+      }
       
       const newAllocation = {
         employeeId: employeeId,
@@ -604,6 +664,53 @@ export const CalendarView: React.FC = () => {
       setDraggingAllocationFromTimeline(null);
       setDragOverProjectsBox(false);
     }
+  };
+
+  // Overallocation dialog handlers
+  const handleOverallocationConfirm = async () => {
+    if (!overallocationData) return;
+    
+    try {
+      const newAllocation = {
+        employeeId: overallocationData.employeeId,
+        projectId: overallocationData.projectId,
+        startDate: format(overallocationData.date, 'yyyy-MM-dd'),
+        endDate: format(overallocationData.date, 'yyyy-MM-dd'),
+        hoursPerDay: allocationHours['new'] || 0,
+        status: 'active'
+      };
+
+      const createdAllocation = await projectAllocationsApi.create(newAllocation);
+      
+      // Update local allocations state
+      setAllocations(prev => [...prev, createdAllocation]);
+      
+      // Update employee's allocated hours
+      await updateEmployeeAllocatedHours(overallocationData.employeeId);
+      
+      toast({
+        title: "Allocation Created",
+        description: `${overallocationData.projectName} assigned to ${overallocationData.employeeName} with ${allocationHours['new'] || 0}h/day.`,
+      });
+      
+    } catch (error) {
+      console.error('Error creating overallocated allocation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create allocation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setOverallocationDialogOpen(false);
+      setOverallocationData(null);
+      setAllocationHours({});
+    }
+  };
+
+  const handleOverallocationCancel = () => {
+    setOverallocationDialogOpen(false);
+    setOverallocationData(null);
+    setAllocationHours({});
   };
   
   // Resize handlers
@@ -1021,7 +1128,8 @@ export const CalendarView: React.FC = () => {
                                className="relative w-full h-full"
                                title={(() => {
                                  const dailyPercentage = getDailyAllocationPercentage(employee.id, date);
-                                 const dailyHours = getDailyAllocatedHours(employee.id, date);
+                                 const dayAllocations = getAllocationsForCell(employee.id, date);
+                                 const dailyHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
                                  const employeeData = employees.find(e => e.id === employee.id);
                                  const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
                                  
@@ -1038,7 +1146,8 @@ export const CalendarView: React.FC = () => {
                                {/* Background progress bar */}
                                {(() => {
                                  const dailyPercentage = getDailyAllocationPercentage(employee.id, date);
-                                 const dailyHours = getDailyAllocatedHours(employee.id, date);
+                                 const dayAllocations = getAllocationsForCell(employee.id, date);
+                                 const dailyHours = dayAllocations.reduce((total, allocation) => total + allocation.hoursPerDay, 0);
                                  const employeeData = employees.find(e => e.id === employee.id);
                                  const maxDailyHours = employeeData ? getWorkingHoursForCountry(employeeData.country) / 5 : 8;
                                  
@@ -1253,6 +1362,89 @@ export const CalendarView: React.FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Overallocation Warning Dialog */}
+        <Dialog open={overallocationDialogOpen} onOpenChange={setOverallocationDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Overallocation Warning</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {overallocationData && (
+                <>
+                  <div className="p-4 bg-muted/50 border rounded-lg">
+                    <p className="text-sm mb-2">
+                      <strong>{overallocationData.employeeName}</strong> is already allocated to other projects on{' '}
+                      <strong>{format(overallocationData.date, 'MMM dd, yyyy')}</strong>.
+                    </p>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <div className="flex justify-between">
+                        <span>Maximum daily hours:</span>
+                        <span className="font-medium">{overallocationData.maxDailyHours}h</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Adjust hours for each project:</Label>
+                    <div className="space-y-2">
+                      {/* Existing allocations */}
+                      {overallocationData.conflictingAllocations.map((allocation) => {
+                        const project = projects.find(p => p.id.toString() === allocation.projectId);
+                        return (
+                          <div key={allocation.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                            <span className="text-sm font-medium">{project?.name || 'Unknown Project'}</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="24"
+                              step="0.5"
+                              value={allocationHours[allocation.id.toString()] || 0}
+                              onChange={(e) => setAllocationHours(prev => ({
+                                ...prev,
+                                [allocation.id.toString()]: parseFloat(e.target.value) || 0
+                              }))}
+                              className="w-20 h-8 text-sm"
+                            />
+                          </div>
+                        );
+                      })}
+                      
+                      {/* New allocation */}
+                      <div className="flex items-center justify-between p-2 bg-primary/10 border border-primary/20 rounded">
+                        <span className="text-sm font-medium">{overallocationData.projectName} (new)</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          value={allocationHours['new'] || 0}
+                          onChange={(e) => setAllocationHours(prev => ({
+                            ...prev,
+                            'new': parseFloat(e.target.value) || 0
+                          }))}
+                          className="w-20 h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="text-xs text-muted-foreground">
+                      Total: {Object.values(allocationHours).reduce((sum, hours) => sum + hours, 0)}h
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleOverallocationCancel}>
+                Cancel
+              </Button>
+              <Button onClick={handleOverallocationConfirm}>
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   };
