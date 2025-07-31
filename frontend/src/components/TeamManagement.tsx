@@ -568,7 +568,7 @@ export const TeamManagement = () => {
               return (
                 <Card key={member.id}>
                   <CardContent className="p-4">
-                    {/* Header with Avatar, Name, Role, and Location */}
+                    {/* Header with Avatar, Name, Role, Country, and Action Buttons */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-10 w-10">
@@ -577,14 +577,31 @@ export const TeamManagement = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="font-semibold text-sm">{member.name}</h3>
+                          <h3 className="font-semibold text-sm flex items-center gap-2">
+                            {member.name}
+                            <span className="text-lg">{COUNTRY_FLAGS[member.country]}</span>
+                          </h3>
                           <p className="text-xs text-muted-foreground">{member.role}</p>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="text-xs">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {member.country}
-                      </Badge>
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(member)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteClick(member)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Allocation Progress Bar */}
@@ -629,25 +646,7 @@ export const TeamManagement = () => {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end space-x-1 mt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(member)}
-                        className="h-7 w-7 p-0"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteClick(member)}
-                        className="h-7 w-7 p-0"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+
                   </CardContent>
                 </Card>
               );
