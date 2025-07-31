@@ -53,6 +53,9 @@ export const Projects = () => {
   // State for delete confirmation
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  // Search state
+  const [search, setSearch] = useState("");
 
   // Load projects and allocations from API
   const loadProjects = useCallback(async () => {
@@ -95,6 +98,31 @@ export const Projects = () => {
       window.removeEventListener('projectAllocationsUpdate', handleAllocationUpdate);
     };
   }, [loadProjects]);
+
+  // Smart search that detects what you're searching for
+  const filteredProjects = projects.filter(project => {
+    if (!search) return true;
+    
+    const searchLower = search.toLowerCase();
+    
+    // Check if search matches name, status, or dates
+    const matchesName = project.name.toLowerCase().includes(searchLower);
+    const matchesStatus = project.status?.toLowerCase().includes(searchLower) || 
+                         getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS).label.toLowerCase().includes(searchLower);
+    
+    // Check if search matches date patterns
+    let matchesDate = false;
+    if (project.startDate) {
+      const startDateStr = format(new Date(project.startDate), 'MMM dd, yyyy').toLowerCase();
+      matchesDate = startDateStr.includes(searchLower);
+    }
+    if (project.endDate && !matchesDate) {
+      const endDateStr = format(new Date(project.endDate), 'MMM dd, yyyy').toLowerCase();
+      matchesDate = endDateStr.includes(searchLower);
+    }
+    
+    return matchesName || matchesStatus || matchesDate;
+  });
 
   // Calculate allocated hours for a specific project using the same logic as Calendar
   const getProjectAllocatedHours = (projectId: number) => {
@@ -357,12 +385,38 @@ export const Projects = () => {
         </div>
       </div>
 
-      {/* Add Project Button */}
-      <div className="flex items-center gap-4">
+      {/* Add Project Button and Search */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
         <Button onClick={() => setShowAddForm(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Project
         </Button>
+        
+        <div className="flex-1">
+          <div className="relative">
+            <Input
+              placeholder="🔍 Smart search: name, status, or dates..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-sm pr-8"
+            />
+            {search && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearch("")}
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          {search && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Found {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Add Project Dialog */}
@@ -559,22 +613,28 @@ export const Projects = () => {
       </Dialog>
 
             {/* Projects List */}
-      <div className="grid gap-3">
-        {projects.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center justify-center h-24">
-              <div className="text-center">
-                <p className="text-muted-foreground text-sm">No projects yet.</p>
-                <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
-                  Add your first project
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          projects
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((project) => (
+      <div className="space-y-4">
+        {/* Projects Grid */}
+        <div className="grid gap-3">
+          {filteredProjects.length === 0 ? (
+            <Card>
+              <CardContent className="flex items-center justify-center h-24">
+                <div className="text-center">
+                  <p className="text-muted-foreground text-sm">
+                    {search ? 'No projects found matching your search.' : 'No projects yet.'}
+                  </p>
+                  {!search && (
+                    <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
+                      Add your first project
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredProjects
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((project) => (
             <Card key={project.id}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -649,6 +709,7 @@ export const Projects = () => {
             </Card>
           ))
         )}
+      </div>
       </div>
 
       {/* Edit Project Dialog */}

@@ -707,9 +707,9 @@ export const TimeOffManagement: React.FC = () => {
             {timeOffs.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">No time off requests yet</p>
+                <p className="text-muted-foreground mb-4">No time off yet</p>
                 <Button onClick={() => setShowVacationForm(true)} size="sm">
-                  Add your first time off request
+                  Add your first time off
                 </Button>
               </div>
             ) : (
