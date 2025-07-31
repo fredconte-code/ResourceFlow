@@ -15,6 +15,7 @@ import { holidaysApi, vacationsApi, projectsApi, projectAllocationsApi, teamMemb
 import { useWorkingHours } from "@/lib/working-hours";
 import { useSettings } from "@/context/SettingsContext";
 import { useHolidays } from "@/context/HolidayContext";
+import { useTimeOffs } from "@/context/TimeOffContext";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown, Filter, CalendarDays, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -42,13 +43,15 @@ export const CalendarView: React.FC = () => {
   const { toast } = useToast();
   const { getWorkingHoursForCountry } = useWorkingHours();
   const { holidays, refreshHolidays } = useHolidays();
+  const { timeOffs: globalTimeOffs, refreshTimeOffs } = useTimeOffs();
   
   // Basic state management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [vacations, setVacations] = useState<ApiVacation[]>([]);
+  // Use global time offs instead of local state
+  const vacations = globalTimeOffs;
   const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);
   
   // Calendar state
@@ -609,9 +612,9 @@ export const CalendarView: React.FC = () => {
   const getVacationForCell = (employeeId: string, date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return vacations.find(vacation => 
-      vacation.employeeId === employeeId && 
-      vacation.startDate <= dateStr && 
-      vacation.endDate >= dateStr
+      vacation.employee_id === employeeId && 
+      vacation.start_date <= dateStr && 
+      vacation.end_date >= dateStr
     );
   };
   
@@ -1225,8 +1228,7 @@ export const CalendarView: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const [vacationsData, employeesData, projectsData, allocationsData] = await Promise.all([
-          vacationsApi.getAll(),
+        const [employeesData, projectsData, allocationsData] = await Promise.all([
           getCurrentEmployees(),
           projectsApi.getAll(),
           projectAllocationsApi.getAll()
@@ -1234,7 +1236,6 @@ export const CalendarView: React.FC = () => {
         
         setEmployees(employeesData);
         setProjects(projectsData);
-        setVacations(vacationsData);
         setAllocations(allocationsData);
         
       } catch (error) {
@@ -1266,14 +1267,22 @@ export const CalendarView: React.FC = () => {
       setCurrentDate(new Date(currentDate));
     };
 
+    const handleTimeOffsUpdate = () => {
+      // Refresh time offs and force re-render
+      refreshTimeOffs();
+      setCurrentDate(new Date(currentDate));
+    };
+
     window.addEventListener('settingsUpdate', handleSettingsUpdate);
     window.addEventListener('holidaysUpdate', handleHolidaysUpdate);
+    window.addEventListener('timeOffsUpdate', handleTimeOffsUpdate);
 
     return () => {
       window.removeEventListener('settingsUpdate', handleSettingsUpdate);
       window.removeEventListener('holidaysUpdate', handleHolidaysUpdate);
+      window.removeEventListener('timeOffsUpdate', handleTimeOffsUpdate);
     };
-  }, [currentDate, refreshHolidays]);
+      }, [currentDate, refreshHolidays, refreshTimeOffs]);
 
   // Close tooltip when clicking outside
   useEffect(() => {
@@ -1758,7 +1767,7 @@ export const CalendarView: React.FC = () => {
                                "p-0.5 border-b border-r relative transition-all duration-200",
                                isWeekendCell && "weekend-cell",
                                holiday && showHolidays && "holiday-cell",
-                               vacation && "vacation-cell",
+                               vacation && showHolidays && "timeoff-cell",
                                "hover:bg-muted/30"
                              )}
                              style={{ minHeight: `${rowHeight}px` }}
@@ -1805,8 +1814,8 @@ export const CalendarView: React.FC = () => {
                                      return `Holiday: ${holiday.name}`;
                                    }
                                    
-                                   if (vacation) {
-                                     return `Vacation: ${vacation.type}`;
+                                   if (vacation && showHolidays) {
+                                     return `Time Off: ${vacation.type}`;
                                    }
                                    
                                    if (dailyPercentage === 0) {
@@ -1829,9 +1838,12 @@ export const CalendarView: React.FC = () => {
                                      return null;
                                    }
                                    
-
+                                   // Handle time off periods - show empty cell when holidays toggle is ON
+                                   if (vacation && showHolidays) {
+                                     return null;
+                                   }
                                    
-                                   // Handle regular allocation percentages (including vacations)
+                                   // Handle regular allocation percentages (excluding time off when toggle is ON)
                                    return (
                                      <>
                                        {/* Full cell background color */}
@@ -1854,8 +1866,8 @@ export const CalendarView: React.FC = () => {
                                                             ) : (
                                  /* Normal View - Show vacation and holiday info */
                                  <>
-                                   {vacation && allocations.length === 0 && (
-                                     <div className="p-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                   {vacation && showHolidays && allocations.length === 0 && (
+                                     <div className="p-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                                        {vacation.type}
                                      </div>
                                    )}

@@ -248,6 +248,27 @@ Previous theme variables (for rollback):
     border: 1px solid rgba(34, 197, 94, 0.3);
   }
 
+  /* Time Off hatching pattern - red */
+  .timeoff-cell {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(239, 68, 68, 0.15) 2px,
+      rgba(239, 68, 68, 0.15) 4px
+    );
+  }
+
+  .dark .timeoff-cell {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(239, 68, 68, 0.2) 2px,
+      rgba(239, 68, 68, 0.2) 4px
+    );
+  }
+
 
 
   .weekend-allocation {
