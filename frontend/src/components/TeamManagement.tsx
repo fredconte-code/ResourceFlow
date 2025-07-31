@@ -328,9 +328,9 @@ export const TeamManagement = () => {
     
     // Calculate vacation days
     vacations.forEach(vacation => {
-      if (vacation.employeeId === member.id.toString()) {
-        const vacationStart = parseISO(vacation.startDate);
-        const vacationEnd = parseISO(vacation.endDate);
+      if (vacation.employee_id === member.id.toString()) {
+        const vacationStart = parseISO(vacation.start_date);
+        const vacationEnd = parseISO(vacation.end_date);
         
         // Check if vacation overlaps with current month
         if (vacationEnd >= monthStart && vacationStart <= monthEnd) {

@@ -1550,7 +1550,7 @@ export const CalendarView: React.FC = () => {
                   )}
                 >
                   <CalendarDays className="h-4 w-4" />
-                  Holidays
+                  Holidays + Time Off
                 </Button>
               </div>
             </div>
@@ -1708,9 +1708,15 @@ export const CalendarView: React.FC = () => {
                                              </div>
                                            )}
                                            {breakdown.vacationHours > 0 && (
-                                             <div className="flex justify-between text-blue-600">
-                                               <span>Deducted vacation hours:</span>
+                                             <div className="flex justify-between text-red-600">
+                                               <span>Deducted time off:</span>
                                                <span className="font-medium">-{formatHours(breakdown.vacationHours)}</span>
+                                             </div>
+                                           )}
+                                           {breakdown.vacationHours === 0 && (
+                                             <div className="flex justify-between text-red-600">
+                                               <span>Deducted time off:</span>
+                                               <span className="font-medium">0</span>
                                              </div>
                                            )}
                                            <div className="flex justify-between text-red-600">

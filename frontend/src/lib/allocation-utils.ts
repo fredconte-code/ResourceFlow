@@ -45,9 +45,9 @@ export const calculateEmployeeBreakdown = (
   // Calculate vacation hours for the current month
   let vacationHours = 0;
   vacations.forEach(vacation => {
-    if (vacation.employeeId === employee.id) {
-      const vacationStart = parseISO(vacation.startDate);
-      const vacationEnd = parseISO(vacation.endDate);
+    if (vacation.employee_id === employee.id) {
+      const vacationStart = parseISO(vacation.start_date);
+      const vacationEnd = parseISO(vacation.end_date);
       
       // Calculate overlap with current month
       if (vacationEnd >= monthStart && vacationStart <= monthEnd) {
