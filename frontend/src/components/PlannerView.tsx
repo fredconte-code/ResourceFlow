@@ -1420,7 +1420,10 @@ export const PlannerView: React.FC = () => {
       {/* Projects Sidebar - Top */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Projects - Drag to Calendar</CardTitle>
+          <CardTitle className="text-lg">Projects</CardTitle>
+          <p className="text-muted-foreground text-sm">
+            Drag and drop projects to allocate team members to tasks on the calendar.
+          </p>
         </CardHeader>
         <CardContent
           onDragOver={handleProjectsBoxDragOver}
@@ -1546,7 +1549,7 @@ export const PlannerView: React.FC = () => {
                <div className="min-w-max" data-calendar-container>
                  {/* Header row with dates */}
                  <div className="grid" style={{ gridTemplateColumns: `220px repeat(${calendarDays.length}, 60px)` }}>
-                   <div className="p-0.5 font-medium text-xs border-b border-r bg-muted/30">
+                   <div className="p-0.5 font-medium text-xs border-b border-r bg-muted/30 flex items-center justify-center">
                      Team Members
                    </div>
                                         {calendarDays.map((date) => {
