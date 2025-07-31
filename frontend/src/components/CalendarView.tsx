@@ -16,7 +16,7 @@ import { useWorkingHours } from "@/lib/working-hours";
 import { useSettings } from "@/context/SettingsContext";
 import { useHolidays } from "@/context/HolidayContext";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, differenceInDays, getDate, isWeekend, getDay, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown, Filter } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown, Filter, CalendarDays, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
@@ -92,10 +92,22 @@ export const CalendarView: React.FC = () => {
   // Heatmap view state
   const [heatmapMode, setHeatmapMode] = useState(false);
 
-  // Filter state
-  const [filterProject, setFilterProject] = useState<string>('all');
-  const [filterCountry, setFilterCountry] = useState<string>('all');
-  const [filterRole, setFilterRole] = useState<string>('all');
+  // Holiday visibility state
+  const [showHolidays, setShowHolidays] = useState(false);
+
+  // Smart filter state
+  const [smartFilter, setSmartFilter] = useState<string>('');
+  const [activeFilters, setActiveFilters] = useState<{
+    projects: string[];
+    countries: string[];
+    roles: string[];
+    names: string[];
+  }>({
+    projects: [],
+    countries: [],
+    roles: [],
+    names: []
+  });
 
   // Overallocation warning state
   const [overallocationDialogOpen, setOverallocationDialogOpen] = useState(false);
@@ -167,23 +179,79 @@ export const CalendarView: React.FC = () => {
     return Array.from(new Set(employees.map(emp => emp.role))).sort();
   };
 
-  // Filter employees based on selected filters
+  // Smart filter parsing function
+  const parseSmartFilter = (filterText: string) => {
+    const filters = {
+      projects: [] as string[],
+      countries: [] as string[],
+      roles: [] as string[],
+      names: [] as string[]
+    };
+
+    const tokens = filterText.toLowerCase().split(/\s+/).filter(token => token.length > 0);
+    
+    tokens.forEach(token => {
+      // Check for project names
+      const project = projects.find(p => p.name.toLowerCase().includes(token));
+      if (project) {
+        filters.projects.push(project.id.toString());
+        return;
+      }
+
+      // Check for countries
+      if (['canada', 'brazil'].includes(token)) {
+        filters.countries.push(token.charAt(0).toUpperCase() + token.slice(1));
+        return;
+      }
+
+      // Check for roles
+      const role = getUniqueRoles().find(r => r.toLowerCase().includes(token));
+      if (role) {
+        filters.roles.push(role);
+        return;
+      }
+
+      // Check for employee names
+      const employee = employees.find(e => e.name.toLowerCase().includes(token));
+      if (employee) {
+        filters.names.push(employee.name);
+        return;
+      }
+
+      // If no specific match, treat as name search
+      filters.names.push(token);
+    });
+
+    return filters;
+  };
+
+  // Filter employees based on smart filters
   const getFilteredEmployees = () => {
+    const filters = parseSmartFilter(smartFilter);
+    
     return employees.filter(employee => {
+      // Filter by name
+      if (filters.names.length > 0) {
+        const nameMatch = filters.names.some(name => 
+          employee.name.toLowerCase().includes(name.toLowerCase())
+        );
+        if (!nameMatch) return false;
+      }
+      
       // Filter by country
-      if (filterCountry !== 'all' && employee.country !== filterCountry) {
+      if (filters.countries.length > 0 && !filters.countries.includes(employee.country)) {
         return false;
       }
       
       // Filter by role
-      if (filterRole !== 'all' && employee.role !== filterRole) {
+      if (filters.roles.length > 0 && !filters.roles.includes(employee.role)) {
         return false;
       }
       
-      // Filter by project (check if employee has allocations for the selected project)
-      if (filterProject !== 'all') {
+      // Filter by project (check if employee has allocations for the selected projects)
+      if (filters.projects.length > 0) {
         const hasProjectAllocation = allocations.some(allocation => 
-          allocation.employeeId === employee.id && allocation.projectId === filterProject
+          allocation.employeeId === employee.id && filters.projects.includes(allocation.projectId)
         );
         if (!hasProjectAllocation) {
           return false;
@@ -196,9 +264,38 @@ export const CalendarView: React.FC = () => {
 
   // Clear all filters
   const clearFilters = () => {
-    setFilterProject('all');
-    setFilterCountry('all');
-    setFilterRole('all');
+    setSmartFilter('');
+    setActiveFilters({
+      projects: [],
+      countries: [],
+      roles: [],
+      names: []
+    });
+  };
+
+  // Get active filter tags for display
+  const getActiveFilterTags = () => {
+    const filters = parseSmartFilter(smartFilter);
+    const tags = [];
+    
+    filters.projects.forEach(projectId => {
+      const project = projects.find(p => p.id.toString() === projectId);
+      if (project) tags.push({ type: 'project', label: project.name, value: projectId });
+    });
+    
+    filters.countries.forEach(country => {
+      tags.push({ type: 'country', label: country, value: country });
+    });
+    
+    filters.roles.forEach(role => {
+      tags.push({ type: 'role', label: role, value: role });
+    });
+    
+    filters.names.forEach(name => {
+      tags.push({ type: 'name', label: name, value: name });
+    });
+    
+    return tags;
   };
 
 
@@ -1508,68 +1605,55 @@ export const CalendarView: React.FC = () => {
                 </Button>
               </div>
               <div className="flex items-center space-x-2">
-                {/* Filter dropdowns */}
+                {/* Smart Filter */}
                 <div className="flex items-center space-x-2">
                   <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={filterProject} onValueChange={setFilterProject}>
-                    <SelectTrigger className="w-[140px] h-8">
-                      <SelectValue placeholder="Project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Projects</SelectItem>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Input
+                      placeholder="🔍 Smart search: name, role, country, or project..."
+                      value={smartFilter}
+                      onChange={(e) => setSmartFilter(e.target.value)}
+                      className="w-80 h-8 pr-8"
+                    />
+                    {smartFilter && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSmartFilter("")}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                   
-                  <Select value={filterCountry} onValueChange={setFilterCountry}>
-                    <SelectTrigger className="w-[120px] h-8">
-                      <SelectValue placeholder="Country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Countries</SelectItem>
-                      <SelectItem value="Canada">Canada</SelectItem>
-                      <SelectItem value="Brazil">Brazil</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select value={filterRole} onValueChange={setFilterRole}>
-                    <SelectTrigger className="w-[120px] h-8">
-                      <SelectValue placeholder="Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Roles</SelectItem>
-                      {getUniqueRoles().map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {(filterProject !== 'all' || filterCountry !== 'all' || filterRole !== 'all') && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={clearFilters}
-                      className="h-8 px-2"
-                    >
-                      Clear
-                    </Button>
-                  )}
+
                 </div>
                 
                 <Button
-                  variant={heatmapMode ? "default" : "outline"}
+                  variant="outline"
                   size="sm"
                   onClick={() => setHeatmapMode(!heatmapMode)}
-                  className="flex items-center gap-2"
+                  className={cn(
+                    "flex items-center gap-2 h-8 transition-all duration-200",
+                    heatmapMode && "bg-primary text-primary-foreground hover:bg-primary/90 border-primary"
+                  )}
                 >
                   <Flame className="h-4 w-4" />
                   Heatmap
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowHolidays(!showHolidays)}
+                  className={cn(
+                    "flex items-center gap-2 h-8 transition-all duration-200",
+                    showHolidays && "bg-primary text-primary-foreground hover:bg-primary/90 border-primary"
+                  )}
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Holidays
                 </Button>
               </div>
             </div>
@@ -1611,7 +1695,7 @@ export const CalendarView: React.FC = () => {
                    </div>
                  ) : (
                    <>
-                     {(filterProject !== 'all' || filterCountry !== 'all' || filterRole !== 'all') && (
+                     {smartFilter && (
                        <div className="col-span-full p-2 bg-muted/30 border-b text-xs text-muted-foreground">
                          Showing {getFilteredEmployees().length} of {employees.length} employees
                        </div>
@@ -1826,7 +1910,7 @@ export const CalendarView: React.FC = () => {
                                      return "Weekend - No working hours";
                                    }
                                    
-                                   if (holiday) {
+                                   if (holiday && showHolidays) {
                                      return `Holiday: ${holiday.name}`;
                                    }
                                    
@@ -1854,8 +1938,8 @@ export const CalendarView: React.FC = () => {
                                      return null;
                                    }
                                    
-                                   // Handle holidays - show empty cell (no background, no text)
-                                   if (holiday) {
+                                   // Handle holidays - show empty cell (no background, no text) if holidays are visible
+                                   if (holiday && showHolidays) {
                                      return null;
                                    }
                                    
@@ -1887,7 +1971,7 @@ export const CalendarView: React.FC = () => {
                                        {vacation.type}
                                      </div>
                                    )}
-                                   {holiday && allocations.length === 0 && !vacation && (
+                                   {showHolidays && holiday && allocations.length === 0 && !vacation && (
                                      <div className="p-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center justify-center h-full">
                                        Holiday
                                      </div>
