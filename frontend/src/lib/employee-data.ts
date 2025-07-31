@@ -124,3 +124,11 @@ export const fixDataConsistency = async (): Promise<void> => {
     console.error('Error fixing data consistency:', error);
   }
 };
+
+// Function to get allocation status based on percentage
+export const getAllocationStatus = (percentage: number): 'low' | 'optimal' | 'high' | 'over' => {
+  if (percentage < 60) return 'low';
+  if (percentage >= 60 && percentage <= 90) return 'optimal';
+  if (percentage > 90 && percentage <= 100) return 'high';
+  return 'over';
+};

@@ -10,40 +10,58 @@ import { Trash2, Plus, Save, MapPin, Edit2, X, Users, Clock, Calendar, Folder, A
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/context/SettingsContext";
+import { useHolidays } from "@/context/HolidayContext";
 import { AllocationBar } from "./AllocationBar";
 import { getEmployeeProjectNamesWithCleanup, getEmployeeProjectAllocationsWithCleanup, initializeProjectData } from "@/lib/project-data";
 import { useWorkingHours } from "@/lib/working-hours";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { format, addMonths, subMonths, startOfMonth } from "date-fns";
-import { teamMembersApi, TeamMember } from "@/lib/api";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, parseISO, addDays } from "date-fns";
+import { teamMembersApi, TeamMember, projectAllocationsApi, vacationsApi, ProjectAllocation, Vacation } from "@/lib/api";
 import { COUNTRY_FLAGS, DEFAULT_ROLES } from "@/lib/constants";
+import { calculateEmployeeAllocationPercentage, getEmployeeAvailableHours, calculateEmployeeAllocatedHoursForMonth } from "@/lib/allocation-utils";
+import { getAllocationStatus } from "@/lib/employee-data";
+import { formatHours, isWeekendDay } from "@/lib/calendar-utils";
 
 export const TeamManagement = () => {
   const { toast } = useToast();
   const { getWorkingHoursForCountry } = useWorkingHours();
+  const { holidays } = useHolidays();
+  const { buffer } = useSettings();
   
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);
+  const [vacations, setVacations] = useState<Vacation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // State for editing
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [editForm, setEditForm] = useState<Partial<TeamMember>>({});
 
-  // Load team members from API
-  const loadTeamMembers = async () => {
+  // Load team members and related data from API
+  const loadTeamData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await teamMembersApi.getAll();
-      setMembers(data);
+      
+      // Load all data in parallel
+      const [membersData, allocationsData, vacationsData] = await Promise.all([
+        teamMembersApi.getAll(),
+        projectAllocationsApi.getAll(),
+        vacationsApi.getAll()
+      ]);
+      
+      setMembers(membersData);
+      setAllocations(allocationsData);
+      setVacations(vacationsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load team members');
+      setError(err instanceof Error ? err.message : 'Failed to load team data');
       toast({
         title: "Error",
-        description: "Failed to load team members. Please try again.",
+        description: "Failed to load team data. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -52,7 +70,20 @@ export const TeamManagement = () => {
   };
 
   useEffect(() => {
-    loadTeamMembers();
+    loadTeamData();
+  }, []);
+
+  // Listen for team updates to refresh data
+  useEffect(() => {
+    const handleTeamUpdate = () => {
+      loadTeamData();
+    };
+
+    window.addEventListener('teamUpdate', handleTeamUpdate);
+    
+    return () => {
+      window.removeEventListener('teamUpdate', handleTeamUpdate);
+    };
   }, []);
 
   const [newMember, setNewMember] = useState<Partial<TeamMember>>({
@@ -224,6 +255,89 @@ export const TeamManagement = () => {
     setNewMember(prev => ({ ...prev, role: e.target.value }));
   };
 
+  // Helper function to get allocation data for a team member
+  const getMemberAllocationData = (member: TeamMember) => {
+    // Convert TeamMember to Employee format for calculations
+    const employee = {
+      id: member.id.toString(),
+      name: member.name,
+      role: member.role,
+      country: member.country,
+      allocatedHours: member.allocatedHours,
+      availableHours: 0, // Will be calculated
+      vacationDays: 0,
+      holidayDays: 0
+    };
+
+    // Calculate allocation percentage using the same logic as Calendar
+    const allocationPercentage = calculateEmployeeAllocationPercentage(
+      employee,
+      allocations,
+      currentDate,
+      holidays,
+      vacations,
+      buffer
+    );
+
+    // Calculate available hours using the same logic as Calendar
+    const availableHours = getEmployeeAvailableHours(
+      employee,
+      currentDate,
+      holidays,
+      vacations,
+      buffer
+    );
+
+    // Calculate allocated hours for current month
+    const allocatedHours = calculateEmployeeAllocatedHoursForMonth(
+      employee.id,
+      allocations,
+      currentDate
+    );
+
+    // Calculate vacation days for current month
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    let vacationDays = 0;
+    
+    vacations.forEach(vacation => {
+      if (vacation.employeeId === member.id.toString()) {
+        const vacationStart = parseISO(vacation.startDate);
+        const vacationEnd = parseISO(vacation.endDate);
+        
+        // Check if vacation overlaps with current month
+        if (vacationEnd >= monthStart && vacationStart <= monthEnd) {
+          const effectiveStart = vacationStart < monthStart ? monthStart : vacationStart;
+          const effectiveEnd = vacationEnd > monthEnd ? monthEnd : vacationEnd;
+          
+          // Count working days in vacation period
+          let workingDays = 0;
+          let currentDate = new Date(effectiveStart);
+          while (currentDate <= effectiveEnd) {
+            if (!isWeekendDay(currentDate)) {
+              workingDays++;
+            }
+            currentDate = addDays(currentDate, 1);
+          }
+          
+          vacationDays += workingDays;
+        }
+      }
+    });
+
+    // Get allocation status
+    const status = getAllocationStatus(allocationPercentage);
+
+    return {
+      percentage: allocationPercentage,
+      allocatedHours,
+      availableHours,
+      status,
+      weeklyHours: getWorkingHoursForCountry(member.country),
+      vacationDays
+    };
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -241,7 +355,7 @@ export const TeamManagement = () => {
         <div className="text-center">
           <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={loadTeamMembers}>Retry</Button>
+          <Button onClick={loadTeamData}>Retry</Button>
         </div>
       </div>
     );
@@ -379,69 +493,118 @@ export const TeamManagement = () => {
         </div>
       </div>
 
-      {/* Team Members List */}
-      <div className="grid gap-3">
+      {/* Team Members Grid - Unified UI with Allocation Data */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredMembers.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center justify-center h-24">
-              <div className="text-center">
-                <Users className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground text-sm">
-                  {search ? 'No team members found matching your search.' : 'No team members yet.'}
-                </p>
-                {!search && (
-                  <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
-                    Add your first team member
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredMembers
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((member) => (
-            <Card key={member.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs">
-                        {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-sm">{member.name}</h3>
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        <span>{member.role}</span>
-                        <span>•</span>
-                        <span>{COUNTRY_FLAGS[member.country]} {member.country}</span>
-                        <span>•</span>
-                        <span>{getWorkingHoursForCountry(member.country)}h/week</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(member)}
-                    >
-                      <Edit2 className="h-3 w-3" />
+          <div className="col-span-full">
+            <Card>
+              <CardContent className="flex items-center justify-center h-24">
+                <div className="text-center">
+                  <Users className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground text-sm">
+                    {search ? 'No team members found matching your search.' : 'No team members yet.'}
+                  </p>
+                  {!search && (
+                    <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
+                      Add your first team member
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(member)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          ))
+          </div>
+        ) : (
+          filteredMembers
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((member) => {
+              const allocationData = getMemberAllocationData(member);
+              return (
+                <Card key={member.id}>
+                  <CardContent className="p-4">
+                    {/* Header with Avatar, Name, Role, and Location */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="text-sm font-medium">
+                            {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold text-sm">{member.name}</h3>
+                          <p className="text-xs text-muted-foreground">{member.role}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {member.country}
+                      </Badge>
+                    </div>
+
+                    {/* Allocation Progress Bar */}
+                    <div className="mb-4">
+                      <AllocationBar 
+                        percentage={allocationData.percentage}
+                        height="sm"
+                        showLabel={true}
+                      />
+                    </div>
+
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <div className="flex items-center justify-center mb-1">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="text-sm font-medium">
+                          {formatHours(allocationData.allocatedHours)}h
+                        </div>
+                        <div className="text-xs text-muted-foreground">Allocated</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-center mb-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="text-sm font-medium">
+                          {formatHours(allocationData.availableHours)}h
+                        </div>
+                        <div className="text-xs text-muted-foreground">Available</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-center mb-1">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="text-sm font-medium">
+                          {allocationData.weeklyHours}h/week
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {allocationData.vacationDays > 0 ? `${allocationData.vacationDays} Days off` : 'No days off'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end space-x-1 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(member)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(member)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
         )}
       </div>
 

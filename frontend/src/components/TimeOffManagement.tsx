@@ -662,7 +662,7 @@ export const TimeOffManagement: React.FC = () => {
                   .map((vacation) => (
                     <div key={vacation.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                       <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div className="w-3 h-3 bg-allocation-low rounded-full"></div>
                         <div>
                           <p className="font-medium text-sm">{vacation.employeeName}</p>
                           <div className="flex items-center space-x-2 text-xs text-muted-foreground">

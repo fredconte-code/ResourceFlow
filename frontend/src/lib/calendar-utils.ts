@@ -28,22 +28,20 @@ export const formatHours = (hours: number) => {
   return hours % 1 === 0 ? Math.round(hours) : Math.round(hours * 10) / 10;
 };
 
-// Color functions
+// Color functions - Unified with Team Tab color scheme
 export const getDailyAllocationColor = (percentage: number) => {
-  if (percentage === 0) return 'bg-gradient-to-br from-green-400/60 to-green-500/60'; // Green for no allocation
-  if (percentage <= 25) return 'bg-gradient-to-br from-green-300/60 to-green-400/60';
-  if (percentage <= 50) return 'bg-gradient-to-br from-green-200/60 to-green-300/60';
-  if (percentage <= 75) return 'bg-gradient-to-br from-yellow-400/60 to-yellow-500/60';
-  if (percentage <= 100) return 'bg-gradient-to-br from-orange-400/60 to-orange-500/60';
-  return 'bg-gradient-to-br from-red-500/60 to-red-600/60'; // Red for overallocated days (>100%)
+  if (percentage === 0) return 'bg-gradient-to-br from-allocation-low/60 to-allocation-low/60'; // Green for no allocation
+  if (percentage < 60) return 'bg-gradient-to-br from-allocation-low/60 to-allocation-low/60';
+  if (percentage >= 60 && percentage <= 90) return 'bg-gradient-to-br from-allocation-optimal/60 to-allocation-optimal/60';
+  if (percentage > 90 && percentage <= 100) return 'bg-gradient-to-br from-allocation-high/60 to-allocation-high/60';
+  return 'bg-gradient-to-br from-allocation-over/60 to-allocation-over/60'; // Red for overallocated days (>100%)
 };
 
 export const getAllocationColor = (percentage: number) => {
-  if (percentage <= 60) return 'bg-green-500';
-  if (percentage <= 80) return 'bg-yellow-500';
-  if (percentage <= 90) return 'bg-orange-500';
-  if (percentage <= 100) return 'bg-red-500';
-  return 'bg-red-600'; // Darker red for overallocation (>100%)
+  if (percentage < 60) return 'bg-allocation-low';
+  if (percentage >= 60 && percentage <= 90) return 'bg-allocation-optimal';
+  if (percentage > 90 && percentage <= 100) return 'bg-allocation-high';
+  return 'bg-allocation-over'; // Red for overallocation (>100%)
 };
 
 // Data filtering functions

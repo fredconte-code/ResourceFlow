@@ -178,21 +178,21 @@ Previous theme variables (for rollback):
     grid-auto-columns: 1fr;
   }
 
-  /* Utilization color classes */
+  /* Utilization color classes - Unified with allocation colors */
   .utilization-low {
-    @apply bg-green-500;
+    @apply bg-allocation-low;
   }
 
   .utilization-optimal {
-    @apply bg-blue-500;
+    @apply bg-allocation-optimal;
   }
 
   .utilization-high {
-    @apply bg-yellow-500;
+    @apply bg-allocation-high;
   }
 
   .utilization-over {
-    @apply bg-red-500;
+    @apply bg-allocation-over;
   }
 
   /* Weekend hatching pattern */
