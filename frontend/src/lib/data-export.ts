@@ -64,7 +64,7 @@ export const exportAllData = async (): Promise<ExportData> => {
       version: '1.0.0',
       metadata: {
         totalRecords,
-        exportSource: 'resource-scheduler',
+        exportSource: 'resourceflow',
         exportType: 'full'
       }
     };
@@ -81,7 +81,7 @@ export const downloadData = async (filename?: string): Promise<void> => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename || `resource-scheduler-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = filename || `resourceflow-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -210,7 +210,7 @@ export const createDataSummary = async (): Promise<{
     const stats = await getDataStats();
     const settings = await settingsApi.getAll();
     
-    const summary = `Resource Scheduler Data Summary:
+    const summary = `ResourceFlow Data Summary:
 - Team Members: ${stats.teamMembers}
 - Projects: ${stats.projects}
 - Holidays: ${stats.holidays}

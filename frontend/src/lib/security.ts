@@ -319,7 +319,7 @@ export const validateCSRFToken = (token: string, storedToken: string): boolean =
  * Secure storage with encryption (basic implementation)
  */
 export class SecureStorage {
-  private static readonly ENCRYPTION_KEY = 'resource-scheduler-secure-key';
+  private static readonly ENCRYPTION_KEY = 'resourceflow-secure-key';
   
   static setSecureItem(key: string, value: any): void {
     try {

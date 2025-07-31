@@ -1,4 +1,4 @@
--- Database Cleanup Script for Resource Scheduler
+-- Database Cleanup Script for ResourceFlow
 -- This script removes test/dummy data from the production database
 -- Run this script before going live
 

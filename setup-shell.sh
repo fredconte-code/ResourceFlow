@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Resource Scheduler - Shell Setup Script
+# ResourceFlow - Shell Setup Script
 # This script will add the necessary functions to your shell configuration
 
-echo "🚀 Setting up Resource Scheduler shell functions..."
+echo "🚀 Setting up ResourceFlow shell functions..."
 
 # Determine the shell configuration file
 SHELL_CONFIG=""
@@ -25,7 +25,7 @@ if [ ! -f "$SHELL_CONFIG" ]; then
 fi
 
 # Check if the functions are already added
-if grep -q "Resource Scheduler - Shell Functions" "$SHELL_CONFIG"; then
+if grep -q "ResourceFlow - Shell Functions" "$SHELL_CONFIG"; then
     echo "✅ Shell functions are already configured in $SHELL_CONFIG"
     echo "You can now use 'start' and 'restart' commands in your terminal!"
 else
@@ -34,7 +34,7 @@ else
     # Add a comment and the source line
     cat >> "$SHELL_CONFIG" << EOF
 
-# Resource Scheduler - Shell Functions
+# ResourceFlow - Shell Functions
 # Source the shell functions for global access
 if [ -f "$(pwd)/shell-functions.sh" ]; then
     source "$(pwd)/shell-functions.sh"
@@ -54,4 +54,4 @@ fi
 
 echo ""
 echo "🎉 Setup complete! You can now use 'start' and 'restart' commands."
-echo "Make sure you're in the Resource Scheduler directory when using these commands." 
+echo "Make sure you're in the ResourceFlow directory when using these commands." 

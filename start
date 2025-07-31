@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Resource Scheduler - Server Management Script
+# ResourceFlow - Server Management Script
 # Usage: ./start [start|restart|stop]
 
 # Function to display usage
 show_usage() {
-    echo "Resource Scheduler Server Management"
+    echo "ResourceFlow Server Management"
     echo ""
     echo "Usage:"
     echo "  ./start start     - Start both backend and frontend servers"
@@ -31,7 +31,7 @@ check_servers() {
 
 # Function to start servers
 start_servers() {
-    echo "🚀 Starting Resource Scheduler servers..."
+    echo "🚀 Starting ResourceFlow servers..."
     
     # Check if servers are already running
     if check_servers; then
@@ -60,7 +60,7 @@ start_servers() {
 
 # Function to restart servers
 restart_servers() {
-    echo "🔄 Restarting Resource Scheduler servers..."
+    echo "🔄 Restarting ResourceFlow servers..."
     
     # Stop servers first
     stop_servers

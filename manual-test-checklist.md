@@ -1,4 +1,4 @@
-# 🔍 MANUAL TESTING CHECKLIST - Resource Scheduler
+# 🔍 MANUAL TESTING CHECKLIST - ResourceFlow
 
 ## 📋 **TESTING SCOPE**
 - Frontend UI/UX functionality

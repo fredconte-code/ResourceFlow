@@ -21,7 +21,7 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 
 // --- SQLite Setup ---
-const db = new sqlite3.Database('./resource_scheduler.db');
+const db = new sqlite3.Database('./resourceflow.db');
 
 // Create tables if they don't exist
 db.serialize(() => {

@@ -9,7 +9,7 @@ let db;
 describe('API Integration Tests', () => {
   beforeAll(async () => {
     // Set up test database
-    const testDbPath = path.join(__dirname, '../test_resource_scheduler.db');
+    const testDbPath = path.join(__dirname, '../test_resourceflow.db');
     db = new sqlite3.Database(testDbPath);
     
     // Create test tables

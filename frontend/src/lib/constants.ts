@@ -1,4 +1,4 @@
-// Shared constants for the Resource Scheduler application
+// Shared constants for the ResourceFlow application
 
 export const COUNTRY_FLAGS = {
   'Canada': '🇨🇦',

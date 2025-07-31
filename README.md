@@ -1,14 +1,14 @@
-# Resource Scheduler
+# ResourceFlow
 
 A modern, full-stack resource scheduling and team management application with real backend persistence, beautiful UI, and comprehensive project management capabilities.
 
-![Resource Scheduler](https://img.shields.io/badge/Node.js-18+-green) ![Resource Scheduler](https://img.shields.io/badge/React-18+-blue) ![Resource Scheduler](https://img.shields.io/badge/TypeScript-5+-blue) ![Resource Scheduler](https://img.shields.io/badge/SQLite-Database-green)
+![ResourceFlow](https://img.shields.io/badge/Node.js-18+-green) ![ResourceFlow](https://img.shields.io/badge/React-18+-blue) ![ResourceFlow](https://img.shields.io/badge/TypeScript-5+-blue) ![ResourceFlow](https://img.shields.io/badge/SQLite-Database-green)
 
 ---
 
 ## 🎯 Overview
 
-Resource Scheduler is a comprehensive team and project management tool that helps organizations:
+ResourceFlow is a comprehensive team and project management tool that helps organizations:
 
 - **Manage team allocations** across multiple projects
 - **Track time off** including holidays and vacations
@@ -74,7 +74,7 @@ Built with modern technologies including React, TypeScript, Node.js, and SQLite 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd Resource\ Scheduler
+   cd ResourceFlow
    ```
 
 2. **Install dependencies**
@@ -251,11 +251,11 @@ npm test
 
 ### Project Structure
 ```
-Resource Scheduler/
+ResourceFlow/
 ├── backend/                 # Node.js API server
 │   ├── index.js            # Main server file
 │   ├── package.json        # Backend dependencies
-│   └── resource_scheduler.db # SQLite database
+│   └── resourceflow.db # SQLite database
 ├── frontend/               # React application
 │   ├── src/
 │   │   ├── components/     # React components
@@ -306,7 +306,7 @@ npm start
 - **Dependencies**: Run `./start install` to install all dependencies
 
 #### Database Issues
-- **Reset database**: Delete `backend/resource_scheduler.db` and restart
+- **Reset database**: Delete `backend/resourceflow.db` and restart
 - **Corrupted data**: Use the export/import feature to backup and restore
 
 #### API Connection Errors

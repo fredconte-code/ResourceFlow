@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Download, Upload, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert, Code } from "lucide-react";
+import { Check, Loader2, Download, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert, Code } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { employees as allEmployees, getCurrentEmployeesSync } from "@/lib/employee-data";
 import { checkDataConsistency } from "@/lib/employee-data";
@@ -104,8 +104,6 @@ export const Settings = () => {
 
 
 
-  const [showImportDialog, setShowImportDialog] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showClearDataDialog, setShowClearDataDialog] = useState(false);
   const [showClearDataWarning, setShowClearDataWarning] = useState(false);
 
@@ -220,7 +218,7 @@ export const Settings = () => {
       }
       
       // Download file
-      const fileName = `resource-scheduler-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+      const fileName = `resourceflow-export-${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(workbook, fileName);
       
       toast({
@@ -542,101 +540,7 @@ export const Settings = () => {
     }
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    setSelectedFile(file);
-    setShowImportDialog(true);
-  };
 
-  const handleImportConfirm = async () => {
-    if (!selectedFile) return;
-    
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const workbook = XLSX.read(e.target?.result as string, { type: 'binary' });
-          const importData: ExportData = {
-            teamMembers: [],
-            projects: [],
-            holidays: [],
-            vacations: [],
-            projectAllocations: [],
-            settings: { buffer: 10, canadaHours: 37.5, brazilHours: 44 }
-          };
-          
-          // Process each sheet
-          workbook.SheetNames.forEach(sheetName => {
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
-            
-            if (jsonData.length > 0) {
-              if (sheetName === 'Settings') {
-                // Convert settings array back to object
-                const settingsObj: { buffer: number; canadaHours: number; brazilHours: number } = {
-                  buffer: 10,
-                  canadaHours: 37.5,
-                  brazilHours: 44
-                };
-                jsonData.forEach((item: { key: string; value: unknown }) => {
-                  if (item.key === 'buffer' && typeof item.value === 'number') {
-                    settingsObj.buffer = item.value;
-                  } else if (item.key === 'canadaHours' && typeof item.value === 'number') {
-                    settingsObj.canadaHours = item.value;
-                  } else if (item.key === 'brazilHours' && typeof item.value === 'number') {
-                    settingsObj.brazilHours = item.value;
-                  }
-                });
-                importData.settings = settingsObj;
-              } else {
-                importData[sheetName.toLowerCase().replace(/\s+/g, '')] = jsonData;
-              }
-            }
-          });
-          
-          // Import data to API
-          await dataApi.import(importData);
-          
-          // Reload settings
-          await loadSettings();
-          
-          toast({
-            title: "Import Successful",
-            description: "Data imported successfully.",
-          });
-          
-          // Dispatch events to refresh other components
-          window.dispatchEvent(new CustomEvent('teamUpdate'));
-          window.dispatchEvent(new CustomEvent('projectsUpdate'));
-          window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
-          
-        } catch (error) {
-          toast({
-            title: "Import Failed",
-            description: "Error processing file. Please check the file format.",
-            variant: "destructive"
-          });
-        }
-      };
-      
-      reader.readAsBinaryString(selectedFile);
-      setShowImportDialog(false);
-      setSelectedFile(null);
-    } catch (error) {
-      toast({
-        title: "Import Failed",
-        description: "Failed to import data.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleImportCancel = () => {
-    setShowImportDialog(false);
-    setSelectedFile(null);
-  };
 
   const handleClearData = async () => {
     try {
@@ -702,7 +606,7 @@ export const Settings = () => {
       <div>
         <h2 className="text-xl font-bold tracking-tight">Settings</h2>
         <p className="text-muted-foreground text-sm">
-          Configure your resource scheduler settings
+          Configure your ResourceFlow settings
         </p>
       </div>
 
@@ -794,11 +698,6 @@ export const Settings = () => {
                 Export data to Excel
               </Button>
               
-              <Button variant="outline" disabled>
-                <Upload className="mr-2 h-4 w-4" />
-                Import data from CSV
-              </Button>
-              
               <Button 
                 variant="outline" 
                 onClick={() => setShowClearDataWarning(true)}
@@ -811,10 +710,7 @@ export const Settings = () => {
           
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              <strong>Export data to Excel:</strong> Download comprehensive data including team members, projects, time off, allocations, dashboard statistics, team allocation breakdowns, project metrics, resource utilization, and monthly summaries as an Excel file for backup or analysis purposes.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              <strong>Import data from CSV:</strong> Coming soon! This feature will allow you to restore your data from a previously exported CSV file.
+              <strong>Export data to Excel:</strong> Download all your data as an Excel file for backup or analysis.
             </p>
             {showClearDataWarning && (
               <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200 dark:border-red-800">
@@ -889,7 +785,7 @@ export const Settings = () => {
                   <div className="space-y-6">
                     {/* Header */}
                     <div className="border-b border-gray-700 pb-2">
-                      <h3 className="text-blue-400 font-semibold"># Resource Scheduler - Application Variables</h3>
+                      <h3 className="text-blue-400 font-semibold"># ResourceFlow - Application Variables</h3>
                       <p className="text-gray-400 text-xs mt-1">Documentation of all application variables and their scope</p>
                     </div>
 
@@ -1496,25 +1392,7 @@ export const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Import Confirmation Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Data</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to import data from "{selectedFile?.name}"? This will replace your current data.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleImportCancel}>
-              Cancel
-            </Button>
-            <Button onClick={handleImportConfirm}>
-              Import
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Clear Data Confirmation Dialog */}
       <Dialog open={showClearDataDialog} onOpenChange={setShowClearDataDialog}>

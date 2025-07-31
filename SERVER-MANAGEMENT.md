@@ -1,4 +1,4 @@
-# Resource Scheduler - Server Management
+# ResourceFlow - Server Management
 
 This document explains how to use the new server management functions that allow you to start and restart the application servers by typing simple commands.
 
@@ -61,7 +61,7 @@ When the servers start successfully, you'll see:
 ## Troubleshooting
 
 ### "start script not found" Error
-Make sure you're in the Resource Scheduler directory when using the commands.
+Make sure you're in the ResourceFlow directory when using the commands.
 
 ### Port Already in Use
 If you get port conflicts, use the `restart` command to stop and restart the servers.
@@ -79,13 +79,13 @@ The script will automatically install dependencies if `node_modules` doesn't exi
 If the setup script doesn't work, you can manually add these lines to your shell configuration file (`~/.zshrc` or `~/.bashrc`):
 
 ```bash
-# Resource Scheduler - Shell Functions
-if [ -f "/path/to/your/Resource Scheduler/shell-functions.sh" ]; then
-    source "/path/to/your/Resource Scheduler/shell-functions.sh"
+# ResourceFlow - Shell Functions
+if [ -f "/path/to/your/ResourceFlow/shell-functions.sh" ]; then
+    source "/path/to/your/ResourceFlow/shell-functions.sh"
 fi
 ```
 
-Replace `/path/to/your/Resource Scheduler/` with the actual path to your project directory.
+Replace `/path/to/your/ResourceFlow/` with the actual path to your project directory.
 
 ## Files Created
 
