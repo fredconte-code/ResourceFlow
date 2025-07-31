@@ -1864,6 +1864,11 @@ export const CalendarView: React.FC = () => {
                                                             ) : (
                                  /* Normal View - Show vacation and holiday info */
                                  <>
+                                   {holiday && showHolidays && allocations.length === 0 && (
+                                     <div className="p-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                       Holiday
+                                     </div>
+                                   )}
                                    {vacation && showHolidays && allocations.length === 0 && (
                                      <div className="p-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                                        {vacation.type}

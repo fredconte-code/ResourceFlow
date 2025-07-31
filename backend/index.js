@@ -30,8 +30,14 @@ db.serialize(() => {
     start_date TEXT,
     end_date TEXT,
     color TEXT DEFAULT '#3b82f6',
-    allocated_hours INTEGER DEFAULT 0
+    allocated_hours INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'active'
   )`);
+  
+  // Add status column to existing projects table if it doesn't exist
+  db.run(`ALTER TABLE projects ADD COLUMN status TEXT DEFAULT 'active'`, (err) => {
+    // Column might already exist, ignore error
+  });
 
   // Holidays table
   db.run(`CREATE TABLE IF NOT EXISTS holidays (
@@ -157,7 +163,17 @@ app.delete('/api/team-members/:id', (req, res) => {
 app.get('/api/projects', (req, res) => {
   db.all('SELECT * FROM projects ORDER BY name', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
+    // Transform field names from snake_case to camelCase
+    const transformedRows = rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      color: row.color,
+      allocatedHours: row.allocated_hours,
+      status: row.status
+    }));
+    res.json(transformedRows);
   });
 });
 
@@ -166,20 +182,30 @@ app.get('/api/projects/:id', (req, res) => {
   db.get('SELECT * FROM projects WHERE id = ?', [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Project not found' });
-    res.json(row);
+    // Transform field names from snake_case to camelCase
+    const transformedRow = {
+      id: row.id,
+      name: row.name,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      color: row.color,
+      allocatedHours: row.allocated_hours,
+      status: row.status
+    };
+    res.json(transformedRow);
   });
 });
 
 app.post('/api/projects', (req, res) => {
-  const { name, startDate, endDate, color } = req.body;
+  const { name, startDate, endDate, color, status } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Project name is required' });
   }
   
   const id = Date.now().toString();
   db.run(
-    'INSERT INTO projects (id, name, start_date, end_date, color) VALUES (?, ?, ?, ?, ?)',
-    [id, name, startDate, endDate, color || '#3b82f6'],
+    'INSERT INTO projects (id, name, start_date, end_date, color, status) VALUES (?, ?, ?, ?, ?, ?)',
+    [id, name, startDate, endDate, color || '#3b82f6', status || 'active'],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ 
@@ -187,7 +213,8 @@ app.post('/api/projects', (req, res) => {
         name, 
         startDate, 
         endDate, 
-        color: color || '#3b82f6'
+        color: color || '#3b82f6',
+        status: status || 'active'
       });
     }
   );
@@ -195,19 +222,19 @@ app.post('/api/projects', (req, res) => {
 
 app.put('/api/projects/:id', (req, res) => {
   const { id } = req.params;
-  const { name, startDate, endDate, color } = req.body;
+  const { name, startDate, endDate, color, status } = req.body;
   
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Project name is required' });
   }
   
   db.run(
-    'UPDATE projects SET name = ?, start_date = ?, end_date = ?, color = ? WHERE id = ?',
-    [name, startDate, endDate, color || '#3b82f6', id],
+    'UPDATE projects SET name = ?, start_date = ?, end_date = ?, color = ?, status = ? WHERE id = ?',
+    [name, startDate, endDate, color || '#3b82f6', status || 'active', id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       if (this.changes === 0) return res.status(404).json({ error: 'Project not found' });
-      res.json({ id, name, startDate, endDate, color: color || '#3b82f6' });
+      res.json({ id, name, startDate, endDate, color: color || '#3b82f6', status: status || 'active' });
     }
   );
 });

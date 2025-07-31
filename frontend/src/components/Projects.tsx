@@ -106,14 +106,38 @@ export const Projects = () => {
 
   // Calculate allocated hours for a specific project using the same logic as Calendar
   const getProjectAllocatedHours = (projectId: number) => {
-    const currentDate = new Date(); // Use current date for month calculation
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    
     // Get all allocations for this project
     const projectAllocations = allocations.filter(allocation => 
       allocation.projectId === projectId.toString()
     );
+    
+    if (projectAllocations.length === 0) return 0;
+    
+    // Find the month with the most allocations for this project
+    const monthAllocationCounts: { [key: string]: number } = {};
+    
+    projectAllocations.forEach(allocation => {
+      const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+      const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
+      
+      // Check each month that this allocation spans
+      let currentDate = new Date(allocationStart);
+      while (currentDate <= allocationEnd) {
+        const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
+        monthAllocationCounts[monthKey] = (monthAllocationCounts[monthKey] || 0) + 1;
+        currentDate = addDays(currentDate, 1);
+      }
+    });
+    
+    // Find the month with the most allocations
+    const mostActiveMonth = Object.keys(monthAllocationCounts).reduce((a, b) => 
+      monthAllocationCounts[a] > monthAllocationCounts[b] ? a : b
+    );
+    
+    const [year, month] = mostActiveMonth.split('-').map(Number);
+    const currentDate = new Date(year, month, 1); // Use the most active month
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
     
     let totalHours = 0;
     

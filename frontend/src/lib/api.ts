@@ -49,6 +49,9 @@ export const teamMembersApi = {
     }),
 };
 
+// Project Status Types
+export type ProjectStatus = 'active' | 'on_hold' | 'finished' | 'cancelled';
+
 // Projects API
 export interface Project {
   id: number;
@@ -57,6 +60,7 @@ export interface Project {
   endDate?: string;
   color: string;
   allocatedHours: number;
+  status: ProjectStatus;
 }
 
 export const projectsApi = {
