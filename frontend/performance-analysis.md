@@ -3,11 +3,11 @@
 ## Executive Summary
 
 **Analysis Date**: December 2024  
-**Application**: Resource Scheduler  
+**Application**: ResourceFlow  
 **Status**: **NEEDS OPTIMIZATION**  
 **Priority**: **HIGH**
 
-The Resource Scheduler application has several performance issues that need to be addressed to ensure optimal user experience, especially with large datasets and complex operations.
+The ResourceFlow application has several performance issues that need to be addressed to ensure optimal user experience, especially with large datasets and complex operations.
 
 ## Issues Identified
 

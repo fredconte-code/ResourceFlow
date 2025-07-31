@@ -3,11 +3,11 @@
 ## Executive Summary
 
 **Analysis Date**: December 2024  
-**Application**: Resource Scheduler  
+**Application**: ResourceFlow  
 **Status**: **NEEDS IMPROVEMENT**  
 **Priority**: **HIGH**
 
-The Resource Scheduler application has several state management issues that need to be addressed to ensure predictable, clean state management and prevent unnecessary re-renders and stale state.
+The ResourceFlow application has several state management issues that need to be addressed to ensure predictable, clean state management and prevent unnecessary re-renders and stale state.
 
 ## Issues Identified
 

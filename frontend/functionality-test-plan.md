@@ -1,7 +1,7 @@
-# Resource Scheduler - Functionality Test Plan
+# ResourceFlow - Functionality Test Plan
 
 ## Overview
-This document outlines comprehensive end-to-end testing for the Resource Scheduler application, covering all features, edge cases, and user interactions.
+This document outlines comprehensive end-to-end testing for the ResourceFlow application, covering all features, edge cases, and user interactions.
 
 ## Test Categories
 
