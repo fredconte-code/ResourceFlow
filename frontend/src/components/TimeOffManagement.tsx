@@ -157,16 +157,16 @@ export const TimeOffManagement: React.FC = () => {
       });
       
       const convertedVacations = vacationsData.map((vacation: ApiVacation) => {
-        const employee = employeesData.find(emp => emp.id === vacation.employeeId);
+        const employee = employeesData.find(emp => emp.id === vacation.employee_id);
         return {
           id: vacation.id.toString(),
-          employeeId: vacation.employeeId,
-          employeeName: vacation.employeeName,
+          employeeId: vacation.employee_id,
+          employeeName: vacation.employee_name,
           employeeRole: employee?.role || 'Unknown',
           employeeCountry: employee?.country || 'Unknown',
-          startDate: parseISO(vacation.startDate),
-          endDate: parseISO(vacation.endDate),
-          days: differenceInDays(parseISO(vacation.endDate), parseISO(vacation.startDate)) + 1,
+          startDate: parseISO(vacation.start_date),
+          endDate: parseISO(vacation.end_date),
+          days: differenceInDays(parseISO(vacation.end_date), parseISO(vacation.start_date)) + 1,
           type: vacation.type as 'Vacation' | 'Sick Leave' | 'Personal' | 'Other',
           notes: ''
         };
@@ -384,10 +384,10 @@ export const TimeOffManagement: React.FC = () => {
       }
 
       const newVacation = {
-        employeeId: vacationForm.employeeId,
-        employeeName: employee.name,
-        startDate: format(vacationForm.startDate, 'yyyy-MM-dd'),
-        endDate: format(vacationForm.endDate, 'yyyy-MM-dd'),
+        employee_id: vacationForm.employeeId,
+        employee_name: employee.name,
+        start_date: format(vacationForm.startDate, 'yyyy-MM-dd'),
+        end_date: format(vacationForm.endDate, 'yyyy-MM-dd'),
         type: vacationForm.type
       };
 

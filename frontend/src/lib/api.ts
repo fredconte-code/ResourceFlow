@@ -112,10 +112,10 @@ export const holidaysApi = {
 // Vacations API
 export interface Vacation {
   id: number;
-  employeeId: string;
-  employeeName: string;
-  startDate: string;
-  endDate: string;
+  employee_id: string;
+  employee_name: string;
+  start_date: string;
+  end_date: string;
   type: string;
 }
 
