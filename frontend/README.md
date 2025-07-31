@@ -1,73 +1,103 @@
-# Welcome to your Lovable project
+# ResourceFlow Frontend
 
-## Project info
+## Overview
 
-**URL**: https://lovable.dev/projects/0579b25c-419f-4c5f-adc0-c6b0a185e67e
+ResourceFlow is a comprehensive resource management application built with modern web technologies. This frontend provides an intuitive interface for managing team members, projects, allocations, and time-off requests.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Dashboard**: Real-time overview of team capacity and project status
+- **Team Management**: Add, edit, and manage team members with country-specific settings
+- **Project Management**: Create and track projects with visual allocation charts
+- **Planner**: Interactive calendar view for resource allocation and scheduling
+- **Time Off Management**: Handle vacation requests and holiday configurations
+- **Settings**: Configure working hours, buffer settings, and system preferences
 
-**Use Lovable**
+## Technology Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0579b25c-419f-4c5f-adc0-c6b0a185e67e) and start prompting.
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **State Management**: React Context API
+- **Charts**: Recharts for data visualization
+- **Icons**: Lucide React
+- **Date Handling**: date-fns
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js 18+ and npm
+- ResourceFlow backend server running
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+```bash
+# Install dependencies
+npm install
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-**Edit a file directly in GitHub**
+### Development
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The application runs on `http://localhost:5173` by default.
 
-**Use GitHub Codespaces**
+### Project Structure
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+src/
+├── components/          # React components
+│   ├── ui/             # shadcn/ui components
+│   └── ...             # Feature components
+├── context/            # React Context providers
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions and API
+├── pages/              # Page components
+└── main.tsx           # Application entry point
+```
 
-## What technologies are used for this project?
+## Key Components
 
-This project is built with:
+- **Dashboard**: Main overview with charts and metrics
+- **TeamManagement**: Team member CRUD operations
+- **Projects**: Project management with allocation charts
+- **PlannerView**: Interactive calendar for resource planning
+- **TimeOffManagement**: Vacation and holiday management
+- **Settings**: Application configuration
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## API Integration
 
-## How can I deploy this project?
+The frontend communicates with the ResourceFlow backend API for:
+- Team member data
+- Project information
+- Allocation management
+- Time-off requests
+- System settings
 
-Simply open [Lovable](https://lovable.dev/projects/0579b25c-419f-4c5f-adc0-c6b0a185e67e) and click on Share -> Publish.
+## Styling
 
-## Can I connect a custom domain to my Lovable project?
+The application uses Tailwind CSS with a custom design system:
+- Consistent color palette
+- Responsive design
+- Dark/light theme support
+- Accessible components
 
-Yes, you can!
+## Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Follow the existing code structure
+2. Use TypeScript for type safety
+3. Follow the established naming conventions
+4. Test your changes thoroughly
+5. Update documentation as needed
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## License
+
+This project is part of the ResourceFlow application suite.
