@@ -715,6 +715,9 @@ export const CalendarView: React.FC = () => {
       // Update employee's allocated hours
       await updateEmployeeAllocatedHours(editingAllocation.employeeId);
       
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
+      
       toast({
         title: "Success",
         description: "Allocation updated successfully.",
@@ -750,6 +753,9 @@ export const CalendarView: React.FC = () => {
       
       // Update employee's allocated hours
       await updateEmployeeAllocatedHours(deletingAllocation.employeeId);
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
       
       toast({
         title: "Success",
@@ -892,6 +898,9 @@ export const CalendarView: React.FC = () => {
       // Update employee's allocated hours
       await updateEmployeeAllocatedHours(employeeId);
       
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
+      
 
       
       toast({
@@ -980,6 +989,9 @@ export const CalendarView: React.FC = () => {
       // Reload data
       const allocationsData = await projectAllocationsApi.getAll();
       setAllocations(allocationsData);
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
       
     } catch (error) {
       console.error('Error moving allocation:', error);
@@ -1176,6 +1188,9 @@ export const CalendarView: React.FC = () => {
       // Reload data
       const allocationsData = await projectAllocationsApi.getAll();
       setAllocations(allocationsData);
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
       
     } catch (error) {
       console.error('Error resizing allocation:', error);

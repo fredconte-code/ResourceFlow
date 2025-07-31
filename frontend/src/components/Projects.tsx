@@ -9,12 +9,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Trash2, Edit2, Save, X, Calendar as CalendarIcon, Plus, AlertCircle, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, differenceInDays, addDays, parseISO, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
-import { projectsApi, Project, ProjectStatus } from "@/lib/api";
+import { projectsApi, projectAllocationsApi, teamMembersApi, holidaysApi, vacationsApi, Project, ProjectAllocation, ProjectStatus, TeamMember, Holiday, Vacation } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { PROJECT_COLORS } from "@/lib/constants";
-import { getContrastColor } from "@/lib/calendar-utils";
+import { getContrastColor, isWeekendDay } from "@/lib/calendar-utils";
+import { useSettings } from "@/context/SettingsContext";
+import { useHolidays } from "@/context/HolidayContext";
+import { useTimeOffs } from "@/context/TimeOffContext";
 import { 
   getProjectStatusConfig, 
   getProjectStatusOptions, 
@@ -26,7 +29,12 @@ import {
 
 export const Projects = () => {
   const { toast } = useToast();
+  const { buffer } = useSettings();
+  const { holidays } = useHolidays();
+  const { timeOffs: vacations } = useTimeOffs();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);
+  const [employees, setEmployees] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ 
@@ -54,13 +62,19 @@ export const Projects = () => {
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Load projects from API
+  // Load projects and allocations from API
   const loadProjects = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await projectsApi.getAll();
-      setProjects(data);
+      const [projectsData, allocationsData, employeesData] = await Promise.all([
+        projectsApi.getAll(),
+        projectAllocationsApi.getAll(),
+        teamMembersApi.getAll()
+      ]);
+      setProjects(projectsData);
+      setAllocations(allocationsData);
+      setEmployees(employeesData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects');
       toast({
@@ -76,6 +90,70 @@ export const Projects = () => {
   useEffect(() => {
     loadProjects();
   }, []);
+
+  // Listen for allocation updates to refresh data
+  useEffect(() => {
+    const handleAllocationUpdate = () => {
+      loadProjects();
+    };
+
+    window.addEventListener('projectAllocationsUpdate', handleAllocationUpdate);
+    
+    return () => {
+      window.removeEventListener('projectAllocationsUpdate', handleAllocationUpdate);
+    };
+  }, []);
+
+  // Calculate allocated hours for a specific project using the same logic as Calendar
+  const getProjectAllocatedHours = (projectId: number) => {
+    const currentDate = new Date(); // Use current date for month calculation
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    
+    // Get all allocations for this project
+    const projectAllocations = allocations.filter(allocation => 
+      allocation.projectId === projectId.toString()
+    );
+    
+    let totalHours = 0;
+    
+    projectAllocations.forEach(allocation => {
+      const allocationStart = new Date(allocation.startDate + 'T00:00:00');
+      const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
+      
+      // Check if allocation overlaps with current month
+      if (allocationEnd < monthStart || allocationStart > monthEnd) {
+        return; // Skip if no overlap
+      }
+      
+      // Calculate overlap with current month
+      const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
+      const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
+      
+      // Find the employee for this allocation
+      const employee = employees.find(emp => emp.id.toString() === allocation.employeeId);
+      
+      // Count only working days (exclude weekends and holidays)
+      let workingDays = 0;
+      let currentDate = new Date(effectiveStart);
+      while (currentDate <= effectiveEnd) {
+        const isHoliday = employee && holidays.some(holiday => {
+          const holidayDate = parseISO(holiday.date);
+          return isSameDay(holidayDate, currentDate) && 
+                 (holiday.country === 'Both' || holiday.country === employee.country);
+        });
+        
+        if (!isWeekendDay(currentDate) && !isHoliday) {
+          workingDays++;
+        }
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      totalHours += allocation.hoursPerDay * workingDays;
+    });
+    
+    return totalHours;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -523,12 +601,15 @@ export const Projects = () => {
                         {project.endDate && (
                           <span>End: {format(new Date(project.endDate), 'MMM dd, yyyy')}</span>
                         )}
-                        {project.allocatedHours > 0 && (
-                          <>
-                            <span>•</span>
-                            <span>{project.allocatedHours}h allocated</span>
-                          </>
-                        )}
+                        {(() => {
+                          const allocatedHours = getProjectAllocatedHours(project.id);
+                          return allocatedHours > 0 ? (
+                            <>
+                              <span>•</span>
+                              <span>Resources Hours Allocated: {allocatedHours.toFixed(1)}h</span>
+                            </>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </div>
