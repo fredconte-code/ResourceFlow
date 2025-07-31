@@ -1844,12 +1844,17 @@ export const CalendarView: React.FC = () => {
                                      return null;
                                    }
                                    
+                                   // Handle holidays - show empty cell when holidays toggle is ON
+                                   if (holiday && showHolidays) {
+                                     return null;
+                                   }
+                                   
                                    // Handle time off periods - show empty cell when holidays toggle is ON
                                    if (vacation && showHolidays) {
                                      return null;
                                    }
                                    
-                                   // Handle regular allocation percentages (excluding time off when toggle is ON)
+                                   // Handle regular allocation percentages (excluding holidays and time off when toggle is ON)
                                    return (
                                      <>
                                        {/* Full cell background color */}
