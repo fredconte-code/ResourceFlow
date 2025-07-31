@@ -365,15 +365,17 @@ export const Projects = () => {
         </Button>
       </div>
 
-      {/* Add Project Form */}
-      {showAddForm && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Add New Project</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div className="space-y-2">
+      {/* Add Project Dialog */}
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Project</DialogTitle>
+            <DialogDescription>
+              Create a new project for your team to work on.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
               <Label htmlFor="name">Project Name *</Label>
               <Input
                 id="name"
@@ -384,7 +386,7 @@ export const Projects = () => {
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>Start Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -441,7 +443,7 @@ export const Projects = () => {
               </Popover>
             </div>
             
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>End Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -498,67 +500,63 @@ export const Projects = () => {
               </Popover>
             </div>
 
-                          <div className="space-y-2">
-                <Label>Project Color</Label>
-                <div className="grid grid-cols-10 gap-2">
-                  {PROJECT_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={cn(
-                        "w-8 h-8 rounded-full border-2 transition-all",
-                        form.color === color 
-                          ? "border-gray-800 scale-110" 
-                          : "border-gray-300 hover:border-gray-500"
-                      )}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setForm({ ...form, color })}
-                    />
-                  ))}
-                </div>
+            <div className="grid gap-2">
+              <Label>Project Color</Label>
+              <div className="grid grid-cols-10 gap-3">
+                {PROJECT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={cn(
+                      "w-6 h-6 rounded-full border-2 transition-all",
+                      form.color === color 
+                        ? "border-gray-800 scale-110" 
+                        : "border-gray-300 hover:border-gray-500"
+                    )}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setForm({ ...form, color })}
+                  />
+                ))}
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label>Project Status</Label>
-                <Select value={form.status} onValueChange={(value: ProjectStatus) => setForm({ ...form, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getProjectStatusOptions().map((option) => {
-                      const IconComponent = option.icon;
-                      return (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-2">
-                            <div style={{ color: option.color }}>
-                              <IconComponent className="h-4 w-4" />
-                            </div>
-                            <span>{option.label}</span>
+            <div className="grid gap-2">
+              <Label>Project Status</Label>
+              <Select value={form.status} onValueChange={(value: ProjectStatus) => setForm({ ...form, status: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getProjectStatusOptions().map((option) => {
+                    const IconComponent = option.icon;
+                    return (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <div style={{ color: option.color }}>
+                            <IconComponent className="h-4 w-4" />
                           </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
+                          <span>{option.label}</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div className="flex gap-2">
-            <Button onClick={handleAdd} size="sm">
-              <Save className="h-4 w-4 mr-2" />
-              Add Project
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => {
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
               setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6', status: DEFAULT_PROJECT_STATUS });
               setShowAddForm(false);
             }}>
-              <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-      )}
+            <Button onClick={handleAdd}>
+              Add Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
             {/* Projects List */}
       <div className="grid gap-3">
@@ -787,13 +785,13 @@ export const Projects = () => {
               
               <div className="space-y-2">
                 <Label>Project Color</Label>
-                <div className="grid grid-cols-10 gap-2">
+                <div className="grid grid-cols-10 gap-3">
                   {PROJECT_COLORS.map((color) => (
                     <button
                       key={color}
                       type="button"
                       className={cn(
-                        "w-8 h-8 rounded-full border-2 transition-all",
+                        "w-6 h-6 rounded-full border-2 transition-all",
                         editForm.color === color 
                           ? "border-gray-800 scale-110" 
                           : "border-gray-300 hover:border-gray-500"

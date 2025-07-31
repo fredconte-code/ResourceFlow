@@ -8,7 +8,7 @@ import { Trash2, Edit2, Save, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { projectsApi, Project, ProjectStatus } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { PROJECT_COLORS, DEFAULT_ROLES, BUTTON_TEXT, FIELD_LABELS, TOAST_VARIANTS } from "@/lib/constants";
+import { PROJECT_COLORS, BUTTON_TEXT, FIELD_LABELS, TOAST_VARIANTS } from "@/lib/constants";
 import { formatDateForAPI, formatDateForDisplay, parseDateFromAPI } from "@/lib/date-utils";
 import { validateRequired, validateDateRange } from "@/lib/form-validation";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -351,13 +351,13 @@ export const ProjectsRefactored = () => {
           
           <div className="space-y-2">
             <Label>{FIELD_LABELS.PROJECT_COLOR}</Label>
-            <div className="grid grid-cols-10 gap-2">
+            <div className="grid grid-cols-10 gap-3">
               {PROJECT_COLORS.map((color) => (
                 <button
                   key={color}
                   type="button"
                   className={cn(
-                    "w-8 h-8 rounded-full border-2 transition-colors",
+                    "w-6 h-6 rounded-full border-2 transition-colors",
                     form.color === color ? "border-foreground" : "border-transparent"
                   )}
                   style={{ backgroundColor: color }}
@@ -427,13 +427,13 @@ export const ProjectsRefactored = () => {
           
           <div className="space-y-2">
             <Label>{FIELD_LABELS.PROJECT_COLOR}</Label>
-            <div className="grid grid-cols-10 gap-2">
+            <div className="grid grid-cols-10 gap-3">
               {PROJECT_COLORS.map((color) => (
                 <button
                   key={color}
                   type="button"
                   className={cn(
-                    "w-8 h-8 rounded-full border-2 transition-colors",
+                    "w-6 h-6 rounded-full border-2 transition-colors",
                     editForm.color === color ? "border-foreground" : "border-transparent"
                   )}
                   style={{ backgroundColor: color }}

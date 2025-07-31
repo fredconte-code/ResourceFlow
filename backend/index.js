@@ -2,12 +2,23 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { securityMiddleware, validateInput, validationRules, logSecurityEvent } = require('./security-middleware');
 
 const app = express();
 const PORT = 3001;
 
-app.use(cors());
-app.use(express.json());
+// Apply security middleware
+app.use(securityMiddleware.all);
+
+// CORS configuration with security
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization']
+}));
+
+app.use(express.json({ limit: '1mb' }));
 
 // --- SQLite Setup ---
 const db = new sqlite3.Database('./resource_scheduler.db');
@@ -107,44 +118,55 @@ app.get('/api/team-members/:id', (req, res) => {
   });
 });
 
-app.post('/api/team-members', (req, res) => {
-  const { name, role, country, allocatedHours } = req.body;
-  if (!name || !name.trim() || !role || !role.trim() || !country) {
-    return res.status(400).json({ error: 'Name, role, and country are required' });
-  }
+app.post('/api/team-members', validateInput(validationRules.teamMember), (req, res) => {
+  const { name, role, country, allocated_hours } = req.body;
   
   const id = Date.now().toString();
   db.run(
     'INSERT INTO team_members (id, name, role, country, allocated_hours) VALUES (?, ?, ?, ?, ?)',
-    [id, name, role, country, allocatedHours || 0],
+    [id, name, role, country, allocated_hours || 0],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
+      
+      logSecurityEvent('team_member_created', { 
+        id, 
+        name, 
+        role, 
+        country,
+        ip: req.ip 
+      });
+      
       res.json({ 
         id, 
         name, 
         role, 
         country, 
-        allocatedHours: allocatedHours || 0 
+        allocated_hours: allocated_hours || 0 
       });
     }
   );
 });
 
-app.put('/api/team-members/:id', (req, res) => {
+app.put('/api/team-members/:id', validateInput(validationRules.teamMember), (req, res) => {
   const { id } = req.params;
-  const { name, role, country, allocatedHours } = req.body;
-  
-  if (!name || !name.trim() || !role || !role.trim() || !country) {
-    return res.status(400).json({ error: 'Name, role, and country are required' });
-  }
+  const { name, role, country, allocated_hours } = req.body;
   
   db.run(
     'UPDATE team_members SET name = ?, role = ?, country = ?, allocated_hours = ? WHERE id = ?',
-    [name, role, country, allocatedHours || 0, id],
+    [name, role, country, allocated_hours || 0, id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       if (this.changes === 0) return res.status(404).json({ error: 'Team member not found' });
-      res.json({ id, name, role, country, allocatedHours: allocatedHours || 0 });
+      
+      logSecurityEvent('team_member_updated', { 
+        id, 
+        name, 
+        role, 
+        country,
+        ip: req.ip 
+      });
+      
+      res.json({ id, name, role, country, allocated_hours: allocated_hours || 0 });
     }
   );
 });

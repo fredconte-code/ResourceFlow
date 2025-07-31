@@ -110,8 +110,7 @@ export const TeamManagement = () => {
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<{name?: string, role?: string, country?: string}>({});
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showCustomRole, setShowCustomRole] = useState(false);
-  const [customRole, setCustomRole] = useState('');
+
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -138,8 +137,6 @@ export const TeamManagement = () => {
       setMembers(prev => [...prev, addedMember]);
       setNewMember({ name: '', role: '', country: 'Canada', allocatedHours: 0 });
       setShowAddForm(false);
-      setShowCustomRole(false);
-      setCustomRole('');
 
       toast({
         title: "Success",
@@ -256,18 +253,7 @@ export const TeamManagement = () => {
   });
 
   const handleRoleChange = (role: string) => {
-    if (role === 'custom') {
-      setShowCustomRole(true);
-      setNewMember(prev => ({ ...prev, role: '' }));
-    } else {
-      setShowCustomRole(false);
-      setNewMember(prev => ({ ...prev, role }));
-    }
-  };
-
-  const handleCustomRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomRole(e.target.value);
-    setNewMember(prev => ({ ...prev, role: e.target.value }));
+    setNewMember(prev => ({ ...prev, role }));
   };
 
   // Helper function to get allocation data for a team member
@@ -420,96 +406,83 @@ export const TeamManagement = () => {
         </div>
       </div>
 
-      {/* Add Member Form */}
-      {showAddForm && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Add New Team Member</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  value={newMember.name}
-                  onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter full name"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="role">Role *</Label>
-                <Select value={newMember.role} onValueChange={handleRoleChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DEFAULT_ROLES.map(role => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
-                    ))}
-                    <SelectItem value="custom">Custom Role</SelectItem>
-                  </SelectContent>
-                </Select>
-                {showCustomRole && (
-                  <Input
-                    value={customRole}
-                    onChange={handleCustomRoleChange}
-                    placeholder="Enter custom role"
-                    className="mt-2"
-                  />
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="country">Country *</Label>
-                <Select 
-                  value={newMember.country} 
-                  onValueChange={(value) => setNewMember(prev => ({ ...prev, country: value as 'Canada' | 'Brazil' }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Canada">🇨🇦 Canada</SelectItem>
-                    <SelectItem value="Brazil">🇧🇷 Brazil</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Working Hours</Label>
-                <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
-                  {getWorkingHoursForCountry(newMember.country)} hours/week (from global settings)
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Working hours are configured globally in Settings
-                </p>
-              </div>
+      {/* Add Member Dialog */}
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Team Member</DialogTitle>
+            <DialogDescription>
+              Add a new team member to your organization.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={newMember.name}
+                onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter full name"
+              />
             </div>
             
-            <div className="flex gap-2">
-              <Button onClick={handleAddMember} size="sm">
-                <Save className="h-4 w-4 mr-2" />
-                Add Team Member
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => {
-                setShowAddForm(false);
-                setNewMember({ name: '', role: '', country: 'Canada' });
-                setShowCustomRole(false);
-                setCustomRole('');
-              }}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
+            <div className="grid gap-2">
+              <Label htmlFor="role">Role *</Label>
+              <Select value={newMember.role} onValueChange={handleRoleChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEFAULT_ROLES.map(role => (
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            
+            <div className="grid gap-2">
+              <Label htmlFor="country">Country *</Label>
+              <Select 
+                value={newMember.country} 
+                onValueChange={(value) => setNewMember(prev => ({ ...prev, country: value as 'Canada' | 'Brazil' }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Canada">🇨🇦 Canada</SelectItem>
+                  <SelectItem value="Brazil">🇧🇷 Brazil</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Working Hours</Label>
+              <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                {getWorkingHoursForCountry(newMember.country)} hours/week (from global settings)
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Working hours are configured globally in Settings
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowAddForm(false);
+              setNewMember({ name: '', role: '', country: 'Canada' });
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddMember}>
+              Add Team Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Search and Month Navigation */}
       <div className="flex flex-col sm:flex-row gap-3 items-center">
-        <Button onClick={() => setShowAddForm(!showAddForm)} size="sm">
+        <Button onClick={() => setShowAddForm(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Team Member
         </Button>

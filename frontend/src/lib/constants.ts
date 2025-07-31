@@ -41,7 +41,11 @@ export const DEFAULT_ROLES = [
   'Business Analyst',
   'DevOps Engineer',
   'UX Designer',
-  'Product Owner'
+  'Product Owner',
+  'Strategist',
+  'Manager',
+  'Tech Lead',
+  'Intern'
 ] as const;
 
 export const DRAG_THRESHOLD = 5; // Minimum pixels to move before considering it a drag
