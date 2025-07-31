@@ -499,18 +499,19 @@ export const Projects = () => {
                         >
                           <span className="font-medium text-xs truncate">{project.name}</span>
                         </div>
-                        {(() => {
-                          const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
-                          const IconComponent = statusConfig.icon;
-                          return (
-                            <div className="flex items-center gap-1 text-xs">
-                              <div style={{ color: statusConfig.color }}>
-                                <IconComponent className="h-3 w-3" />
-                              </div>
-                              <span className="text-muted-foreground">{statusConfig.label}</span>
-                            </div>
-                          );
-                        })()}
+                                                 <span className="text-muted-foreground font-medium text-xs">Status:</span>
+                         {(() => {
+                           const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
+                           const IconComponent = statusConfig.icon;
+                           return (
+                             <div className="flex items-center gap-1">
+                               <div style={{ color: statusConfig.color }}>
+                                 <IconComponent className="h-4 w-4" />
+                               </div>
+                               <span className="text-muted-foreground font-medium text-xs">{statusConfig.label}</span>
+                             </div>
+                           );
+                         })()}
                       </div>
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         {project.startDate && (

@@ -16,9 +16,10 @@ import { getEmployeeProjectNamesWithCleanup, getEmployeeProjectAllocationsWithCl
 import { useWorkingHours } from "@/lib/working-hours";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, parseISO, addDays } from "date-fns";
-import { teamMembersApi, TeamMember, projectAllocationsApi, vacationsApi, ProjectAllocation, Vacation } from "@/lib/api";
+import { teamMembersApi, TeamMember, projectAllocationsApi, projectsApi, vacationsApi, ProjectAllocation, Project, Vacation } from "@/lib/api";
 import { COUNTRY_FLAGS, DEFAULT_ROLES } from "@/lib/constants";
 import { calculateEmployeeAllocationPercentage, getEmployeeAvailableHours, calculateEmployeeAllocatedHoursForMonth } from "@/lib/allocation-utils";
+import { getContrastColor } from "@/lib/calendar-utils";
 import { getAllocationStatus } from "@/lib/employee-data";
 import { formatHours, isWeekendDay } from "@/lib/calendar-utils";
 
@@ -30,6 +31,7 @@ export const TeamManagement = () => {
   
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +55,16 @@ export const TeamManagement = () => {
       setError(null);
       
       // Load all data in parallel
-      const [membersData, allocationsData, vacationsData] = await Promise.all([
+      const [membersData, allocationsData, projectsData, vacationsData] = await Promise.all([
         teamMembersApi.getAll(),
         projectAllocationsApi.getAll(),
+        projectsApi.getAll(),
         vacationsApi.getAll()
       ]);
       
       setMembers(membersData);
       setAllocations(allocationsData);
+      setProjects(projectsData);
       setVacations(vacationsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load team data');
@@ -367,6 +371,20 @@ export const TeamManagement = () => {
     };
   };
 
+  // Get projects for a specific team member
+  const getMemberProjects = (memberId: number) => {
+    const memberAllocations = allocations.filter(allocation => 
+      allocation.employeeId === memberId.toString()
+    );
+    
+    const memberProjectIds = memberAllocations.map(allocation => allocation.projectId);
+    const memberProjects = projects.filter(project => 
+      memberProjectIds.includes(project.id.toString())
+    );
+    
+    return memberProjects;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -647,6 +665,36 @@ export const TeamManagement = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Projects Section */}
+                    {(() => {
+                      const memberProjects = getMemberProjects(member.id);
+                      if (memberProjects.length === 0) return null;
+                      
+                      return (
+                        <div className="mt-4 pt-3 border-t">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Folder className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs font-medium text-muted-foreground">Projects</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {memberProjects.map((project) => (
+                              <div
+                                key={project.id}
+                                className="px-2 py-1 rounded text-xs font-medium truncate max-w-[120px]"
+                                style={{
+                                  backgroundColor: project.color,
+                                  color: getContrastColor(project.color)
+                                }}
+                                title={project.name}
+                              >
+                                {project.name}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
 
                   </CardContent>
