@@ -664,6 +664,7 @@ export const TimeOffManagement: React.FC = () => {
                   .map((vacation) => (
                     <div key={vacation.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                       <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3"></div>
                         <div>
                           <p className="font-medium text-sm">{vacation.employeeName}</p>
                           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
@@ -1140,7 +1141,7 @@ export const TimeOffManagement: React.FC = () => {
               Cancel
             </Button>
             <Button onClick={handleAddVacation}>
-              Add Vacation Request
+              Add Time Off
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1166,13 +1167,13 @@ export const TimeOffManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Vacation Confirmation Dialog */}
+      {/* Delete Time Off Confirmation Dialog */}
       <Dialog open={showDeleteVacationDialog} onOpenChange={setShowDeleteVacationDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Delete Vacation Request</DialogTitle>
+            <DialogTitle>Delete Time Off Request</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the vacation request for "{vacationToDelete?.employeeName}"? This action cannot be undone.
+              Are you sure you want to delete the time off request for "{vacationToDelete?.employeeName}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1180,7 +1181,7 @@ export const TimeOffManagement: React.FC = () => {
               Cancel
             </Button>
             <Button variant="destructive" onClick={executeDeleteVacation}>
-              Delete Vacation
+              Delete Time Off
             </Button>
           </DialogFooter>
         </DialogContent>
