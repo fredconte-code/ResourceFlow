@@ -60,8 +60,7 @@ interface VacationItem {
   startDate: Date;
   endDate: Date;
   days: number;
-  type: 'Vacation' | 'Sick Leave' | 'Personal' | 'Other';
-  notes?: string;
+  type: 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal';
 }
 
 export const TimeOffManagement: React.FC = () => {
@@ -130,8 +129,7 @@ export const TimeOffManagement: React.FC = () => {
     employeeId: '',
     startDate: new Date(),
     endDate: new Date(),
-    type: 'Vacation' as 'Vacation' | 'Sick Leave' | 'Personal' | 'Other',
-    notes: ''
+    type: 'Vacation' as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
   });
 
   // Load data on component mount
@@ -167,8 +165,7 @@ export const TimeOffManagement: React.FC = () => {
           startDate: parseISO(vacation.start_date),
           endDate: parseISO(vacation.end_date),
           days: differenceInDays(parseISO(vacation.end_date), parseISO(vacation.start_date)) + 1,
-          type: vacation.type as 'Vacation' | 'Sick Leave' | 'Personal' | 'Other',
-          notes: ''
+          type: vacation.type as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
         };
       });
       
@@ -395,7 +392,7 @@ export const TimeOffManagement: React.FC = () => {
       
       toast({
         title: "Success",
-        description: "Vacation request added successfully.",
+        description: "Time off request added successfully.",
       });
       
       setShowVacationForm(false);
@@ -404,7 +401,6 @@ export const TimeOffManagement: React.FC = () => {
         startDate: new Date(),
         endDate: new Date(),
         type: 'Vacation',
-        notes: ''
       });
       
       loadData(); // Refresh data
@@ -413,7 +409,7 @@ export const TimeOffManagement: React.FC = () => {
       console.error('Error adding vacation:', error);
       toast({
         title: "Error",
-        description: "Failed to add vacation request. Please try again.",
+        description: "Failed to add time off request. Please try again.",
         variant: "destructive",
       });
     }
@@ -425,7 +421,7 @@ export const TimeOffManagement: React.FC = () => {
       
       toast({
         title: "Success",
-        description: "Vacation request deleted successfully.",
+        description: "Time off request deleted successfully.",
       });
       
       loadData(); // Refresh data
@@ -434,7 +430,7 @@ export const TimeOffManagement: React.FC = () => {
       console.error('Error deleting vacation:', error);
       toast({
         title: "Error",
-        description: "Failed to delete vacation request. Please try again.",
+        description: "Failed to delete time off request. Please try again.",
         variant: "destructive",
       });
     }
@@ -453,7 +449,7 @@ export const TimeOffManagement: React.FC = () => {
       
       toast({
         title: "Success",
-        description: "Vacation request deleted successfully.",
+        description: "Time off request deleted successfully.",
       });
       
       loadData(); // Refresh data
@@ -462,7 +458,7 @@ export const TimeOffManagement: React.FC = () => {
       console.error('Error deleting vacation:', error);
       toast({
         title: "Error",
-        description: "Failed to delete vacation request. Please try again.",
+        description: "Failed to delete time off request. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -498,7 +494,7 @@ export const TimeOffManagement: React.FC = () => {
           <div>
             <h2 className="text-xl font-bold tracking-tight">Time Off Management</h2>
             <p className="text-muted-foreground text-sm">
-              Manage holidays and vacation schedules that affect team availability.
+              Manage holidays and time off schedules that affect team availability.
             </p>
           </div>
         </div>
@@ -517,7 +513,7 @@ export const TimeOffManagement: React.FC = () => {
           <div>
             <h2 className="text-xl font-bold tracking-tight">Time Off Management</h2>
             <p className="text-muted-foreground text-sm">
-              Manage holidays and vacation schedules that affect team availability.
+              Manage holidays and time off schedules that affect team availability.
             </p>
           </div>
         </div>
@@ -540,7 +536,7 @@ export const TimeOffManagement: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold tracking-tight">Time Off Management</h2>
           <p className="text-muted-foreground text-sm">
-            Manage holidays and vacation schedules that affect team availability.
+            Manage holidays and time off schedules that affect team availability.
           </p>
         </div>
       </div>
@@ -563,6 +559,9 @@ export const TimeOffManagement: React.FC = () => {
                 Add Holiday
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Manage company holidays and national days off that affect team availability.
+            </p>
           </CardHeader>
           <CardContent>
             {holidays.length === 0 ? (
@@ -629,30 +628,33 @@ export const TimeOffManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Vacations Container */}
+        {/* Time Off Container */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Users className="h-5 w-5 text-green-600" />
-                <CardTitle className="text-lg">Vacations</CardTitle>
+                <CardTitle className="text-lg">Time Off</CardTitle>
                 <Badge variant="secondary" className="ml-2">
                   {vacations.length}
                 </Badge>
               </div>
               <Button onClick={() => setShowVacationForm(true)} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Vacation
+                Add Time Off
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Manage employee time off requests including vacations, sick leave, compensation days, and personal time.
+            </p>
           </CardHeader>
           <CardContent>
             {vacations.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">No vacation requests yet</p>
+                <p className="text-muted-foreground mb-4">No time off requests yet</p>
                 <Button onClick={() => setShowVacationForm(true)} size="sm">
-                  Add your first vacation
+                  Add your first time off request
                 </Button>
               </div>
             ) : (
@@ -662,7 +664,6 @@ export const TimeOffManagement: React.FC = () => {
                   .map((vacation) => (
                     <div key={vacation.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                       <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-allocation-low rounded-full"></div>
                         <div>
                           <p className="font-medium text-sm">{vacation.employeeName}</p>
                           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
@@ -972,13 +973,13 @@ export const TimeOffManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Vacation Dialog */}
+      {/* Add Time Off Dialog */}
       <Dialog open={showVacationForm} onOpenChange={setShowVacationForm}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Add Vacation Request</DialogTitle>
+            <DialogTitle>Add Time Off Request</DialogTitle>
             <DialogDescription>
-              Create a new vacation request for a team member.
+              Create a new time off request for a team member.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -1118,7 +1119,7 @@ export const TimeOffManagement: React.FC = () => {
               <Label htmlFor="vacation-type">Type</Label>
               <Select
                 value={vacationForm.type}
-                onValueChange={(value: 'Vacation' | 'Sick Leave' | 'Personal' | 'Other') =>
+                onValueChange={(value: 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal') =>
                   setVacationForm({ ...vacationForm, type: value })
                 }
               >
@@ -1128,20 +1129,10 @@ export const TimeOffManagement: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="Vacation">Vacation</SelectItem>
                   <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                  <SelectItem value="Compensation">Compensation</SelectItem>
                   <SelectItem value="Personal">Personal</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="vacation-notes">Notes (Optional)</Label>
-              <Textarea
-                id="vacation-notes"
-                value={vacationForm.notes}
-                onChange={(e) => setVacationForm({ ...vacationForm, notes: e.target.value })}
-                placeholder="Additional notes about this request..."
-                rows={3}
-              />
             </div>
           </div>
           <DialogFooter>
