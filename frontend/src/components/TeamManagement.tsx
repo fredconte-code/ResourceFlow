@@ -303,7 +303,9 @@ export const TeamManagement = () => {
     const allocatedHours = calculateEmployeeAllocatedHoursForMonth(
       employee.id,
       allocations,
-      currentDate
+      currentDate,
+      holidays,
+      employee
     );
 
     // Calculate total days off for current month (holidays + vacations)

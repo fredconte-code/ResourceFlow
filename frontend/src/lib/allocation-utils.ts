@@ -1,4 +1,4 @@
-import { startOfMonth, endOfMonth, differenceInDays, addDays, parseISO } from "date-fns";
+import { startOfMonth, endOfMonth, differenceInDays, addDays, parseISO, isSameDay } from "date-fns";
 import { isWeekendDay } from "./calendar-utils";
 import { getWorkingHoursForCountry } from "./working-hours";
 import { Employee } from "./employee-data";
@@ -97,7 +97,9 @@ export const calculateEmployeeBreakdown = (
 export const calculateEmployeeAllocatedHoursForMonth = (
   employeeId: string,
   allocations: ProjectAllocation[],
-  currentDate: Date
+  currentDate: Date,
+  holidays: any[] = [],
+  employee?: Employee
 ) => {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -116,11 +118,17 @@ export const calculateEmployeeAllocatedHoursForMonth = (
     const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
     const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
     
-    // Count working days in allocation period
+    // Count only working days (exclude weekends and holidays)
     let workingDays = 0;
     let currentDate = new Date(effectiveStart);
     while (currentDate <= effectiveEnd) {
-      if (!isWeekendDay(currentDate)) {
+      const isHoliday = employee && holidays.some(holiday => {
+        const holidayDate = parseISO(holiday.date);
+        return isSameDay(holidayDate, currentDate) && 
+               (holiday.country === 'Both' || holiday.country === employee.country);
+      });
+      
+      if (!isWeekendDay(currentDate) && !isHoliday) {
         workingDays++;
       }
       currentDate = addDays(currentDate, 1);

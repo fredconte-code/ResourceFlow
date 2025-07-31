@@ -384,39 +384,11 @@ export const CalendarView: React.FC = () => {
   };
 
   // Calculate allocated hours for an employee for the current month only
-  const calculateEmployeeAllocatedHoursForMonth = (employeeId: string) => {
+  const calculateEmployeeAllocatedHoursForMonthLocal = (employeeId: string) => {
     const employee = employees.find(e => e.id === employeeId);
     if (!employee) return 0;
     
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    
-    const employeeAllocations = allocations.filter(allocation => allocation.employeeId === employeeId);
-    return employeeAllocations.reduce((total, allocation) => {
-      const allocationStart = new Date(allocation.startDate + 'T00:00:00');
-      const allocationEnd = new Date(allocation.endDate + 'T00:00:00');
-      
-      // Check if allocation overlaps with current month
-      if (allocationEnd < monthStart || allocationStart > monthEnd) {
-        return total;
-      }
-      
-      // Calculate overlap with current month
-      const effectiveStart = allocationStart < monthStart ? monthStart : allocationStart;
-      const effectiveEnd = allocationEnd > monthEnd ? monthEnd : allocationEnd;
-      
-      // Count only working days (exclude weekends and holidays)
-      let workingDays = 0;
-      let currentDate = new Date(effectiveStart);
-      while (currentDate <= effectiveEnd) {
-        if (!isWeekendDay(currentDate) && !getHolidayForEmployeeAndDate(employee, currentDate)) {
-          workingDays++;
-        }
-        currentDate = addDays(currentDate, 1);
-      }
-      
-      return total + (allocation.hoursPerDay * workingDays);
-    }, 0);
+    return calculateEmployeeAllocatedHoursForMonth(employeeId, allocations, currentDate, holidays, employee);
   };
 
   // Update employee's allocated hours
@@ -1644,7 +1616,7 @@ export const CalendarView: React.FC = () => {
                              <span className={cn(
                                getEmployeeAllocationPercentage(employee) > 100 && "text-red-600 font-medium"
                              )}>
-                               {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getEmployeeAvailableHoursLocal(employee))}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                               {formatHours(calculateEmployeeAllocatedHoursForMonthLocal(employee.id))}h / {formatHours(getEmployeeAvailableHoursLocal(employee))}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
                                {getEmployeeAllocationPercentage(employee) > 100 && " ⚠️"}
                              </span>
                              <TooltipProvider>
@@ -1733,7 +1705,7 @@ export const CalendarView: React.FC = () => {
                                                "font-medium",
                                                getEmployeeAllocationPercentage(employee) > 100 ? "text-red-600" : "text-green-600"
                                              )}>
-                                               {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}
+                                               {formatHours(calculateEmployeeAllocatedHoursForMonthLocal(employee.id))}
                                              </span>
                                            </div>
                                            <div className="flex justify-between">

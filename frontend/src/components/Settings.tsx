@@ -13,6 +13,7 @@ import { employees as allEmployees, getCurrentEmployeesSync } from "@/lib/employ
 import { checkDataConsistency } from "@/lib/employee-data";
 import { getProjectsSync } from "@/lib/project-data";
 import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection, ExportData, holidaysApi, vacationsApi, projectAllocationsApi } from "@/lib/api";
+import { calculateEmployeeAllocatedHoursForMonth } from "@/lib/allocation-utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
@@ -290,19 +291,14 @@ export const Settings = () => {
       const { buffer } = useSettings();
 
       return employees.map(employee => {
-        // Calculate allocation data for current month
-        const employeeAllocations = allocations.filter(a => a.employeeId === employee.id.toString());
-        const allocatedHours = employeeAllocations.reduce((sum, a) => {
-          const start = new Date(a.startDate);
-          const end = new Date(a.endDate);
-          const currentMonth = currentDate.getMonth();
-          const currentYear = currentDate.getFullYear();
-          
-          if (start.getMonth() === currentMonth && start.getFullYear() === currentYear) {
-            return sum + (a.hoursPerDay || 8);
-          }
-          return sum;
-        }, 0);
+        // Calculate allocation data for current month using the corrected function
+        const allocatedHours = calculateEmployeeAllocatedHoursForMonth(
+          employee.id.toString(),
+          allocations,
+          currentDate,
+          holidays,
+          employee
+        );
 
         // Calculate available hours
         const weeklyHours = employee.country === 'Canada' ? canadaHours : brazilHours;
@@ -353,6 +349,9 @@ export const Settings = () => {
         });
 
         const allocationPercentage = availableHours > 0 ? Math.round((allocatedHours / availableHours) * 100) : 0;
+
+        // Count active allocations for this employee
+        const employeeAllocations = allocations.filter(a => a.employeeId === employee.id.toString());
 
         return {
           employeeId: employee.id,
