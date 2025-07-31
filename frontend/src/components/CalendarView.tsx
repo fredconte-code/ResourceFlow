@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -44,6 +44,7 @@ export const CalendarView: React.FC = () => {
   const { getWorkingHoursForCountry } = useWorkingHours();
   const { holidays, refreshHolidays } = useHolidays();
   const { timeOffs: globalTimeOffs, refreshTimeOffs } = useTimeOffs();
+  const { buffer } = useSettings();
   
   // Basic state management
   const [loading, setLoading] = useState(true);
@@ -332,7 +333,6 @@ export const CalendarView: React.FC = () => {
 
   // Calculate allocation percentage for an employee for the current month
   const getEmployeeAllocationPercentage = (employee: Employee) => {
-    const { buffer } = useSettings();
     return calculateEmployeeAllocationPercentage(
       employee,
       allocations,
@@ -345,7 +345,6 @@ export const CalendarView: React.FC = () => {
 
   // Helper function to get available hours for an employee (after buffer deduction)
   const getEmployeeAvailableHoursLocal = (employee: Employee) => {
-    const { buffer } = useSettings();
     return getEmployeeAvailableHours(
       employee,
       currentDate,
@@ -921,7 +920,7 @@ export const CalendarView: React.FC = () => {
     }
   };
 
-  const handleAllocationDrop = async (event: React.MouseEvent, employeeId: string, date: Date) => {
+  const handleAllocationDrop = useCallback(async (event: React.MouseEvent, employeeId: string, date: Date) => {
     if (!draggingAllocation) return;
     
     // Only allow horizontal movement (same employee)
@@ -1003,7 +1002,7 @@ export const CalendarView: React.FC = () => {
     } finally {
       setDraggingAllocation(null);
     }
-  };
+  }, [draggingAllocation, allocations, projects, toast, updateEmployeeAllocatedHours]);
 
   const handleDragLeave = () => {
     setDragOverCell(null);
@@ -1120,7 +1119,7 @@ export const CalendarView: React.FC = () => {
     });
   };
 
-  const handleResizeMove = (event: MouseEvent) => {
+  const handleResizeMove = useCallback((event: MouseEvent) => {
     if (!resizingAllocation) return;
     
     // Find the cell under the mouse cursor using elementFromPoint
@@ -1160,9 +1159,9 @@ export const CalendarView: React.FC = () => {
         }
       }
     }
-  };
+  }, [resizingAllocation]);
 
-  const handleResizeEnd = async () => {
+  const handleResizeEnd = useCallback(async () => {
     if (!resizingAllocation) return;
     
 
@@ -1202,7 +1201,7 @@ export const CalendarView: React.FC = () => {
     } finally {
       setResizingAllocation(null);
     }
-  };
+  }, [resizingAllocation, allocations, toast, updateEmployeeAllocatedHours]);
   
 
   
@@ -1362,7 +1361,7 @@ export const CalendarView: React.FC = () => {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [resizingAllocation, draggingAllocation]);
+  }, [resizingAllocation, draggingAllocation, dragStartPosition, handleAllocationDrop, handleResizeEnd, handleResizeMove]);
 
   // Handle clicking outside date pickers to close them
   useEffect(() => {
@@ -1654,7 +1653,6 @@ export const CalendarView: React.FC = () => {
                                    <div className="space-y-2">
                                      <div className="font-semibold text-sm border-b pb-1">Allocation Breakdown</div>
                                      {(() => {
-                                       const { buffer } = useSettings();
                                        const breakdown = calculateEmployeeBreakdown(employee, currentDate, holidays, vacations, buffer);
                                        return (
                                          <div className="space-y-1 text-xs">

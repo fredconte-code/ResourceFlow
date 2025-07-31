@@ -58,4 +58,56 @@ export const createLoadingState = () => ({
 export const createDialogState = () => ({
   showDialog: false,
   selectedFile: null as File | null
-}); 
+});
+
+// Validation messages
+export const VALIDATION_MESSAGES = {
+  REQUIRED: (field: string) => `${field} is required.`,
+  DATE_RANGE: "Start date must be before end date.",
+  POSITIVE_NUMBER: (field: string) => `${field} must be a positive number.`,
+  NUMBER_RANGE: (field: string, min: number, max: number) => 
+    `${field} must be between ${min} and ${max}.`,
+  MIN_LENGTH: (field: string, min: number) => `${field} must be at least ${min} characters long.`,
+  MAX_LENGTH: (field: string, max: number) => `${field} must be no more than ${max} characters long.`,
+  EMAIL: (field: string) => `${field} must be a valid email address.`,
+  URL: (field: string) => `${field} must be a valid URL.`
+} as const;
+
+// Toast variants
+export const TOAST_VARIANTS = {
+  SUCCESS: "default",
+  ERROR: "destructive",
+  WARNING: "default",
+  INFO: "default"
+} as const;
+
+// Common button text
+export const BUTTON_TEXT = {
+  SAVE: "Save",
+  CANCEL: "Cancel",
+  DELETE: "Delete",
+  EDIT: "Edit",
+  ADD: "Add",
+  CONFIRM: "Confirm",
+  CLEAR: "Clear",
+  REFRESH: "Refresh",
+  EXPORT: "Export",
+  IMPORT: "Import"
+} as const;
+
+// Form field labels
+export const FIELD_LABELS = {
+  NAME: "Name",
+  EMAIL: "Email",
+  ROLE: "Role",
+  COUNTRY: "Country",
+  START_DATE: "Start Date",
+  END_DATE: "End Date",
+  HOURS_PER_DAY: "Hours per Day",
+  PROJECT_NAME: "Project Name",
+  PROJECT_COLOR: "Project Color",
+  PROJECT_STATUS: "Project Status",
+  HOLIDAY_NAME: "Holiday Name",
+  HOLIDAY_DATE: "Holiday Date",
+  VACATION_TYPE: "Vacation Type"
+} as const; 

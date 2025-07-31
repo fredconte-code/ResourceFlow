@@ -8,7 +8,7 @@ import { CalendarView } from "@/components/CalendarView";
 import { Dashboard } from "@/components/Dashboard";
 
 const Index = () => {
-  console.log('Index component rendering...');
+
   
   // Initialize currentView from localStorage or default to 'dashboard'
   const [currentView, setCurrentView] = useState(() => {

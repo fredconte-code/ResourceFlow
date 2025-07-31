@@ -9,7 +9,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  console.log('App component rendering...');
+
   
   try {
     return (
@@ -27,7 +27,6 @@ const App = () => {
       </QueryClientProvider>
     );
   } catch (error) {
-    console.error('Error rendering App:', error);
     return <div>Error loading app: {error.message}</div>;
   }
 };

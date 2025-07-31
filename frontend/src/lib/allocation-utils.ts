@@ -2,15 +2,15 @@ import { startOfMonth, endOfMonth, differenceInDays, addDays, parseISO, isSameDa
 import { isWeekendDay } from "./calendar-utils";
 import { getWorkingHoursForCountry } from "./working-hours";
 import { Employee } from "./employee-data";
-import { ProjectAllocation } from "./api";
+import { ProjectAllocation, Holiday, Vacation } from "./api";
 
 // Shared allocation calculation functions that match the Calendar page logic exactly
 
 export const calculateEmployeeBreakdown = (
   employee: Employee, 
   currentDate: Date,
-  holidays: any[],
-  vacations: any[],
+  holidays: Holiday[],
+  vacations: Vacation[],
   buffer: number
 ) => {
   const weeklyHours = getWorkingHoursForCountry(employee.country);
@@ -98,7 +98,7 @@ export const calculateEmployeeAllocatedHoursForMonth = (
   employeeId: string,
   allocations: ProjectAllocation[],
   currentDate: Date,
-  holidays: any[] = [],
+  holidays: Holiday[] = [],
   employee?: Employee
 ) => {
   const monthStart = startOfMonth(currentDate);
@@ -142,8 +142,8 @@ export const calculateEmployeeAllocationPercentage = (
   employee: Employee,
   allocations: ProjectAllocation[],
   currentDate: Date,
-  holidays: any[],
-  vacations: any[],
+  holidays: Holiday[],
+  vacations: Vacation[],
   buffer: number
 ) => {
   const allocatedHours = calculateEmployeeAllocatedHoursForMonth(employee.id, allocations, currentDate);
@@ -158,8 +158,8 @@ export const calculateEmployeeAllocationPercentage = (
 export const getEmployeeAvailableHours = (
   employee: Employee,
   currentDate: Date,
-  holidays: any[],
-  vacations: any[],
+  holidays: Holiday[],
+  vacations: Vacation[],
   buffer: number
 ) => {
   const breakdown = calculateEmployeeBreakdown(employee, currentDate, holidays, vacations, buffer);

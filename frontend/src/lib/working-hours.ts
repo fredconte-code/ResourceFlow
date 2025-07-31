@@ -168,12 +168,12 @@ export const calculateTimeOffDays = (
   
   // Calculate vacation days
   const employeeVacations = vacations.filter(vacation => 
-    vacation.employeeId === employee.id
+    vacation.employee_id === employee.id
   );
   
   employeeVacations.forEach(vacation => {
-    const vacationStart = new Date(vacation.startDate);
-    const vacationEnd = new Date(vacation.endDate);
+    const vacationStart = new Date(vacation.start_date);
+    const vacationEnd = new Date(vacation.end_date);
     
     if (!startDate || !endDate) {
       // If no period specified, count all vacation days
@@ -210,12 +210,9 @@ export const calculateTimeOffDays = (
 };
 
 // Calculate allocation percentage for an employee
-export const calculateAllocationPercentage = (employee: Employee): number => {
+export const calculateAllocationPercentage = (employee: Employee, buffer: number): number => {
   // This is a simplified calculation - in practice, you'd want to use the full calculation
   const totalHours = employee.country === 'Canada' ? 150 : 176; // 4 weeks
-  
-  // Get buffer from settings context
-  const { buffer } = useSettings();
   
   // Calculate buffer hours
   const bufferHours = (totalHours * buffer) / 100;

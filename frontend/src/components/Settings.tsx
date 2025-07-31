@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,7 +58,7 @@ export const Settings = () => {
   }, []);
 
   // Load settings from API
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -83,11 +83,11 @@ export const Settings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setBuffer, setCanadaHours, setBrazilHours, toast]);
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [loadSettings]);
 
   // Sync local state with context values when they change
   useEffect(() => {
@@ -288,7 +288,6 @@ export const Settings = () => {
       ]);
 
       const currentDate = new Date();
-      const { buffer } = useSettings();
 
       return employees.map(employee => {
         // Calculate allocation data for current month using the corrected function
@@ -335,7 +334,7 @@ export const Settings = () => {
               const effectiveEnd = vacationEnd > monthEnd ? monthEnd : vacationEnd;
               
               let workingDays = 0;
-              let currentDate = new Date(effectiveStart);
+              const currentDate = new Date(effectiveStart);
               while (currentDate <= effectiveEnd) {
                 if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) { // Not weekend
                   workingDays += 1;
@@ -424,7 +423,6 @@ export const Settings = () => {
       ]);
 
       const currentDate = new Date();
-      const { buffer } = useSettings();
 
       return employees.map(employee => {
         const employeeAllocations = allocations.filter(a => a.employeeId === employee.id.toString());
@@ -492,7 +490,6 @@ export const Settings = () => {
       ]);
 
       const currentDate = new Date();
-      const { buffer } = useSettings();
 
       // Calculate totals
       const totalEmployees = employees.length;

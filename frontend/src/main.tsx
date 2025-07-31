@@ -4,26 +4,30 @@ import './index.css'
 import { SettingsProvider } from "@/context/SettingsContext";
 import { HolidayProvider } from "@/context/HolidayContext";
 import { TimeOffProvider } from "@/context/TimeOffContext";
-
-console.log('main.tsx loading...');
+import { TeamMembersProvider } from "@/context/TeamMembersContext";
+import { ProjectsProvider } from "@/context/ProjectsContext";
+import { AllocationsProvider } from "@/context/AllocationsContext";
 
 const rootElement = document.getElementById("root");
-console.log('Root element:', rootElement);
 
 if (rootElement) {
   const root = createRoot(rootElement);
-  console.log('React root created');
-  
+
   root.render(
     <SettingsProvider>
-      <HolidayProvider>
-        <TimeOffProvider>
-          <App />
-        </TimeOffProvider>
-      </HolidayProvider>
+      <TeamMembersProvider>
+        <ProjectsProvider>
+          <AllocationsProvider>
+            <HolidayProvider>
+              <TimeOffProvider>
+                <App />
+              </TimeOffProvider>
+            </HolidayProvider>
+          </AllocationsProvider>
+        </ProjectsProvider>
+      </TeamMembersProvider>
     </SettingsProvider>
   );
-  console.log('React app rendered');
 } else {
-  console.error('Root element not found!');
+  // Root element not found - this should not happen in a properly configured app
 }

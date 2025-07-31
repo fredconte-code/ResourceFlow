@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -145,7 +145,7 @@ export const Dashboard: React.FC = () => {
     };
   }, [buffer, canadaHours, brazilHours, holidays, timeOffs]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -259,7 +259,7 @@ export const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buffer, canadaHours, brazilHours, holidays, timeOffs, toast]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -287,7 +287,7 @@ export const Dashboard: React.FC = () => {
 
     projects.forEach(project => {
       const status = project.status || 'active';
-      if (statusCounts.hasOwnProperty(status)) {
+      if (Object.prototype.hasOwnProperty.call(statusCounts, status)) {
         statusCounts[status as keyof typeof statusCounts]++;
       }
     });
@@ -330,7 +330,7 @@ export const Dashboard: React.FC = () => {
         workingDays
       };
     });
-  }, [stats.totalEmployees, stats.activeAllocations, holidays]);
+  }, [stats.totalEmployees, stats.activeAllocations, holidays, allocations]);
 
   const resourceUtilizationData = useMemo(() => [
     { name: 'Utilized', value: stats.averageUtilization, fill: '#3b82f6' },
@@ -874,9 +874,7 @@ export const Dashboard: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {(() => {
-                  console.log('Projects in Dashboard:', projects);
                   const projectsWithDates = projects.filter(project => project.startDate && project.endDate);
-                  console.log('Projects with dates:', projectsWithDates);
                   
                   if (projectsWithDates.length === 0) {
                     return (

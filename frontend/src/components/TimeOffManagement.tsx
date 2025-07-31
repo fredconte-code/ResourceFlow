@@ -154,22 +154,18 @@ export const TimeOffManagement: React.FC = () => {
 
   const loadData = async () => {
     try {
-      console.log('🔄 Loading TimeOffManagement data...');
+  
       setLoading(true);
       setError(null);
       
       const employeesData = await getCurrentEmployees();
       
-      console.log('📊 Data loaded:', {
-        holidays: globalHolidays.length,
-        timeOffs: globalTimeOffs.length,
-        employees: employeesData.length
-      });
+
       
       setEmployees(employeesData);
       
     } catch (error) {
-      console.error('❌ Error loading TimeOffManagement data:', error);
+
       setError('Failed to load time off data. Please try again.');
       toast({
         title: "Error",
@@ -222,7 +218,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('holidaysUpdate'));
       
     } catch (error) {
-      console.error('Error adding holiday:', error);
       toast({
         title: "Error",
         description: "Failed to add holiday. Please try again.",
@@ -280,7 +275,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('holidaysUpdate'));
       
     } catch (error) {
-      console.error('Error updating holiday:', error);
       toast({
         title: "Error",
         description: "Failed to update holiday. Please try again.",
@@ -303,7 +297,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('holidaysUpdate'));
       
     } catch (error) {
-      console.error('Error deleting holiday:', error);
       toast({
         title: "Error",
         description: "Failed to delete holiday. Please try again.",
@@ -333,7 +326,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('holidaysUpdate'));
       
     } catch (error) {
-      console.error('Error deleting holiday:', error);
       toast({
         title: "Error",
         description: "Failed to delete holiday. Please try again.",
@@ -404,7 +396,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
       
     } catch (error) {
-      console.error('Error adding vacation:', error);
       toast({
         title: "Error",
         description: "Failed to add time off request. Please try again.",
@@ -427,7 +418,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
       
     } catch (error) {
-      console.error('Error deleting vacation:', error);
       toast({
         title: "Error",
         description: "Failed to delete time off request. Please try again.",
@@ -457,7 +447,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
       
     } catch (error) {
-      console.error('Error deleting vacation:', error);
       toast({
         title: "Error",
         description: "Failed to delete time off request. Please try again.",
@@ -524,7 +513,6 @@ export const TimeOffManagement: React.FC = () => {
       window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
       
     } catch (error) {
-      console.error('Error updating vacation:', error);
       toast({
         title: "Error",
         description: "Failed to update time off request. Please try again.",

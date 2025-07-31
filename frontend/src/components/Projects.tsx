@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,31 +7,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Trash2, Edit2, Save, X, Calendar as CalendarIcon, Plus, AlertCircle, Loader2 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, differenceInDays, addDays, parseISO, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, addDays, parseISO, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
-import { projectsApi, projectAllocationsApi, teamMembersApi, holidaysApi, vacationsApi, Project, ProjectAllocation, ProjectStatus, TeamMember, Holiday, Vacation } from "@/lib/api";
+import { projectsApi, projectAllocationsApi, teamMembersApi, Project, ProjectAllocation, ProjectStatus, TeamMember } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { PROJECT_COLORS } from "@/lib/constants";
 import { getContrastColor, isWeekendDay } from "@/lib/calendar-utils";
-import { useSettings } from "@/context/SettingsContext";
 import { useHolidays } from "@/context/HolidayContext";
-import { useTimeOffs } from "@/context/TimeOffContext";
 import { 
   getProjectStatusConfig, 
   getProjectStatusOptions, 
-  DEFAULT_PROJECT_STATUS,
-  getProjectStatusLabel,
-  getProjectStatusColor,
-  getProjectStatusIcon
+  DEFAULT_PROJECT_STATUS
 } from "@/lib/project-status";
 
 export const Projects = () => {
   const { toast } = useToast();
-  const { buffer } = useSettings();
   const { holidays } = useHolidays();
-  const { timeOffs: vacations } = useTimeOffs();
   const [projects, setProjects] = useState<Project[]>([]);
   const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);
   const [employees, setEmployees] = useState<TeamMember[]>([]);
@@ -63,7 +55,7 @@ export const Projects = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Load projects and allocations from API
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -85,11 +77,11 @@ export const Projects = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadProjects();
-  }, []);
+  }, [loadProjects]);
 
   // Listen for allocation updates to refresh data
   useEffect(() => {
@@ -102,7 +94,7 @@ export const Projects = () => {
     return () => {
       window.removeEventListener('projectAllocationsUpdate', handleAllocationUpdate);
     };
-  }, []);
+  }, [loadProjects]);
 
   // Calculate allocated hours for a specific project using the same logic as Calendar
   const getProjectAllocatedHours = (projectId: number) => {
