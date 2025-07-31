@@ -293,23 +293,23 @@ app.get('/api/vacations', (req, res) => {
 });
 
 app.post('/api/vacations', (req, res) => {
-  const { employeeId, employeeName, startDate, endDate, type } = req.body;
-  if (!employeeId || !employeeName || !startDate || !endDate) {
+  const { employee_id, employee_name, start_date, end_date, type } = req.body;
+  if (!employee_id || !employee_name || !start_date || !end_date) {
     return res.status(400).json({ error: 'Employee ID, name, start date, and end date are required' });
   }
   
   const id = Date.now().toString();
   db.run(
-    'INSERT INTO vacations (id, employee_id, employee_name, start_date, end_date) VALUES (?, ?, ?, ?, ?)',
-    [id, employeeId, employeeName, startDate, endDate],
+    'INSERT INTO vacations (id, employee_id, employee_name, start_date, end_date, type) VALUES (?, ?, ?, ?, ?, ?)',
+    [id, employee_id, employee_name, start_date, end_date, type || 'vacation'],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ 
         id, 
-        employeeId, 
-        employeeName, 
-        startDate, 
-        endDate, 
+        employee_id, 
+        employee_name, 
+        start_date, 
+        end_date, 
         type: type || 'vacation' 
       });
     }
@@ -324,6 +324,32 @@ app.delete('/api/vacations/:id', (req, res) => {
     if (this.changes === 0) return res.status(404).json({ error: 'Vacation not found' });
     res.json({ message: 'Vacation deleted successfully' });
   });
+});
+
+app.put('/api/vacations/:id', (req, res) => {
+  const { id } = req.params;
+  const { employee_id, employee_name, start_date, end_date, type } = req.body;
+  
+  if (!employee_id || !employee_name || !start_date || !end_date) {
+    return res.status(400).json({ error: 'Employee ID, name, start date, and end date are required' });
+  }
+  
+  db.run(
+    'UPDATE vacations SET employee_id = ?, employee_name = ?, start_date = ?, end_date = ?, type = ? WHERE id = ?',
+    [employee_id, employee_name, start_date, end_date, type || 'vacation', id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: 'Vacation not found' });
+      res.json({ 
+        id, 
+        employee_id, 
+        employee_name, 
+        start_date, 
+        end_date, 
+        type: type || 'vacation' 
+      });
+    }
+  );
 });
 
 // --- Project Allocations API ---
