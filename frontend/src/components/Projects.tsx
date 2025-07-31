@@ -6,26 +6,49 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Trash2, Edit2, Save, X, Calendar as CalendarIcon, Plus, AlertCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { projectsApi, Project } from "@/lib/api";
+import { projectsApi, Project, ProjectStatus } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { PROJECT_COLORS } from "@/lib/constants";
+import { getContrastColor } from "@/lib/calendar-utils";
+import { 
+  getProjectStatusConfig, 
+  getProjectStatusOptions, 
+  DEFAULT_PROJECT_STATUS,
+  getProjectStatusLabel,
+  getProjectStatusColor,
+  getProjectStatusIcon
+} from "@/lib/project-status";
 
 export const Projects = () => {
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined, color: '#3b82f6' });
+  const [form, setForm] = useState({ 
+    name: "", 
+    startDate: undefined as Date | undefined, 
+    endDate: undefined as Date | undefined, 
+    color: '#3b82f6',
+    status: DEFAULT_PROJECT_STATUS as ProjectStatus
+  });
   
   // State for showing/hiding add form
   const [showAddForm, setShowAddForm] = useState(false);
   
   // State for editing
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", startDate: undefined as Date | undefined, endDate: undefined as Date | undefined, color: '#3b82f6' });
+  const [editForm, setEditForm] = useState({ 
+    name: "", 
+    startDate: undefined as Date | undefined, 
+    endDate: undefined as Date | undefined, 
+    color: '#3b82f6',
+    status: DEFAULT_PROJECT_STATUS as ProjectStatus
+  });
   
   // State for delete confirmation
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
@@ -78,11 +101,12 @@ export const Projects = () => {
         startDate: form.startDate ? format(form.startDate, 'yyyy-MM-dd') : undefined,
         endDate: form.endDate ? format(form.endDate, 'yyyy-MM-dd') : undefined,
         color: form.color,
+        status: form.status,
         allocatedHours: 0
       });
       
       setProjects(prev => [...prev, addedProject]);
-      setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
+      setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6', status: DEFAULT_PROJECT_STATUS });
       setShowAddForm(false);
       
       toast({
@@ -107,7 +131,8 @@ export const Projects = () => {
       name: project.name,
       startDate: project.startDate ? new Date(project.startDate) : undefined,
       endDate: project.endDate ? new Date(project.endDate) : undefined,
-      color: project.color
+      color: project.color,
+      status: project.status || DEFAULT_PROJECT_STATUS
     });
   };
 
@@ -140,12 +165,13 @@ export const Projects = () => {
         name: editForm.name,
         startDate: editForm.startDate ? format(editForm.startDate, 'yyyy-MM-dd') : undefined,
         endDate: editForm.endDate ? format(editForm.endDate, 'yyyy-MM-dd') : undefined,
-        color: editForm.color
+        color: editForm.color,
+        status: editForm.status
       });
       
       setProjects(prev => prev.map(p => p.id === editingProject.id ? updatedProject : p));
       setEditingProject(null);
-      setEditForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
+      setEditForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6', status: DEFAULT_PROJECT_STATUS });
       
       toast({
         title: "Success",
@@ -167,7 +193,7 @@ export const Projects = () => {
 
   const handleCancelEdit = () => {
     setEditingProject(null);
-    setEditForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
+    setEditForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6', status: DEFAULT_PROJECT_STATUS });
   };
 
   const handleDeleteClick = (project: Project) => {
@@ -252,7 +278,7 @@ export const Projects = () => {
             <CardTitle className="text-lg">Add New Project</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div className="space-y-2">
               <Label htmlFor="name">Project Name *</Label>
               <Input
@@ -397,6 +423,30 @@ export const Projects = () => {
                   ))}
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label>Project Status</Label>
+                <Select value={form.status} onValueChange={(value: ProjectStatus) => setForm({ ...form, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getProjectStatusOptions().map((option) => {
+                      const IconComponent = option.icon;
+                      return (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <div style={{ color: option.color }}>
+                              <IconComponent className="h-4 w-4" />
+                            </div>
+                            <span>{option.label}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
           </div>
           
           <div className="flex gap-2">
@@ -405,7 +455,7 @@ export const Projects = () => {
               Add Project
             </Button>
             <Button variant="outline" size="sm" onClick={() => {
-              setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6' });
+              setForm({ name: "", startDate: undefined, endDate: undefined, color: '#3b82f6', status: DEFAULT_PROJECT_STATUS });
               setShowAddForm(false);
             }}>
               <X className="h-4 w-4 mr-2" />
@@ -437,12 +487,31 @@ export const Projects = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: project.color }}
-                    />
-                    <div>
-                      <h3 className="font-semibold text-sm">{project.name}</h3>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="px-3 py-1.5 border rounded-md flex items-center justify-center min-w-[120px] max-w-[150px] h-8"
+                          style={{ 
+                            backgroundColor: project.color,
+                            borderColor: project.color,
+                            color: getContrastColor(project.color)
+                          }}
+                        >
+                          <span className="font-medium text-xs truncate">{project.name}</span>
+                        </div>
+                        {(() => {
+                          const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
+                          const IconComponent = statusConfig.icon;
+                          return (
+                            <div className="flex items-center gap-1 text-xs">
+                              <div style={{ color: statusConfig.color }}>
+                                <IconComponent className="h-3 w-3" />
+                              </div>
+                              <span className="text-muted-foreground">{statusConfig.label}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         {project.startDate && (
                           <>
@@ -636,6 +705,30 @@ export const Projects = () => {
                     />
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Project Status</Label>
+                <Select value={editForm.status} onValueChange={(value: ProjectStatus) => setEditForm({ ...editForm, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getProjectStatusOptions().map((option) => {
+                      const IconComponent = option.icon;
+                      return (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <div style={{ color: option.color }}>
+                              <IconComponent className="h-4 w-4" />
+                            </div>
+                            <span>{option.label}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
