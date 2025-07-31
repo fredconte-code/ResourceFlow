@@ -853,50 +853,18 @@ export const Settings = () => {
           </div>
 
           {/* Server Status */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Server className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <span className="font-medium">Server Status</span>
-              </div>
-                              <div className="flex items-center gap-2">
-                  {serverStatus === 'online' ? (
-                    <CircleCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  ) : serverStatus === 'offline' ? (
-                    <CircleX className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  ) : (
-                    <CircleAlert className="h-5 w-5 text-yellow-600 dark:text-yellow-400 animate-pulse" />
-                  )}
-                  <span className={`text-sm font-medium ${
-                    serverStatus === 'online' 
-                      ? 'text-green-700 dark:text-green-400' 
-                      : serverStatus === 'offline' 
-                      ? 'text-red-700 dark:text-red-400' 
-                      : 'text-yellow-700 dark:text-yellow-400'
-                  }`}>
-                    {serverStatus === 'online' ? 'Online' : serverStatus === 'offline' ? 'Offline' : 'Checking...'}
-                  </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {lastChecked && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Last checked: {lastChecked.toLocaleTimeString()}
-                </span>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={checkServerStatus}
-                disabled={serverStatus === 'checking'}
-              >
-                {serverStatus === 'checking' ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  'Test'
-                )}
-              </Button>
-            </div>
+          <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800">
+            <Server className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm text-gray-800 dark:text-gray-200">
+              <strong>Server Status:</strong> {serverStatus === 'online' ? 'Online' : serverStatus === 'offline' ? 'Offline' : 'Checking...'}
+            </span>
+            {serverStatus === 'online' ? (
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            ) : serverStatus === 'offline' ? (
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            ) : (
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+            )}
           </div>
         </CardContent>
       </Card>
