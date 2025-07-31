@@ -36,7 +36,7 @@ import {
 } from "recharts";
 import { getCurrentEmployeesSync, Employee } from "@/lib/employee-data";
 import { getProjectsSync } from "@/lib/project-data";
-import { projectAllocationsApi, ProjectAllocation, Project } from "@/lib/api";
+import { projectAllocationsApi, projectsApi, ProjectAllocation, Project } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/context/SettingsContext";
 import { useHolidays } from "@/context/HolidayContext";
@@ -152,7 +152,7 @@ export const Dashboard: React.FC = () => {
 
       const [employeesData, projects, allocationsData] = await Promise.all([
         getCurrentEmployeesSync(),
-        getProjectsSync(),
+        projectsApi.getAll(),
         projectAllocationsApi.getAll()
       ]);
 
@@ -555,6 +555,7 @@ export const Dashboard: React.FC = () => {
           <TabsTrigger value="utilization">Utilization</TabsTrigger>
           <TabsTrigger value="capacity">Capacity</TabsTrigger>
           <TabsTrigger value="employees">Employee Details</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -856,6 +857,128 @@ export const Dashboard: React.FC = () => {
                     <p className="text-muted-foreground">No employee data available</p>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Project Timeline Tab */}
+        <TabsContent value="timeline" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Project Timeline Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(() => {
+                  console.log('Projects in Dashboard:', projects);
+                  const projectsWithDates = projects.filter(project => project.startDate && project.endDate);
+                  console.log('Projects with dates:', projectsWithDates);
+                  
+                  if (projectsWithDates.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No projects with dates to display</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Total projects: {projects.length} | Projects with dates: {projectsWithDates.length}
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  return projectsWithDates
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((project) => {
+                      const startDate = new Date(project.startDate);
+                      const endDate = new Date(project.endDate);
+                      const today = new Date();
+                      
+                      // Calculate timeline range (fixed from 2024 to 2030)
+                      const timelineStart = new Date('2024-01-01');
+                      const timelineEnd = new Date('2030-12-31');
+                      
+                      const totalTimelineDays = differenceInDays(timelineEnd, timelineStart);
+                      const projectStartOffset = differenceInDays(startDate, timelineStart);
+                      const projectDuration = differenceInDays(endDate, startDate) + 1;
+                      
+                      const projectStartPercent = (projectStartOffset / totalTimelineDays) * 100;
+                      const projectWidthPercent = (projectDuration / totalTimelineDays) * 100;
+                      
+                      return (
+                        <Card key={project.id} className="border-border">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: project.color }}
+                              />
+                              <span className="font-medium text-foreground">{project.name}</span>
+                            </div>
+                            <div className="relative h-4 bg-muted rounded-full overflow-hidden mb-3">
+                              {/* Year markers */}
+                              {(() => {
+                                const years = [];
+                                for (let year = 2024; year <= 2030; year++) {
+                                  const yearStart = new Date(`${year}-01-01`);
+                                  if (yearStart >= timelineStart && yearStart <= timelineEnd) {
+                                    const yearStartPercent = (differenceInDays(yearStart, timelineStart) / totalTimelineDays) * 100;
+                                    years.push({ year, percent: yearStartPercent });
+                                  }
+                                }
+                                return years.map(({ year, percent }) => (
+                                  <div
+                                    key={year}
+                                    className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/30 z-5"
+                                    style={{ left: `${percent}%` }}
+                                    title={`${year}`}
+                                  />
+                                ));
+                              })()}
+                              
+                              {/* Today indicator */}
+                              {today >= timelineStart && today <= timelineEnd && (
+                                <div 
+                                  className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10"
+                                  style={{ 
+                                    left: `${((differenceInDays(today, timelineStart) / totalTimelineDays) * 100)}%` 
+                                  }}
+                                  title={`Today: ${format(today, 'MMM dd, yyyy')}`}
+                                />
+                              )}
+                              
+                              {/* Project timeline bar */}
+                              <div
+                                className="absolute top-1 bottom-1 rounded-full transition-all duration-200 hover:opacity-80 bg-primary"
+                                style={{
+                                  left: `${projectStartPercent}%`,
+                                  width: `${projectWidthPercent}%`,
+                                  minWidth: '8px'
+                                }}
+                                title={`${format(startDate, 'MMM dd, yyyy')} - ${format(endDate, 'MMM dd, yyyy')}`}
+                              />
+                            </div>
+                            
+                            {/* Project details */}
+                            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                              <span>Start: {format(startDate, 'MMM dd, yyyy')}</span>
+                              <span>End: {format(endDate, 'MMM dd, yyyy')}</span>
+                              <span>Status: {project.status || 'Active'}</span>
+                            </div>
+                            
+                            {/* Timeline labels */}
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>{format(timelineStart, 'MMM yyyy')}</span>
+                              <span>{format(timelineEnd, 'MMM yyyy')}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    });
+                })()}
               </div>
             </CardContent>
           </Card>

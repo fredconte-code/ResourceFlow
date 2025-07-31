@@ -568,7 +568,7 @@ export const Projects = () => {
       </Card>
       )}
 
-      {/* Projects List */}
+            {/* Projects List */}
       <div className="grid gap-3">
         {projects.length === 0 ? (
           <Card>

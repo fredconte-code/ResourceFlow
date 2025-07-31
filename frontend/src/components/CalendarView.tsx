@@ -2144,7 +2144,7 @@ export const CalendarView: React.FC = () => {
               )}
             </div>
             <DialogFooter className="flex justify-between">
-              <Button variant="destructive" onClick={handleDeleteAllocation}>
+              <Button variant="destructive" onClick={handleDeleteAllocation} className="mr-auto">
                 Delete
               </Button>
               <div className="flex gap-2">
