@@ -53,7 +53,7 @@ export const AllocationBar = ({
             "text-xs font-medium",
             status === "over" ? "text-destructive" : "text-muted-foreground"
           )}>
-            {Number(safePercentage).toFixed(1).replace(/\.0$/, '')}% allocated
+            {Math.round(safePercentage)}% allocated
           </span>
           <span className="text-xs text-muted-foreground capitalize">
             {status === "over" ? "Over-allocated" : status}

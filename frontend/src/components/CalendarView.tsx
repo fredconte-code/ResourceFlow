@@ -30,12 +30,12 @@ import {
   getVacationForCell,
   getHolidayForDate,
   getDailyAllocatedHours,
-  calculateEmployeeAllocatedHoursForMonth,
   calculateEmployeeAllocatedHours,
   hasAllocationConflict,
   WEEKS_PER_MONTH,
   WORKING_DAYS_PER_WEEK
 } from "@/lib/calendar-utils";
+import { calculateEmployeeAllocationPercentage, getEmployeeAvailableHours, calculateEmployeeAllocatedHoursForMonth, calculateEmployeeBreakdown } from "@/lib/allocation-utils";
 import { COUNTRY_FLAGS, DRAG_THRESHOLD } from "@/lib/constants";
 
 export const CalendarView: React.FC = () => {
@@ -329,142 +329,30 @@ export const CalendarView: React.FC = () => {
 
   // Calculate allocation percentage for an employee for the current month
   const getEmployeeAllocationPercentage = (employee: Employee) => {
-    const allocatedHours = calculateEmployeeAllocatedHoursForMonth(employee.id);
-    const breakdown = getEmployeeBreakdown(employee);
-    
-    // Calculate percentage based on total available hours (after all deductions)
-    const percentage = breakdown.totalAvailableHours > 0 ? (allocatedHours / breakdown.totalAvailableHours) * 100 : 0;
-    
-    return percentage; // Allow percentages over 100% for overallocation
+    const { buffer } = useSettings();
+    return calculateEmployeeAllocationPercentage(
+      employee,
+      allocations,
+      currentDate,
+      holidays,
+      vacations,
+      buffer
+    );
   };
 
   // Helper function to get available hours for an employee (after buffer deduction)
-  const getEmployeeAvailableHours = (employee: Employee) => {
-    const breakdown = getEmployeeBreakdown(employee);
-    return breakdown.totalAvailableHours;
+  const getEmployeeAvailableHoursLocal = (employee: Employee) => {
+    const { buffer } = useSettings();
+    return getEmployeeAvailableHours(
+      employee,
+      currentDate,
+      holidays,
+      vacations,
+      buffer
+    );
   };
 
-  // Function to calculate detailed breakdown for tooltip
-  const getEmployeeBreakdown = (employee: Employee) => {
-    const weeklyHours = getWorkingHoursForCountry(employee.country);
-    const dailyHours = weeklyHours / 5; // Assuming 5 working days per week
-    
-    // Calculate total calendar hours for the month (including weekends)
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    const totalDaysInMonth = differenceInDays(monthEnd, monthStart) + 1;
-    const monthlyHours = totalDaysInMonth * dailyHours; // Total calendar hours including weekends
-    
-    // Get buffer from settings context
-    const { buffer } = useSettings();
-    
-    // Calculate buffer hours for the month
-    const bufferHours = (monthlyHours * buffer) / 100;
-    
-    // Calculate holiday hours for the current month
-    let holidayHours = 0;
-    
-    console.log('Holiday calculation debug:', {
-      employeeId: employee.id,
-      employeeCountry: employee.country,
-      monthStart: monthStart.toISOString(),
-      monthEnd: monthEnd.toISOString(),
-      totalHolidays: holidays.length,
-      holidays: holidays.map(h => ({ name: h.name, date: h.date, country: h.country }))
-    });
-    
-    holidays.forEach(holiday => {
-      const holidayDate = parseISO(holiday.date);
-      console.log('Processing holiday:', { 
-        name: holiday.name, 
-        originalDate: holiday.date, 
-        parsedDate: holidayDate.toISOString(),
-        dayOfMonth: holidayDate.getDate(),
-        isWeekend: isWeekendDay(holidayDate),
-        country: holiday.country,
-        employeeCountry: employee.country
-      });
-      
-      if (holidayDate >= monthStart && holidayDate <= monthEnd) {
-        // Check if holiday applies to employee's country
-        if (holiday.country === 'Both' || holiday.country === employee.country) {
-          // Only count if it's a working day (not weekend)
-          if (!isWeekendDay(holidayDate)) {
-            holidayHours += dailyHours;
-            console.log('✅ Holiday counted:', { name: holiday.name, date: holiday.date, hours: dailyHours, totalHolidayHours: holidayHours });
-          } else {
-            console.log('❌ Holiday skipped (weekend):', { name: holiday.name, date: holiday.date });
-          }
-        } else {
-          console.log('❌ Holiday skipped (country mismatch):', { name: holiday.name, date: holiday.date, holidayCountry: holiday.country, employeeCountry: employee.country });
-        }
-      } else {
-        console.log('❌ Holiday skipped (outside month):', { name: holiday.name, date: holiday.date, monthStart: monthStart.toISOString(), monthEnd: monthEnd.toISOString() });
-      }
-    });
-    
-    console.log('Final holiday hours:', holidayHours);
-    
-    // Special debug for day 7
-    const day7Date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 7);
-    console.log('Day 7 debug:', {
-      date: day7Date.toISOString(),
-      dayOfWeek: day7Date.getDay(), // 0 = Sunday, 1 = Monday, etc.
-      isWeekend: isWeekendDay(day7Date),
-      dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day7Date.getDay()]
-    });
-    
-    // Calculate vacation hours for the current month
-    let vacationHours = 0;
-    vacations.forEach(vacation => {
-      if (vacation.employeeId === employee.id) {
-        const vacationStart = parseISO(vacation.startDate);
-        const vacationEnd = parseISO(vacation.endDate);
-        
-        // Calculate overlap with current month
-        if (vacationEnd >= monthStart && vacationStart <= monthEnd) {
-          const effectiveStart = vacationStart < monthStart ? monthStart : vacationStart;
-          const effectiveEnd = vacationEnd > monthEnd ? monthEnd : vacationEnd;
-          
-          // Count working days in vacation period
-          let workingDays = 0;
-          let currentDate = new Date(effectiveStart);
-          while (currentDate <= effectiveEnd) {
-            if (!isWeekendDay(currentDate)) {
-              workingDays++;
-            }
-            currentDate = addDays(currentDate, 1);
-          }
-          
-          vacationHours += workingDays * dailyHours;
-        }
-      }
-    });
-    
-    // Calculate weekend hours for the current month
-    let weekendHours = 0;
-    let weekendDate = new Date(monthStart);
-    while (weekendDate <= monthEnd) {
-      if (isWeekendDay(weekendDate)) {
-        weekendHours += dailyHours;
-      }
-      weekendDate = addDays(weekendDate, 1);
-    }
-    
-    // Calculate total available hours
-    const totalAvailableHours = monthlyHours - bufferHours - holidayHours - vacationHours - weekendHours;
-    
-    return {
-      maxHoursPerMonth: monthlyHours,
-      maxHoursPerWeek: weeklyHours,
-      maxHoursPerDay: dailyHours,
-      bufferHours,
-      holidayHours,
-      vacationHours,
-      weekendHours,
-      totalAvailableHours
-    };
-  };
+
 
 
 
@@ -1747,7 +1635,7 @@ export const CalendarView: React.FC = () => {
                              <span className={cn(
                                getEmployeeAllocationPercentage(employee) > 100 && "text-red-600 font-medium"
                              )}>
-                               {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getEmployeeAvailableHours(employee))}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
+                               {formatHours(calculateEmployeeAllocatedHoursForMonth(employee.id))}h / {formatHours(getEmployeeAvailableHoursLocal(employee))}h ({Math.round(getEmployeeAllocationPercentage(employee))}%)
                                {getEmployeeAllocationPercentage(employee) > 100 && " ⚠️"}
                              </span>
                              <TooltipProvider>
@@ -1770,7 +1658,8 @@ export const CalendarView: React.FC = () => {
                                    <div className="space-y-2">
                                      <div className="font-semibold text-sm border-b pb-1">Allocation Breakdown</div>
                                      {(() => {
-                                       const breakdown = getEmployeeBreakdown(employee);
+                                       const { buffer } = useSettings();
+                                       const breakdown = calculateEmployeeBreakdown(employee, currentDate, holidays, vacations, buffer);
                                        return (
                                          <div className="space-y-1 text-xs">
                                            <div className="flex justify-between">

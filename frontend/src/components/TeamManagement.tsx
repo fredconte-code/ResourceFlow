@@ -306,11 +306,27 @@ export const TeamManagement = () => {
       currentDate
     );
 
-    // Calculate vacation days for current month
+    // Calculate total days off for current month (holidays + vacations)
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
-    let vacationDays = 0;
+    let totalDaysOff = 0;
     
+    // Calculate holiday days
+    holidays.forEach(holiday => {
+      const holidayDate = parseISO(holiday.date);
+      
+      if (holidayDate >= monthStart && holidayDate <= monthEnd) {
+        // Check if holiday applies to employee's country
+        if (holiday.country === 'Both' || holiday.country === member.country) {
+          // Only count if it's a working day (not weekend)
+          if (!isWeekendDay(holidayDate)) {
+            totalDaysOff += 1;
+          }
+        }
+      }
+    });
+    
+    // Calculate vacation days
     vacations.forEach(vacation => {
       if (vacation.employeeId === member.id.toString()) {
         const vacationStart = parseISO(vacation.startDate);
@@ -331,7 +347,7 @@ export const TeamManagement = () => {
             currentDate = addDays(currentDate, 1);
           }
           
-          vacationDays += workingDays;
+          totalDaysOff += workingDays;
         }
       }
     });
@@ -345,7 +361,7 @@ export const TeamManagement = () => {
       availableHours,
       status,
       weeklyHours: getWorkingHoursForCountry(member.country),
-      vacationDays
+      vacationDays: totalDaysOff
     };
   };
 
