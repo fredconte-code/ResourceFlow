@@ -1757,6 +1757,8 @@ export const CalendarView: React.FC = () => {
                              className={cn(
                                "p-0.5 border-b border-r relative transition-all duration-200",
                                isWeekendCell && "weekend-cell",
+                               holiday && showHolidays && "holiday-cell",
+                               vacation && "vacation-cell",
                                "hover:bg-muted/30"
                              )}
                              style={{ minHeight: `${rowHeight}px` }}
@@ -1827,10 +1829,7 @@ export const CalendarView: React.FC = () => {
                                      return null;
                                    }
                                    
-                                   // Handle holidays - show empty cell (no background, no text) if holidays are visible
-                                   if (holiday && showHolidays) {
-                                     return null;
-                                   }
+
                                    
                                    // Handle regular allocation percentages (including vacations)
                                    return (
@@ -1860,11 +1859,7 @@ export const CalendarView: React.FC = () => {
                                        {vacation.type}
                                      </div>
                                    )}
-                                   {showHolidays && holiday && allocations.length === 0 && !vacation && (
-                                     <div className="p-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center justify-center h-full">
-                                       Holiday
-                                     </div>
-                                   )}
+
                                  </>
                                )}
                            </div>
