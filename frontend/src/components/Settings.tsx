@@ -9,11 +9,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Loader2, Download, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert, Code } from "lucide-react";
 import * as XLSX from 'xlsx';
-import { employees as allEmployees, getCurrentEmployeesSync } from "@/lib/employee-data";
-import { checkDataConsistency } from "@/lib/employee-data";
-import { getProjectsSync } from "@/lib/project-data";
-import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection, ExportData, holidaysApi, vacationsApi, projectAllocationsApi } from "@/lib/api";
-import { calculateEmployeeAllocatedHoursForMonth } from "@/lib/allocation-utils";
+import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection } from "@/lib/api";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
@@ -181,41 +177,6 @@ export const Settings = () => {
         const settingsSheet = XLSX.utils.json_to_sheet(settingsArray);
         XLSX.utils.book_append_sheet(workbook, settingsSheet, 'Settings');
       }
-
-      // Add Dashboard Statistics Sheet
-      const dashboardStats = await generateDashboardStats();
-      if (dashboardStats) {
-        const statsSheet = XLSX.utils.json_to_sheet(dashboardStats);
-        XLSX.utils.book_append_sheet(workbook, statsSheet, 'Dashboard Statistics');
-      }
-
-      // Add Team Allocation Breakdown Sheet
-      const teamAllocationData = await generateTeamAllocationData();
-      if (teamAllocationData && teamAllocationData.length > 0) {
-        const allocationSheet = XLSX.utils.json_to_sheet(teamAllocationData);
-        XLSX.utils.book_append_sheet(workbook, allocationSheet, 'Team Allocation Breakdown');
-      }
-
-      // Add Project Metrics Sheet
-      const projectMetrics = await generateProjectMetrics();
-      if (projectMetrics && projectMetrics.length > 0) {
-        const metricsSheet = XLSX.utils.json_to_sheet(projectMetrics);
-        XLSX.utils.book_append_sheet(workbook, metricsSheet, 'Project Metrics');
-      }
-
-      // Add Resource Utilization Sheet
-      const resourceUtilization = await generateResourceUtilization();
-      if (resourceUtilization && resourceUtilization.length > 0) {
-        const utilizationSheet = XLSX.utils.json_to_sheet(resourceUtilization);
-        XLSX.utils.book_append_sheet(workbook, utilizationSheet, 'Resource Utilization');
-      }
-
-      // Add Monthly Summary Sheet
-      const monthlySummary = await generateMonthlySummary();
-      if (monthlySummary) {
-        const summarySheet = XLSX.utils.json_to_sheet(monthlySummary);
-        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Monthly Summary');
-      }
       
       // Download file
       const fileName = `resourceflow-export-${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -223,7 +184,7 @@ export const Settings = () => {
       
       toast({
         title: "Export Successful",
-        description: `Complete data exported to ${fileName}`,
+        description: `Core data exported to ${fileName} (Dashboard data excluded)`,
       });
     } catch (err) {
       toast({
@@ -234,311 +195,7 @@ export const Settings = () => {
     }
   };
 
-  // Helper function to generate dashboard statistics
-  const generateDashboardStats = async () => {
-    try {
-      const [employees, projects, holidays, vacations, allocations] = await Promise.all([
-        getCurrentEmployeesSync(),
-        getProjectsSync(),
-        holidaysApi.getAll(),
-        vacationsApi.getAll(),
-        projectAllocationsApi.getAll()
-      ]);
 
-      const canadaEmployees = employees.filter(emp => emp.country === 'Canada').length;
-      const brazilEmployees = employees.filter(emp => emp.country === 'Brazil').length;
-      
-      const ongoingProjects = projects.length; // All projects are considered ongoing since status is not available
-      const completedProjects = 0; // No completed projects since status is not available
-
-      const currentDate = new Date();
-      const upcomingVacations = vacations.filter(vacation => 
-        new Date(vacation.start_date) > currentDate
-      ).length;
-
-      return [
-        { metric: 'Total Employees', value: employees.length },
-        { metric: 'Canada Employees', value: canadaEmployees },
-        { metric: 'Brazil Employees', value: brazilEmployees },
-        { metric: 'Total Projects', value: projects.length },
-        { metric: 'Ongoing Projects', value: ongoingProjects },
-        { metric: 'Completed Projects', value: completedProjects },
-        { metric: 'Active Allocations', value: allocations.length },
-        { metric: 'Total Holidays', value: holidays.length },
-        { metric: 'Total Time Off', value: vacations.length },
-        { metric: 'Upcoming Time Off', value: upcomingVacations },
-        { metric: 'Export Date', value: new Date().toISOString() }
-      ];
-    } catch (error) {
-      console.error('Error generating dashboard stats:', error);
-      return null;
-    }
-  };
-
-  // Helper function to generate team allocation breakdown
-  const generateTeamAllocationData = async () => {
-    try {
-      const [employees, allocations, holidays, vacations] = await Promise.all([
-        getCurrentEmployeesSync(),
-        projectAllocationsApi.getAll(),
-        holidaysApi.getAll(),
-        vacationsApi.getAll()
-      ]);
-
-      const currentDate = new Date();
-
-      return employees.map(employee => {
-        // Calculate allocation data for current month using the corrected function
-        const allocatedHours = calculateEmployeeAllocatedHoursForMonth(
-          employee.id.toString(),
-          allocations,
-          currentDate,
-          holidays,
-          employee
-        );
-
-        // Calculate available hours
-        const weeklyHours = employee.country === 'Canada' ? canadaHours : brazilHours;
-        const monthlyHours = weeklyHours * 4; // 4 weeks
-        const bufferHours = (monthlyHours * buffer) / 100;
-        const availableHours = monthlyHours - bufferHours;
-
-        // Calculate days off
-        const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        
-        let totalDaysOff = 0;
-        
-        // Count holidays
-        holidays.forEach(holiday => {
-          const holidayDate = new Date(holiday.date);
-          if (holidayDate >= monthStart && holidayDate <= monthEnd) {
-            if (holiday.country === 'Both' || holiday.country === employee.country) {
-              if (holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6) { // Not weekend
-                totalDaysOff += 1;
-              }
-            }
-          }
-        });
-
-        // Count vacations
-        vacations.forEach(vacation => {
-          if (vacation.employee_id === employee.id.toString()) {
-            const vacationStart = new Date(vacation.start_date);
-            const vacationEnd = new Date(vacation.end_date);
-            
-            if (vacationEnd >= monthStart && vacationStart <= monthEnd) {
-              const effectiveStart = vacationStart < monthStart ? monthStart : vacationStart;
-              const effectiveEnd = vacationEnd > monthEnd ? monthEnd : vacationEnd;
-              
-              let workingDays = 0;
-              const currentDate = new Date(effectiveStart);
-              while (currentDate <= effectiveEnd) {
-                if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) { // Not weekend
-                  workingDays += 1;
-                }
-                currentDate.setDate(currentDate.getDate() + 1);
-              }
-              
-              totalDaysOff += workingDays;
-            }
-          }
-        });
-
-        const allocationPercentage = availableHours > 0 ? Math.round((allocatedHours / availableHours) * 100) : 0;
-
-        // Count active allocations for this employee
-        const employeeAllocations = allocations.filter(a => a.employeeId === employee.id.toString());
-
-        return {
-          employeeId: employee.id,
-          employeeName: employee.name,
-          role: employee.role,
-          country: employee.country,
-          allocatedHours: allocatedHours,
-          availableHours: Math.round(availableHours * 10) / 10,
-          allocationPercentage: allocationPercentage,
-          totalDaysOff: totalDaysOff,
-          weeklyHours: weeklyHours,
-          monthlyHours: monthlyHours,
-          bufferHours: Math.round(bufferHours * 10) / 10,
-          activeAllocations: employeeAllocations.length
-        };
-      });
-    } catch (error) {
-      console.error('Error generating team allocation data:', error);
-      return null;
-    }
-  };
-
-  // Helper function to generate project metrics
-  const generateProjectMetrics = async () => {
-    try {
-      const [projects, allocations] = await Promise.all([
-        getProjectsSync(),
-        projectAllocationsApi.getAll()
-      ]);
-
-      return projects.map(project => {
-        const projectAllocations = allocations.filter(a => a.projectId === project.id.toString());
-        const totalAllocatedHours = projectAllocations.reduce((sum, a) => {
-          const start = new Date(a.startDate);
-          const end = new Date(a.endDate);
-          const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          return sum + (daysDiff * (a.hoursPerDay || 8));
-        }, 0);
-
-        const uniqueEmployees = new Set(projectAllocations.map(a => a.employeeId)).size;
-        const projectDuration = project.startDate && project.endDate 
-          ? Math.ceil((new Date(project.endDate).getTime() - new Date(project.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-          : 0;
-
-        return {
-          projectId: project.id,
-          projectName: project.name,
-          status: 'Active', // Default status since it's not available in the interface
-          startDate: project.startDate,
-          endDate: project.endDate,
-          duration: projectDuration,
-          totalAllocatedHours: totalAllocatedHours,
-          uniqueEmployees: uniqueEmployees,
-          color: project.color,
-          averageHoursPerDay: projectDuration > 0 ? Math.round((totalAllocatedHours / projectDuration) * 10) / 10 : 0
-        };
-      });
-    } catch (error) {
-      console.error('Error generating project metrics:', error);
-      return null;
-    }
-  };
-
-  // Helper function to generate resource utilization
-  const generateResourceUtilization = async () => {
-    try {
-      const [employees, allocations] = await Promise.all([
-        getCurrentEmployeesSync(),
-        projectAllocationsApi.getAll()
-      ]);
-
-      const currentDate = new Date();
-
-      return employees.map(employee => {
-        const employeeAllocations = allocations.filter(a => a.employeeId === employee.id.toString());
-        
-        // Calculate current month utilization
-        const currentMonthAllocations = employeeAllocations.filter(a => {
-          const start = new Date(a.startDate);
-          const end = new Date(a.endDate);
-          const currentMonth = currentDate.getMonth();
-          const currentYear = currentDate.getFullYear();
-          
-          return (start.getMonth() === currentMonth && start.getFullYear() === currentYear) ||
-                 (end.getMonth() === currentMonth && end.getFullYear() === currentYear) ||
-                 (start <= new Date(currentYear, currentMonth, 1) && end >= new Date(currentYear, currentMonth + 1, 0));
-        });
-
-        const allocatedHours = currentMonthAllocations.reduce((sum, a) => {
-          const start = new Date(a.startDate);
-          const end = new Date(a.endDate);
-          const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-          const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-          
-          const effectiveStart = start < monthStart ? monthStart : start;
-          const effectiveEnd = end > monthEnd ? monthEnd : end;
-          
-          const daysDiff = Math.ceil((effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          return sum + (daysDiff * (a.hoursPerDay || 8));
-        }, 0);
-
-        const weeklyHours = employee.country === 'Canada' ? canadaHours : brazilHours;
-        const monthlyHours = weeklyHours * 4;
-        const bufferHours = (monthlyHours * buffer) / 100;
-        const availableHours = monthlyHours - bufferHours;
-        const utilizationPercentage = availableHours > 0 ? Math.round((allocatedHours / availableHours) * 100) : 0;
-
-        return {
-          employeeId: employee.id,
-          employeeName: employee.name,
-          country: employee.country,
-          allocatedHours: Math.round(allocatedHours * 10) / 10,
-          availableHours: Math.round(availableHours * 10) / 10,
-          utilizationPercentage: utilizationPercentage,
-          bufferHours: Math.round(bufferHours * 10) / 10,
-          totalMonthlyHours: monthlyHours,
-          weeklyHours: weeklyHours,
-          activeProjects: currentMonthAllocations.length,
-          overallocation: utilizationPercentage > 100
-        };
-      });
-    } catch (error) {
-      console.error('Error generating resource utilization:', error);
-      return null;
-    }
-  };
-
-  // Helper function to generate monthly summary
-  const generateMonthlySummary = async () => {
-    try {
-      const [employees, projects, allocations, holidays, vacations] = await Promise.all([
-        getCurrentEmployeesSync(),
-        getProjectsSync(),
-        projectAllocationsApi.getAll(),
-        holidaysApi.getAll(),
-        vacationsApi.getAll()
-      ]);
-
-      const currentDate = new Date();
-
-      // Calculate totals
-      const totalEmployees = employees.length;
-      const canadaEmployees = employees.filter(emp => emp.country === 'Canada').length;
-      const brazilEmployees = employees.filter(emp => emp.country === 'Brazil').length;
-      
-      const totalProjects = projects.length;
-      const activeProjects = projects.length; // All projects are considered active since status is not available
-      const completedProjects = 0; // No completed projects since status is not available
-
-      const totalAllocations = allocations.length;
-      const activeAllocations = allocations.filter(a => {
-        const end = new Date(a.endDate);
-        return end >= currentDate;
-      }).length;
-
-      const totalHolidays = holidays.length;
-      const totalVacations = vacations.length;
-
-      // Calculate capacity
-      const canadaCapacity = canadaEmployees * canadaHours * 4; // 4 weeks
-      const brazilCapacity = brazilEmployees * brazilHours * 4;
-      const totalCapacity = canadaCapacity + brazilCapacity;
-      const bufferCapacity = (totalCapacity * buffer) / 100;
-      const availableCapacity = totalCapacity - bufferCapacity;
-
-      return [
-        { category: 'Team Overview', metric: 'Total Employees', value: totalEmployees },
-        { category: 'Team Overview', metric: 'Canada Employees', value: canadaEmployees },
-        { category: 'Team Overview', metric: 'Brazil Employees', value: brazilEmployees },
-        { category: 'Projects', metric: 'Total Projects', value: totalProjects },
-        { category: 'Projects', metric: 'Active Projects', value: activeProjects },
-        { category: 'Projects', metric: 'Completed Projects', value: completedProjects },
-        { category: 'Allocations', metric: 'Total Allocations', value: totalAllocations },
-        { category: 'Allocations', metric: 'Active Allocations', value: activeAllocations },
-        { category: 'Time Off', metric: 'Total Holidays', value: totalHolidays },
-        { category: 'Time Off', metric: 'Total Time Off', value: totalVacations },
-        { category: 'Capacity', metric: 'Total Capacity (hours)', value: Math.round(totalCapacity) },
-        { category: 'Capacity', metric: 'Available Capacity (hours)', value: Math.round(availableCapacity) },
-        { category: 'Capacity', metric: 'Buffer Capacity (hours)', value: Math.round(bufferCapacity) },
-        { category: 'Settings', metric: 'Buffer Percentage', value: `${buffer}%` },
-        { category: 'Settings', metric: 'Canada Weekly Hours', value: canadaHours },
-        { category: 'Settings', metric: 'Brazil Weekly Hours', value: brazilHours },
-        { category: 'Export Info', metric: 'Export Date', value: new Date().toISOString() },
-        { category: 'Export Info', metric: 'Export Month', value: currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }
-      ];
-    } catch (error) {
-      console.error('Error generating monthly summary:', error);
-      return null;
-    }
-  };
 
 
 
@@ -710,7 +367,7 @@ export const Settings = () => {
           
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              <strong>Export data to Excel:</strong> Download all your data as an Excel file for backup or analysis.
+              <strong>Export data to Excel:</strong> Download core data (team members, projects, allocations, etc.) as an Excel file for backup or analysis. Dashboard statistics are excluded.
             </p>
             {showClearDataWarning && (
               <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200 dark:border-red-800">
