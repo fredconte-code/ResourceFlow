@@ -128,6 +128,12 @@ export const vacationsApi = {
       body: JSON.stringify(vacation),
     }),
   
+  update: (id: number, vacation: Partial<Vacation>): Promise<Vacation> => 
+    apiRequest(`/vacations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(vacation),
+    }),
+  
   delete: (id: number): Promise<{ message: string }> => 
     apiRequest(`/vacations/${id}`, {
       method: 'DELETE',

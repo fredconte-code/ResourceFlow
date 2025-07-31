@@ -1,45 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  CalendarIcon, 
-  Plus, 
-  Trash2, 
-  Edit, 
-  MapPin, 
-  Users, 
-  AlertTriangle,
-  Loader2,
-  Search,
-  Filter,
-  Clock,
-  User,
-  Building,
-  Globe,
-  CheckCircle,
-  XCircle,
-  MinusCircle,
-  GripVertical,
-  Eye,
-  MoreHorizontal
-} from "lucide-react";
-import { format, differenceInDays, isAfter, isBefore, addDays, isSameDay, parseISO, isValid } from "date-fns";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useHolidays } from "@/context/HolidayContext";
-import { getCurrentEmployees, Employee } from "@/lib/employee-data";
+import { format, parseISO, differenceInDays } from "date-fns";
+import { CalendarIcon, Plus, Edit, Trash2, Building, Users, AlertTriangle, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { holidaysApi, vacationsApi, Holiday as ApiHoliday, Vacation as ApiVacation } from "@/lib/api";
-import { COUNTRY_FLAGS } from "@/lib/constants";
+import { getCurrentEmployees, Employee } from "@/lib/employee-data";
+import { useHolidays } from "@/context/HolidayContext";
+import { useTimeOffs } from "@/context/TimeOffContext";
+
+// Country flags mapping
+const COUNTRY_FLAGS: Record<string, string> = {
+  'Canada': '🇨🇦',
+  'Brazil': '🇧🇷',
+  'Both': '🌎'
+};
 
 // Types - Using existing API interfaces and extending them
 interface HolidayItem {
@@ -66,12 +50,12 @@ interface VacationItem {
 export const TimeOffManagement: React.FC = () => {
   const { toast } = useToast();
   const { holidays: globalHolidays, refreshHolidays } = useHolidays();
+  const { timeOffs: globalTimeOffs, refreshTimeOffs } = useTimeOffs();
   
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [vacations, setVacations] = useState<VacationItem[]>([]);
   
   // Convert global holidays to local format for display
   const holidays: HolidayItem[] = globalHolidays.map(holiday => ({
@@ -82,6 +66,22 @@ export const TimeOffManagement: React.FC = () => {
     type: 'Company' as const, // Default type since API doesn't store this
     isRecurring: false
   }));
+  
+  // Convert global time offs to local format for display
+  const timeOffs: VacationItem[] = globalTimeOffs.map(timeOff => {
+    const employee = employees.find(emp => emp.id === timeOff.employee_id);
+    return {
+      id: timeOff.id.toString(),
+      employeeId: timeOff.employee_id,
+      employeeName: timeOff.employee_name,
+      employeeRole: employee?.role || 'Unknown',
+      employeeCountry: employee?.country || 'Unknown',
+      startDate: parseISO(timeOff.start_date),
+      endDate: parseISO(timeOff.end_date),
+      days: differenceInDays(parseISO(timeOff.end_date), parseISO(timeOff.start_date)) + 1,
+      type: timeOff.type as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
+    };
+  });
   
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
@@ -101,6 +101,14 @@ export const TimeOffManagement: React.FC = () => {
   const [showEditHolidayForm, setShowEditHolidayForm] = useState(false);
   const [editHolidayDatePickerOpen, setEditHolidayDatePickerOpen] = useState(false);
   const [tempEditHolidayDate, setTempEditHolidayDate] = useState<Date | undefined>(undefined);
+  
+  // Time Off Edit state
+  const [editingVacation, setEditingVacation] = useState<VacationItem | null>(null);
+  const [showEditVacationForm, setShowEditVacationForm] = useState(false);
+  const [editVacationStartDatePickerOpen, setEditVacationStartDatePickerOpen] = useState(false);
+  const [editVacationEndDatePickerOpen, setEditVacationEndDatePickerOpen] = useState(false);
+  const [tempEditVacationStartDate, setTempEditVacationStartDate] = useState<Date | undefined>(undefined);
+  const [tempEditVacationEndDate, setTempEditVacationEndDate] = useState<Date | undefined>(undefined);
   
   // Delete confirmation state
   const [showDeleteHolidayDialog, setShowDeleteHolidayDialog] = useState(false);
@@ -132,6 +140,13 @@ export const TimeOffManagement: React.FC = () => {
     type: 'Vacation' as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
   });
 
+  const [editVacationForm, setEditVacationForm] = useState({
+    employeeId: '',
+    startDate: new Date(),
+    endDate: new Date(),
+    type: 'Vacation' as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
+  });
+
   // Load data on component mount
   useEffect(() => {
     loadData();
@@ -143,34 +158,15 @@ export const TimeOffManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const [vacationsData, employeesData] = await Promise.all([
-        vacationsApi.getAll(),
-        getCurrentEmployees()
-      ]);
+      const employeesData = await getCurrentEmployees();
       
       console.log('📊 Data loaded:', {
         holidays: globalHolidays.length,
-        vacations: vacationsData.length,
+        timeOffs: globalTimeOffs.length,
         employees: employeesData.length
       });
       
-      const convertedVacations = vacationsData.map((vacation: ApiVacation) => {
-        const employee = employeesData.find(emp => emp.id === vacation.employee_id);
-        return {
-          id: vacation.id.toString(),
-          employeeId: vacation.employee_id,
-          employeeName: vacation.employee_name,
-          employeeRole: employee?.role || 'Unknown',
-          employeeCountry: employee?.country || 'Unknown',
-          startDate: parseISO(vacation.start_date),
-          endDate: parseISO(vacation.end_date),
-          days: differenceInDays(parseISO(vacation.end_date), parseISO(vacation.start_date)) + 1,
-          type: vacation.type as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
-        };
-      });
-      
       setEmployees(employeesData);
-      setVacations(convertedVacations);
       
     } catch (error) {
       console.error('❌ Error loading TimeOffManagement data:', error);
@@ -361,7 +357,7 @@ export const TimeOffManagement: React.FC = () => {
         return;
       }
 
-      if (isAfter(vacationForm.startDate, vacationForm.endDate)) {
+             if (vacationForm.startDate > vacationForm.endDate) {
         toast({
           title: "Validation Error",
           description: "Start date must be before end date.",
@@ -403,7 +399,9 @@ export const TimeOffManagement: React.FC = () => {
         type: 'Vacation',
       });
       
-      loadData(); // Refresh data
+      // Refresh global time offs and dispatch update event
+      await refreshTimeOffs();
+      window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
       
     } catch (error) {
       console.error('Error adding vacation:', error);
@@ -424,7 +422,9 @@ export const TimeOffManagement: React.FC = () => {
         description: "Time off request deleted successfully.",
       });
       
-      loadData(); // Refresh data
+      // Refresh global time offs and dispatch update event
+      await refreshTimeOffs();
+      window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
       
     } catch (error) {
       console.error('Error deleting vacation:', error);
@@ -452,7 +452,9 @@ export const TimeOffManagement: React.FC = () => {
         description: "Time off request deleted successfully.",
       });
       
-      loadData(); // Refresh data
+      // Refresh global time offs and dispatch update event
+      await refreshTimeOffs();
+      window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
       
     } catch (error) {
       console.error('Error deleting vacation:', error);
@@ -467,6 +469,70 @@ export const TimeOffManagement: React.FC = () => {
     }
   };
 
+  // Time Off Edit functions
+  const handleEditVacation = (vacation: VacationItem) => {
+    setEditingVacation(vacation);
+    setEditVacationForm({
+      employeeId: vacation.employeeId,
+      startDate: vacation.startDate,
+      endDate: vacation.endDate,
+      type: vacation.type
+    });
+    setShowEditVacationForm(true);
+  };
+
+  const handleUpdateVacation = async () => {
+    if (!editingVacation) return;
+
+    try {
+      const employee = employees.find(emp => emp.id === editVacationForm.employeeId);
+      if (!employee) {
+        toast({
+          title: "Error",
+          description: "Employee not found.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updatedVacation = {
+        employee_id: editVacationForm.employeeId,
+        employee_name: employee.name,
+        start_date: format(editVacationForm.startDate, 'yyyy-MM-dd'),
+        end_date: format(editVacationForm.endDate, 'yyyy-MM-dd'),
+        type: editVacationForm.type
+      };
+
+      await vacationsApi.update(parseInt(editingVacation.id), updatedVacation);
+      
+      toast({
+        title: "Success",
+        description: "Time off request updated successfully.",
+      });
+      
+      setShowEditVacationForm(false);
+      setEditingVacation(null);
+      setEditVacationForm({
+        employeeId: '',
+        startDate: new Date(),
+        endDate: new Date(),
+        type: 'Vacation'
+      });
+      
+      // Refresh global time offs and dispatch update event
+      await refreshTimeOffs();
+      window.dispatchEvent(new CustomEvent('timeOffsUpdate'));
+      
+    } catch (error) {
+      console.error('Error updating vacation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update time off request. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Filter functions
   const filteredHolidays = holidays.filter(holiday => {
     const matchesSearch = holiday.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -474,7 +540,7 @@ export const TimeOffManagement: React.FC = () => {
     return matchesSearch && matchesCountry;
   });
 
-  const filteredVacations = vacations.filter(vacation => {
+  const filteredVacations = timeOffs.filter(vacation => {
     const matchesSearch = vacation.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vacation.type.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCountry = filterCountry === 'all' || vacation.employeeCountry === filterCountry;
@@ -562,6 +628,7 @@ export const TimeOffManagement: React.FC = () => {
             <p className="text-sm text-muted-foreground mt-2">
               Manage company holidays and national days off that affect team availability.
             </p>
+            <div className="h-4"></div>
           </CardHeader>
           <CardContent>
             {holidays.length === 0 ? (
@@ -579,7 +646,7 @@ export const TimeOffManagement: React.FC = () => {
                   .map((holiday) => (
                     <div key={holiday.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
                       <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                        <div className="w-3 h-3"></div>
                         <div>
                           <p className="font-medium text-sm">{holiday.name}</p>
                           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
@@ -636,7 +703,7 @@ export const TimeOffManagement: React.FC = () => {
                 <Users className="h-5 w-5 text-green-600" />
                 <CardTitle className="text-lg">Time Off</CardTitle>
                 <Badge variant="secondary" className="ml-2">
-                  {vacations.length}
+                  {timeOffs.length}
                 </Badge>
               </div>
               <Button onClick={() => setShowVacationForm(true)} size="sm">
@@ -649,7 +716,7 @@ export const TimeOffManagement: React.FC = () => {
             </p>
           </CardHeader>
           <CardContent>
-            {vacations.length === 0 ? (
+            {timeOffs.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground mb-4">No time off requests yet</p>
@@ -659,7 +726,7 @@ export const TimeOffManagement: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {vacations
+                {timeOffs
                   .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                   .map((vacation) => (
                     <div key={vacation.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
@@ -678,6 +745,14 @@ export const TimeOffManagement: React.FC = () => {
                           </div>
                         </div>
                       </div>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditVacation(vacation)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -685,6 +760,7 @@ export const TimeOffManagement: React.FC = () => {
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -1142,6 +1218,176 @@ export const TimeOffManagement: React.FC = () => {
             </Button>
             <Button onClick={handleAddVacation}>
               Add Time Off
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Time Off Dialog */}
+      <Dialog open={showEditVacationForm} onOpenChange={(open) => {
+        setShowEditVacationForm(open);
+        if (!open) {
+          setEditVacationStartDatePickerOpen(false);
+          setEditVacationEndDatePickerOpen(false);
+          setEditingVacation(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Time Off Request</DialogTitle>
+            <DialogDescription>
+              Update the time off request information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-vacation-employee">Employee</Label>
+              <Select
+                value={editVacationForm.employeeId}
+                onValueChange={(value) => setEditVacationForm({ ...editVacationForm, employeeId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.name} ({employee.role} - {employee.country})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Start Date</Label>
+                <Popover open={editVacationStartDatePickerOpen} onOpenChange={setEditVacationStartDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !editVacationForm.startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editVacationForm.startDate ? format(editVacationForm.startDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <div className="p-3">
+                      <Calendar
+                        mode="single"
+                        selected={tempEditVacationStartDate || editVacationForm.startDate}
+                        onSelect={(date) => setTempEditVacationStartDate(date)}
+                        initialFocus
+                      />
+                      <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setTempEditVacationStartDate(undefined);
+                            setEditVacationStartDatePickerOpen(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (tempEditVacationStartDate) {
+                              setEditVacationForm({ ...editVacationForm, startDate: tempEditVacationStartDate });
+                            }
+                            setTempEditVacationStartDate(undefined);
+                            setEditVacationStartDatePickerOpen(false);
+                          }}
+                        >
+                          OK
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid gap-2">
+                <Label>End Date</Label>
+                <Popover open={editVacationEndDatePickerOpen} onOpenChange={setEditVacationEndDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !editVacationForm.endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editVacationForm.endDate ? format(editVacationForm.endDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <div className="p-3">
+                      <Calendar
+                        mode="single"
+                        selected={tempEditVacationEndDate || editVacationForm.endDate}
+                        onSelect={(date) => setTempEditVacationEndDate(date)}
+                        initialFocus
+                      />
+                      <div className="flex justify-end space-x-2 mt-3 pt-3 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setTempEditVacationEndDate(undefined);
+                            setEditVacationEndDatePickerOpen(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (tempEditVacationEndDate) {
+                              setEditVacationForm({ ...editVacationForm, endDate: tempEditVacationEndDate });
+                            }
+                            setTempEditVacationEndDate(undefined);
+                            setEditVacationEndDatePickerOpen(false);
+                          }}
+                        >
+                          OK
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-vacation-type">Type</Label>
+              <Select
+                value={editVacationForm.type}
+                onValueChange={(value: 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal') =>
+                  setEditVacationForm({ ...editVacationForm, type: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Vacation">Vacation</SelectItem>
+                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                  <SelectItem value="Compensation">Compensation</SelectItem>
+                  <SelectItem value="Personal">Personal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditVacationForm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateVacation}>
+              Update Time Off
             </Button>
           </DialogFooter>
         </DialogContent>

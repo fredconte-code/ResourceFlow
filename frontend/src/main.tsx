@@ -3,6 +3,7 @@ import App from './App.tsx'
 import './index.css'
 import { SettingsProvider } from "@/context/SettingsContext";
 import { HolidayProvider } from "@/context/HolidayContext";
+import { TimeOffProvider } from "@/context/TimeOffContext";
 
 console.log('main.tsx loading...');
 
@@ -16,7 +17,9 @@ if (rootElement) {
   root.render(
     <SettingsProvider>
       <HolidayProvider>
-        <App />
+        <TimeOffProvider>
+          <App />
+        </TimeOffProvider>
       </HolidayProvider>
     </SettingsProvider>
   );
