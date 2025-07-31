@@ -37,6 +37,11 @@ export const TeamManagement = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  // Month navigation functions (same as Calendar page)
+  const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const goToToday = () => setCurrentDate(new Date());
+
   // State for editing
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [editForm, setEditForm] = useState<Partial<TeamMember>>({});
@@ -85,6 +90,12 @@ export const TeamManagement = () => {
       window.removeEventListener('teamUpdate', handleTeamUpdate);
     };
   }, []);
+
+  // Refresh data when month changes
+  useEffect(() => {
+    // The data will automatically update when currentDate changes
+    // because getMemberAllocationData uses currentDate in its calculations
+  }, [currentDate]);
 
   const [newMember, setNewMember] = useState<Partial<TeamMember>>({
     name: '',
@@ -368,7 +379,7 @@ export const TeamManagement = () => {
         <div>
           <h2 className="text-xl font-bold tracking-tight">Team Management</h2>
           <p className="text-muted-foreground text-sm">
-            Manage your team members and their allocations
+            Manage your team members and their allocations for {format(currentDate, 'MMMM yyyy')}
           </p>
         </div>
       </div>
@@ -460,12 +471,13 @@ export const TeamManagement = () => {
         </Card>
       )}
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Search and Month Navigation */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
         <Button onClick={() => setShowAddForm(!showAddForm)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Team Member
         </Button>
+        
         <div className="flex-1">
           <div className="relative">
             <Input
@@ -490,6 +502,25 @@ export const TeamManagement = () => {
               Found {filteredMembers.length} member{filteredMembers.length !== 1 ? 's' : ''}
             </div>
           )}
+        </div>
+        
+        {/* Month Navigation Control */}
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-sm font-medium min-w-[100px] text-center hidden sm:block">
+            {format(currentDate, 'MMMM yyyy')}
+          </div>
+          <div className="text-sm font-medium min-w-[80px] text-center sm:hidden">
+            {format(currentDate, 'MMM yyyy')}
+          </div>
+          <Button variant="outline" size="sm" onClick={goToNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToToday} className="hidden sm:block">
+            Today
+          </Button>
         </div>
       </div>
 
