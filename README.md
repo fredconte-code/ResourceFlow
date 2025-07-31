@@ -22,7 +22,7 @@ ResourceFlow is a comprehensive team and project management tool designed to str
 ### Key Benefits
 
 - **Real-time Updates**: Instant synchronization between team members and projects
-- **Visual Planning**: Interactive charts and calendar views for better decision-making
+- **Visual Planning**: Interactive charts and planner views for better decision-making
 - **Data Persistence**: Reliable SQLite database with automatic backup capabilities
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Modern UI**: Beautiful, intuitive interface built with Shadcn/ui components
@@ -43,8 +43,8 @@ ResourceFlow is a comprehensive team and project management tool designed to str
 - **Resource Allocation**: Track project allocations and resource distribution
 - **Status Tracking**: Monitor project progress and completion status
 
-### 📅 Calendar & Scheduling
-- **Interactive Calendar**: Drag & drop interface for easy scheduling
+### 📅 Planner & Scheduling
+- **Interactive Planner**: Drag & drop interface for easy scheduling
 - **Advanced Filtering**: Filter by project, team member, or allocation type
 - **Visual Planning**: Clear representation of team schedules and conflicts
 - **Real-time Updates**: Instant synchronization of schedule changes
@@ -53,7 +53,7 @@ ResourceFlow is a comprehensive team and project management tool designed to str
 - **Holiday Management**: Configure and manage company holidays
 - **Vacation Tracking**: Individual vacation requests and approvals
 - **Country Support**: Multi-country holiday configurations
-- **Calendar Integration**: Visual time-off display in main calendar
+- **Planner Integration**: Visual time-off display in main planner
 
 ### ⚙️ Settings & Configuration
 - **Buffer Management**: Configure buffer time for unexpected tasks

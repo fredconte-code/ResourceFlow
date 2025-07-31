@@ -80,7 +80,7 @@ This document outlines comprehensive end-to-end testing for the ResourceFlow app
 - [ ] Calendar view integration
 - [ ] Country-specific holiday display
 
-### 6. Calendar View Testing (Most Complex)
+### 6. Planner View Testing (Most Complex)
 - [ ] Calendar navigation
   - [ ] Month navigation (previous/next)
   - [ ] Today button functionality

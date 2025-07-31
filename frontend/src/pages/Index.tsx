@@ -4,7 +4,7 @@ import { TeamManagement } from "@/components/TeamManagement";
 import { Projects } from "@/components/Projects";
 import { TimeOffManagement } from "@/components/TimeOffManagement";
 import { Settings } from "@/components/Settings";
-import { CalendarView } from "@/components/CalendarView";
+import { PlannerView } from "@/components/PlannerView";
 import { Dashboard } from "@/components/Dashboard";
 
 const Index = () => {
@@ -29,8 +29,8 @@ const Index = () => {
         return <Projects />;
       case 'timeoff':
         return <TimeOffManagement />;
-      case 'calendar':
-        return <CalendarView />;
+      case 'planner':
+        return <PlannerView />;
       case 'settings':
         return <Settings />;
       default:

@@ -18,7 +18,7 @@ The ResourceFlow application has several state management issues that need to be
 **Locations**:
 - `TeamManagement.tsx`: Local state for `members`, `allocations`, `projects`, `vacations`
 - `Dashboard.tsx`: Local state for `employees`, `allocations`, `projects`
-- `CalendarView.tsx`: Local state for `employees`, `projects`, `allocations`
+- `PlannerView.tsx`: Local state for `employees`, `projects`, `allocations`
 - `Projects.tsx`: Local state for `projects`, `allocations`, `employees`
 
 **Impact**:
@@ -73,7 +73,7 @@ useEffect(() => {
 **Problem**: Components have too many local state variables, making them hard to maintain.
 
 **Examples**:
-- `CalendarView.tsx`: 20+ state variables
+- `PlannerView.tsx`: 20+ state variables
 - `TimeOffManagement.tsx`: 15+ state variables
 - `TeamManagement.tsx`: 10+ state variables
 

@@ -48,7 +48,7 @@ This report documents the comprehensive refactoring of the ResourceFlow applicat
 **Files Modified:**
 - `frontend/src/lib/employee-data.ts` - Removed hardcoded values
 - `frontend/src/components/EmployeeCard.tsx` - Uses new calculation functions
-- `frontend/src/components/CalendarView.tsx` - Integrated with working hours
+- `frontend/src/components/PlannerView.tsx` - Integrated with working hours
 - `frontend/src/components/ProjectAllocationChart.tsx` - Uses consistent calculations
 - `frontend/src/components/ProjectDistributionChart.tsx` - Updated data sources
 

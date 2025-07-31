@@ -39,7 +39,7 @@ import {
 import { calculateEmployeeAllocationPercentage, getEmployeeAvailableHours, calculateEmployeeAllocatedHoursForMonth, calculateEmployeeBreakdown } from "@/lib/allocation-utils";
 import { COUNTRY_FLAGS, DRAG_THRESHOLD } from "@/lib/constants";
 
-export const CalendarView: React.FC = () => {
+export const PlannerView: React.FC = () => {
   const { toast } = useToast();
   const { getWorkingHoursForCountry } = useWorkingHours();
   const { holidays, refreshHolidays } = useHolidays();

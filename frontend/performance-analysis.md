@@ -16,7 +16,7 @@ The ResourceFlow application has several performance issues that need to be addr
 **Problem**: Application contains numerous console.log, console.error, and console.warn statements that impact performance and clutter production logs.
 
 **Console Statements Found**:
-- **CalendarView.tsx**: 20+ console statements (debugging, errors, warnings)
+- **PlannerView.tsx**: 20+ console statements (debugging, errors, warnings)
 - **Settings.tsx**: 5+ console.error statements
 - **Context files**: Multiple console.error statements
 - **NotFound.tsx**: console.error for 404 logging

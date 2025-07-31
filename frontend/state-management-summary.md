@@ -206,7 +206,7 @@ const [employees, setEmployees] = useState<Employee[]>([]);
 const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);
 const [projects, setProjects] = useState<Project[]>([]);
 
-// CalendarView.tsx
+// PlannerView.tsx
 const [employees, setEmployees] = useState<Employee[]>([]);
 const [projects, setProjects] = useState<Project[]>([]);
 const [allocations, setAllocations] = useState<ProjectAllocation[]>([]);

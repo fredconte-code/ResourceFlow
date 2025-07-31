@@ -16,7 +16,7 @@
 - [ ] **Team tab** - Click and verify team management loads
 - [ ] **Projects tab** - Click and verify projects management loads
 - [ ] **Time Off tab** - Click and verify time off management loads
-- [ ] **Calendar tab** - Click and verify "Coming Soon" message
+- [ ] **Planner tab** - Click and verify "Coming Soon" message
 - [ ] **Settings tab** - Click and verify settings page loads
 
 ### ✅ **Keyboard Navigation**

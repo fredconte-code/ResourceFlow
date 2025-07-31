@@ -15,7 +15,7 @@ const navigation = [
   { id: 'team', name: 'Team', icon: Users },
   { id: 'projects', name: 'Projects', icon: Folder },
   { id: 'timeoff', name: 'Time Off', icon: Clock },
-  { id: 'calendar', name: 'Calendar', icon: Calendar },
+  { id: 'planner', name: 'Planner', icon: Calendar },
   { id: 'settings', name: 'Settings', icon: Settings },
 ];
 

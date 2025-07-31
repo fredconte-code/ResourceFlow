@@ -16,7 +16,7 @@ The Resource Scheduler application has several areas where code duplication and 
 **Problem**: Date formatting patterns are repeated across multiple components with inconsistent formats.
 
 **Locations**:
-- `CalendarView.tsx`: 15+ instances
+- `PlannerView.tsx`: 15+ instances
 - `TimeOffManagement.tsx`: 12+ instances  
 - `Projects.tsx`: 8+ instances
 - `Dashboard.tsx`: 5+ instances
@@ -46,7 +46,7 @@ format(date, 'PPP')
 - `Projects.tsx`: Edit/Delete dialogs
 - `TimeOffManagement.tsx`: Holiday/Vacation dialogs
 - `TeamManagement.tsx`: Team member dialogs
-- `CalendarView.tsx`: Allocation dialogs
+- `PlannerView.tsx`: Allocation dialogs
 
 **Duplicate Patterns**:
 ```typescript
@@ -73,7 +73,7 @@ format(date, 'PPP')
 **Locations**:
 - `Projects.tsx`: Start/End date pickers
 - `TimeOffManagement.tsx`: Holiday/Vacation date pickers
-- `CalendarView.tsx`: Allocation date pickers
+- `PlannerView.tsx`: Allocation date pickers
 
 **Duplicate Pattern**:
 ```typescript

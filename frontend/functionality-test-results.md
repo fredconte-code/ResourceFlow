@@ -97,7 +97,7 @@
 **Status**: ✅ PASSED
 **Notes**: Date validation working correctly. Country-specific holiday display functional.
 
-### 6. Calendar View Testing (Most Complex) ✅
+### 6. Planner View Testing (Most Complex) ✅
 - [x] Calendar navigation
   - [x] Month navigation (previous/next)
   - [x] Today button functionality

@@ -125,7 +125,7 @@ The ResourceFlow application has undergone comprehensive end-to-end functionalit
 - Conflict detection prevents overlapping time off
 - Real-time updates work seamlessly
 
-### 6. Calendar View Testing (Most Complex) ✅
+### 6. Planner View Testing (Most Complex) ✅
 
 **Test Results**: Advanced calendar functionality working perfectly
 - ✅ Calendar navigation (previous/next month, today button)
