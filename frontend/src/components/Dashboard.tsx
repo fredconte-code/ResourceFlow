@@ -92,6 +92,8 @@ interface EmployeeUtilization {
   overallocation: boolean;
 }
 
+
+
 export const Dashboard: React.FC = () => {
   const { toast } = useToast();
   const { buffer, canadaHours, brazilHours } = useSettings();
@@ -192,11 +194,6 @@ export const Dashboard: React.FC = () => {
     };
   }, [buffer, canadaHours, brazilHours, holidays, timeOffs, teamMembers]);
 
-  // Load data when currentDate changes
-  useEffect(() => {
-    loadDashboardData();
-  }, [currentDate]);
-
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
@@ -222,10 +219,16 @@ export const Dashboard: React.FC = () => {
       // All projects are considered ongoing since status is not available in the interface
       const ongoingProjects = projects.length;
       
-      // Calculate upcoming vacations (using correct field name)
-      const upcomingVacations = timeOffs.filter(vacation => 
-        new Date(vacation.start_date) > new Date()
-      ).length;
+      // Calculate upcoming vacations for the current month
+      const upcomingVacations = timeOffs.filter(vacation => {
+        const vacationStart = new Date(vacation.start_date);
+        const vacationEnd = new Date(vacation.end_date);
+        
+        // Check if vacation overlaps with current month and is upcoming
+        return vacationEnd >= monthStart && 
+               vacationStart <= monthEnd && 
+               vacationStart > new Date();
+      }).length;
 
       // Calculate detailed allocation metrics
       let totalAllocatedHours = 0;
@@ -281,9 +284,19 @@ export const Dashboard: React.FC = () => {
         currentMonthAllocations += employeeAllocations.length;
       });
 
-      // Calculate capacity
-      const canadaCapacity = canadaEmployees * canadaHours * 4; // 4 weeks
-      const brazilCapacity = brazilEmployees * brazilHours * 4;
+      // Calculate working days in month
+      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+      const workingDaysInMonth = daysInMonth.filter(date => {
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+        const isHoliday = holidays.some(holiday => 
+          isSameDay(parseISO(holiday.date), date)
+        );
+        return !isWeekend && !isHoliday;
+      }).length;
+
+      // Calculate capacity based on actual working days in the month
+      const canadaCapacity = canadaEmployees * canadaHours * (workingDaysInMonth / 5); // Convert working days to weeks
+      const brazilCapacity = brazilEmployees * brazilHours * (workingDaysInMonth / 5);
       const totalCapacity = canadaCapacity + brazilCapacity;
       const bufferHours = (totalCapacity * buffer) / 100;
 
@@ -295,22 +308,19 @@ export const Dashboard: React.FC = () => {
       // Calculate active projects count
       const activeProjectsCount = projects.filter(project => project.status === 'active').length;
 
-      // Calculate working days in month
-      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-      const workingDaysInMonth = daysInMonth.filter(date => {
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        const isHoliday = holidays.some(holiday => 
-          isSameDay(parseISO(holiday.date), date)
-        );
-        return !isWeekend && !isHoliday;
-      }).length;
-
       const finalStats = {
         totalEmployees: teamMembers.length,
         totalProjects: projects.length,
         activeAllocations: activeProjectsCount,
-        totalHolidays: holidays.length,
-        totalVacations: timeOffs.length,
+        totalHolidays: holidays.filter(holiday => {
+          const holidayDate = parseISO(holiday.date);
+          return holidayDate >= monthStart && holidayDate <= monthEnd;
+        }).length,
+        totalVacations: timeOffs.filter(vacation => {
+          const vacationStart = new Date(vacation.start_date);
+          const vacationEnd = new Date(vacation.end_date);
+          return vacationEnd >= monthStart && vacationStart <= monthEnd;
+        }).length,
         canadaEmployees,
         brazilEmployees,
         ongoingProjects,
@@ -346,7 +356,12 @@ export const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [buffer, canadaHours, brazilHours, holidays, timeOffs, teamMembers, toast]);
+  }, [buffer, canadaHours, brazilHours, holidays, timeOffs, teamMembers, toast, currentDate]);
+
+  // Load data when currentDate changes
+  useEffect(() => {
+    loadDashboardData();
+  }, [currentDate, loadDashboardData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -476,6 +491,38 @@ export const Dashboard: React.FC = () => {
       };
     }).sort((a, b) => b.utilizationPercentage - a.utilizationPercentage);
   }, [currentDate, teamMembers, allocations, holidays, timeOffs, buffer]);
+
+  // Calculate onboarding members
+  const onboardingMembers = useMemo(() => {
+    if (!teamMembers || !allocations || !projects) return [];
+
+    // Find the Onboarding project
+    const onboardingProject = projects.find(project => 
+      project.name.toLowerCase().includes('onboarding')
+    );
+
+    if (!onboardingProject) return [];
+
+    // Get all allocations for the Onboarding project in the current month
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+
+    const onboardingAllocations = allocations.filter(allocation => {
+      const allocationStart = new Date(allocation.startDate);
+      const allocationEnd = new Date(allocation.endDate);
+      
+      return allocation.projectId === onboardingProject.id.toString() &&
+             allocationEnd >= monthStart &&
+             allocationStart <= monthEnd;
+    });
+
+    // Get unique team members allocated to onboarding
+    const onboardingMemberIds = [...new Set(onboardingAllocations.map(a => a.employeeId))];
+    
+    return teamMembers.filter(member => 
+      onboardingMemberIds.includes(member.id.toString())
+    );
+  }, [currentDate, teamMembers, allocations, projects]);
 
   if (loading) {
     return (
@@ -715,14 +762,18 @@ export const Dashboard: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resource Utilization</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Members Onboarding</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.averageUtilization}%</div>
-            <p className="text-xs text-muted-foreground">
-              Average team utilization
-            </p>
+            <div className="space-y-2">
+              <div className="text-2xl font-bold">
+                {onboardingMembers.length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                New hires onboarding
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -752,13 +803,14 @@ export const Dashboard: React.FC = () => {
       <Card>
         <CardContent className="pt-6">
           <Tabs defaultValue="overview" className="space-y-3">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="resources">Resources</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="utilization">Utilization</TabsTrigger>
               <TabsTrigger value="capacity">Capacity</TabsTrigger>
               <TabsTrigger value="employees">Employee Details</TabsTrigger>
+              <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
 
@@ -1059,6 +1111,127 @@ export const Dashboard: React.FC = () => {
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No employee data available</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Onboarding Members Tab */}
+        <TabsContent value="onboarding" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Onboarding Members Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Onboarding Members Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={[
+                    { 
+                      category: 'Onboarding', 
+                      count: onboardingMembers.length,
+                      total: teamMembers.length 
+                    }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Onboarding vs Total Members */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Team Member Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Onboarding', value: onboardingMembers.length, fill: '#3b82f6' },
+                        { name: 'Other Projects', value: teamMembers.length - onboardingMembers.length, fill: '#e5e7eb' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Onboarding', value: onboardingMembers.length, fill: '#3b82f6' },
+                        { name: 'Other Projects', value: teamMembers.length - onboardingMembers.length, fill: '#e5e7eb' }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Detailed Onboarding Members Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Onboarding Members Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {onboardingMembers.length > 0 ? (
+                  <div className="grid gap-4">
+                    {onboardingMembers.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <h3 className="font-medium">{member.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {member.role} • {member.country}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-6">
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-blue-600">
+                              Onboarding
+                            </div>
+                            <p className="text-xs text-muted-foreground">Project</p>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-bold">
+                              {member.allocatedHours || 0}h
+                            </div>
+                            <p className="text-xs text-muted-foreground">Allocated</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No members currently onboarding</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      No team members are allocated to the Onboarding project this month
+                    </p>
                   </div>
                 )}
               </div>
