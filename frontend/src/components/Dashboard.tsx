@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Users, 
@@ -65,6 +66,7 @@ interface DashboardStats {
   currentMonthAllocations: number;
   totalCapacity: number;
   bufferHours: number;
+  workingDaysInMonth: number;
 }
 
 interface ChartData {
@@ -120,7 +122,8 @@ export const Dashboard: React.FC = () => {
     overallocationCount: 0,
     currentMonthAllocations: 0,
     totalCapacity: 0,
-    bufferHours: 0
+    bufferHours: 0,
+    workingDaysInMonth: 0
   });
 
   // Growth tracking state
@@ -292,6 +295,16 @@ export const Dashboard: React.FC = () => {
       // Calculate active projects count
       const activeProjectsCount = projects.filter(project => project.status === 'active').length;
 
+      // Calculate working days in month
+      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+      const workingDaysInMonth = daysInMonth.filter(date => {
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+        const isHoliday = holidays.some(holiday => 
+          isSameDay(parseISO(holiday.date), date)
+        );
+        return !isWeekend && !isHoliday;
+      }).length;
+
       const finalStats = {
         totalEmployees: teamMembers.length,
         totalProjects: projects.length,
@@ -308,7 +321,8 @@ export const Dashboard: React.FC = () => {
         overallocationCount,
         currentMonthAllocations,
         totalCapacity: Math.round(totalCapacity),
-        bufferHours: Math.round(bufferHours * 10) / 10
+        bufferHours: Math.round(bufferHours * 10) / 10,
+        workingDaysInMonth
       };
 
       setStats(finalStats);
@@ -603,72 +617,30 @@ export const Dashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Key Metrics Cards */}
+      {/* Monthly Capacity & Utilization - Second Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Team</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEmployees}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.canadaEmployees} Canada, {stats.brazilEmployees} Brazil
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            <Folder className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProjects}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.currentMonthAllocations} current allocations
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resource Utilization</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.averageUtilization}%</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.overallocationCount} overallocated
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Time Off</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalVacations}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.totalHolidays} holidays, {stats.upcomingVacations} upcoming
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Enhanced Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>
+            <CardTitle className="text-sm font-medium">Monthly Capacity</CardTitle>
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCapacity}h</div>
             <p className="text-xs text-muted-foreground">
-              Monthly capacity
+              {stats.workingDaysInMonth} working days
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Available Hours</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalAvailableHours}h</div>
+            <p className="text-xs text-muted-foreground">
+              Remaining capacity
             </p>
           </CardContent>
         </Card>
@@ -688,30 +660,101 @@ export const Dashboard: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Hours</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Resource Utilization</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAvailableHours}h</div>
+            <div className="text-2xl font-bold">{stats.averageUtilization}%</div>
             <p className="text-xs text-muted-foreground">
-              After deductions
+              Allocated ÷ Capacity
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Project & Workforce Insights - Third Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Monthly Time Off</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalVacations}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.totalHolidays} holidays, {stats.upcomingVacations} upcoming
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Buffer Hours</CardTitle>
+            <CardTitle className="text-sm font-medium">Working Days in Month</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.workingDaysInMonth}</div>
+            <p className="text-xs text-muted-foreground">
+              Excluding weekends & holidays
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Overallocation Count</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.bufferHours}h</div>
+            <div className="text-2xl font-bold">{stats.overallocationCount}</div>
             <p className="text-xs text-muted-foreground">
-              {buffer}% buffer time
+              People over 100% allocation
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Resource Utilization</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.averageUtilization}%</div>
+            <p className="text-xs text-muted-foreground">
+              Average team utilization
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Capacity Progress Bar */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Capacity Allocation Overview</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex justify-between text-sm">
+            <span>Allocated: {stats.totalAllocatedHours}h</span>
+            <span>Available: {stats.totalAvailableHours}h</span>
+            <span>Total: {stats.totalCapacity}h</span>
+          </div>
+          <div className="relative">
+            <Progress 
+              value={(stats.totalAllocatedHours / stats.totalCapacity) * 100} 
+              className="h-3"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-medium text-white drop-shadow-sm">
+                {Math.round((stats.totalAllocatedHours / stats.totalCapacity) * 100)}% Utilized
+              </span>
+            </div>
+          </div>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Allocated Hours</span>
+            <span>Available Hours</span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Charts Section */}
       <Tabs defaultValue="overview" className="space-y-3">
