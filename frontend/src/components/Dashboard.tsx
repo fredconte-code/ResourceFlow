@@ -600,220 +600,15 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Executive Summary - Top Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border-2 border-primary/20 bg-primary/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Team Size</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <div className="text-2xl font-bold">{stats.totalEmployees}</div>
-              {getTrendIcon(calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {getGrowthText(calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees))}
-            </p>
-          </CardContent>
-        </Card>
 
-        <Card className="border-2 border-primary/20 bg-primary/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Growth</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <div className="text-2xl font-bold">
-                {calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage > 0 ? '+' : ''}
-                {calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage}%
-              </div>
-              {getTrendIcon(calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              vs {format(subMonths(new Date(), 1), 'MMMM')}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-primary/20 bg-primary/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Active Projects</CardTitle>
-            <Activity className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <div className="text-2xl font-bold">{stats.activeAllocations}</div>
-              {getTrendIcon(calculateGrowth(stats.activeAllocations, previousMonthStats.activeProjects).percentage)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {getGrowthText(calculateGrowth(stats.activeAllocations, previousMonthStats.activeProjects))}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-primary/20 bg-primary/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Projects Growth</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <div className="text-2xl font-bold">
-                {calculateGrowth(stats.totalProjects, previousMonthStats.totalProjects).percentage > 0 ? '+' : ''}
-                {calculateGrowth(stats.totalProjects, previousMonthStats.totalProjects).percentage}%
-              </div>
-              {getTrendIcon(calculateGrowth(stats.totalProjects, previousMonthStats.totalProjects).percentage)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              vs {format(subMonths(new Date(), 1), 'MMMM')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Monthly Capacity & Utilization - Second Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Capacity</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCapacity}h</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.workingDaysInMonth} working days
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Hours</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAvailableHours}h</div>
-            <p className="text-xs text-muted-foreground">
-              Remaining capacity
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Allocated Hours</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAllocatedHours}h</div>
-            <p className="text-xs text-muted-foreground">
-              {Math.round((stats.totalAllocatedHours / stats.totalCapacity) * 100)}% of capacity
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resource Utilization</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.averageUtilization}%</div>
-            <p className="text-xs text-muted-foreground">
-              Allocated ÷ Capacity
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Project & Workforce Insights - Third Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Time Off</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalVacations}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.totalHolidays} holidays, {stats.upcomingVacations} upcoming vacations
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Working Days in Month</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.workingDaysInMonth}</div>
-            <p className="text-xs text-muted-foreground">
-              Excluding weekends & holidays
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overallocation Count</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.overallocationCount}</div>
-            <p className="text-xs text-muted-foreground">
-              People over 100% allocation
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Members Onboarding</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="text-2xl font-bold">
-                {onboardingMembers.length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                New hires onboarding
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Capacity Progress Bar */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Capacity Allocation Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold mb-2">
-            {Math.round((stats.totalAllocatedHours / stats.totalCapacity) * 100)}% Utilized
-          </div>
-          <div className="relative mb-2">
-            <Progress 
-              value={(stats.totalAllocatedHours / stats.totalCapacity) * 100} 
-              className="h-2"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {stats.totalAllocatedHours}h allocated, {stats.totalAvailableHours}h available
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Charts Section */}
       <Card>
         <CardContent className="pt-6">
-          <Tabs defaultValue="overview" className="space-y-3">
-            <TabsList className="grid w-full grid-cols-8">
+          <Tabs defaultValue="metrics" className="space-y-3">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="metrics">Metrics</TabsTrigger>
               <TabsTrigger value="resources">Resources</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="utilization">Utilization</TabsTrigger>
@@ -878,6 +673,217 @@ export const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Metrics Tab */}
+        <TabsContent value="metrics" className="space-y-4">
+          {/* Executive Summary - Top Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Team Size</CardTitle>
+                <Users className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl font-bold">{stats.totalEmployees}</div>
+                  {getTrendIcon(calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {getGrowthText(calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees))}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Team Growth</CardTitle>
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl font-bold">
+                    {calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage > 0 ? '+' : ''}
+                    {calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage}%
+                  </div>
+                  {getTrendIcon(calculateGrowth(stats.totalEmployees, previousMonthStats.totalEmployees).percentage)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs {format(subMonths(new Date(), 1), 'MMMM')}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Active Projects</CardTitle>
+                <Activity className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl font-bold">{stats.activeAllocations}</div>
+                  {getTrendIcon(calculateGrowth(stats.activeAllocations, previousMonthStats.activeProjects).percentage)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {getGrowthText(calculateGrowth(stats.activeAllocations, previousMonthStats.activeProjects))}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Projects Growth</CardTitle>
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <div className="text-2xl font-bold">
+                    {calculateGrowth(stats.totalProjects, previousMonthStats.totalProjects).percentage > 0 ? '+' : ''}
+                    {calculateGrowth(stats.totalProjects, previousMonthStats.totalProjects).percentage}%
+                  </div>
+                  {getTrendIcon(calculateGrowth(stats.totalProjects, previousMonthStats.totalProjects).percentage)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  vs {format(subMonths(new Date(), 1), 'MMMM')}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Monthly Capacity & Utilization - Second Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Monthly Capacity</CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalCapacity}h</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.workingDaysInMonth} working days
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Available Hours</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalAvailableHours}h</div>
+                <p className="text-xs text-muted-foreground">
+                  Remaining capacity
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Allocated Hours</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalAllocatedHours}h</div>
+                <p className="text-xs text-muted-foreground">
+                  {Math.round((stats.totalAllocatedHours / stats.totalCapacity) * 100)}% of capacity
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Resource Utilization</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.averageUtilization}%</div>
+                <p className="text-xs text-muted-foreground">
+                  Allocated ÷ Capacity
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Project & Workforce Insights - Third Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Monthly Time Off</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalVacations}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.totalHolidays} holidays, {stats.upcomingVacations} upcoming vacations
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Working Days in Month</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.workingDaysInMonth}</div>
+                <p className="text-xs text-muted-foreground">
+                  Excluding weekends & holidays
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Overallocation Count</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.overallocationCount}</div>
+                <p className="text-xs text-muted-foreground">
+                  People over 100% allocation
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Members Onboarding</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold">
+                    {onboardingMembers.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    New hires onboarding
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Capacity Progress Bar */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Capacity Allocation Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold mb-2">
+                {Math.round((stats.totalAllocatedHours / stats.totalCapacity) * 100)}% Utilized
+              </div>
+              <div className="relative mb-2">
+                <Progress 
+                  value={(stats.totalAllocatedHours / stats.totalCapacity) * 100} 
+                  className="h-2"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.totalAllocatedHours}h allocated, {stats.totalAvailableHours}h available
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Resources Tab */}
