@@ -558,20 +558,7 @@ export const TimeOffManagement: React.FC = () => {
     }
   };
 
-  // Filter functions
-  const filteredHolidays = holidays.filter(holiday => {
-    const matchesSearch = holiday.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry = filterCountry === 'all' || holiday.country === filterCountry;
-    return matchesSearch && matchesCountry;
-  });
 
-  const filteredVacations = timeOffs.filter(vacation => {
-    const matchesSearch = vacation.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vacation.type.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry = filterCountry === 'all' || vacation.employeeCountry === filterCountry;
-    const matchesType = filterType === 'all' || vacation.type === filterType;
-    return matchesSearch && matchesCountry && matchesType;
-  });
 
   // Get type badge variant
   const getTypeBadgeVariant = (type: string) => {
