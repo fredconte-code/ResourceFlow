@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, differenceInDays } from "date-fns";
-import { CalendarIcon, Plus, Edit, Trash2, Building, Users, AlertTriangle, Loader2 } from "lucide-react";
+import { CalendarIcon, Plus, Edit, Trash2, Building, Users, AlertTriangle, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { holidaysApi, vacationsApi, Holiday as ApiHoliday, Vacation as ApiVacation } from "@/lib/api";
 import { getCurrentEmployees, Employee } from "@/lib/employee-data";
@@ -82,6 +82,34 @@ export const TimeOffManagement: React.FC = () => {
       type: timeOff.type as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
     };
   });
+
+  // Filter holidays based on search and filters
+  const filteredHolidays = holidays.filter(holiday => {
+    const matchesSearch = holidaySearchTerm === '' || 
+      holiday.name.toLowerCase().includes(holidaySearchTerm.toLowerCase()) ||
+      format(holiday.date, 'MMMM yyyy').toLowerCase().includes(holidaySearchTerm.toLowerCase());
+    
+    const matchesCountry = holidayFilterCountry === 'all' || holiday.country === holidayFilterCountry;
+    
+    const matchesYear = holidayFilterYear === 'all' || 
+      holiday.date.getFullYear().toString() === holidayFilterYear;
+    
+    return matchesSearch && matchesCountry && matchesYear;
+  });
+
+  // Get unique years for year filter
+  const holidayYears = Array.from(new Set(holidays.map(h => h.date.getFullYear().toString()))).sort();
+
+  // Filter time offs based on search and filters
+  const filteredTimeOffs = timeOffs.filter(timeOff => {
+    const matchesSearch = timeOffSearchTerm === '' || 
+      timeOff.employeeName.toLowerCase().includes(timeOffSearchTerm.toLowerCase()) ||
+      timeOff.type.toLowerCase().includes(timeOffSearchTerm.toLowerCase());
+    
+    const matchesType = timeOffFilterType === 'all' || timeOff.type === timeOffFilterType;
+    
+    return matchesSearch && matchesType;
+  });
   
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
@@ -91,6 +119,15 @@ export const TimeOffManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCountry, setFilterCountry] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
+  
+  // Holiday search and filter state
+  const [holidaySearchTerm, setHolidaySearchTerm] = useState('');
+  const [holidayFilterCountry, setHolidayFilterCountry] = useState<string>('all');
+  const [holidayFilterYear, setHolidayFilterYear] = useState<string>('all');
+  
+  // Time Off search and filter state
+  const [timeOffSearchTerm, setTimeOffSearchTerm] = useState('');
+  const [timeOffFilterType, setTimeOffFilterType] = useState<string>('all');
   
   // Date picker state
   const [holidayDatePickerOpen, setHolidayDatePickerOpen] = useState(false);
@@ -605,7 +642,7 @@ export const TimeOffManagement: React.FC = () => {
                 <Building className="h-5 w-5 text-blue-600" />
                 <CardTitle className="text-lg">Holidays</CardTitle>
                 <Badge variant="secondary" className="ml-2">
-                  {holidays.length}
+                  {filteredHolidays.length} of {holidays.length}
                 </Badge>
               </div>
               <Button onClick={() => setShowHolidayForm(true)} size="sm">
@@ -616,68 +653,123 @@ export const TimeOffManagement: React.FC = () => {
             <p className="text-sm text-muted-foreground mt-2">
               Manage company holidays and national days off that affect team availability.
             </p>
-            <div className="h-4"></div>
+            
+            {/* Search and Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search holidays by name or month..."
+                  value={holidaySearchTerm}
+                  onChange={(e) => setHolidaySearchTerm(e.target.value)}
+                  className="h-9 pl-9"
+                />
+              </div>
+              <Select value={holidayFilterCountry} onValueChange={setHolidayFilterCountry}>
+                <SelectTrigger className="w-full sm:w-[140px] h-9">
+                  <SelectValue placeholder="Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  <SelectItem value="Canada">🇨🇦 Canada</SelectItem>
+                  <SelectItem value="Brazil">🇧🇷 Brazil</SelectItem>
+                  <SelectItem value="Both">🌎 Global</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={holidayFilterYear} onValueChange={setHolidayFilterYear}>
+                <SelectTrigger className="w-full sm:w-[100px] h-9">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {holidayYears.map(year => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {holidays.length === 0 ? (
-              <div className="text-center py-8">
+              <div className="text-center py-8 px-6">
                 <Building className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground mb-4">No holidays configured yet</p>
                 <Button onClick={() => setShowHolidayForm(true)} size="sm">
                   Add your first holiday
                 </Button>
               </div>
+            ) : filteredHolidays.length === 0 ? (
+              <div className="text-center py-8 px-6">
+                <Building className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-muted-foreground text-sm">No holidays match your search criteria</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setHolidaySearchTerm('');
+                    setHolidayFilterCountry('all');
+                    setHolidayFilterYear('all');
+                  }}
+                  className="mt-2"
+                >
+                  Clear filters
+                </Button>
+              </div>
             ) : (
-              <div className="space-y-3">
-                {holidays
-                  .sort((a, b) => a.date.getTime() - b.date.getTime())
-                  .map((holiday) => (
-                    <div key={holiday.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3"></div>
-                        <div>
-                          <p className="font-medium text-sm">{holiday.name}</p>
-                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                            <span>{format(holiday.date, 'MMM dd, yyyy')}</span>
-                            <span>•</span>
-                            <Badge variant="outline" className="text-xs">
-                              {holiday.type}
-                            </Badge>
-                            <span>•</span>
-                            <span className="flex items-center space-x-1">
-                              {holiday.country === 'Both' ? (
-                                <>
-                                  <span>🌎</span>
-                                  <span>Global</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span>{COUNTRY_FLAGS[holiday.country]}</span>
-                                  <span>{holiday.country}</span>
-                                </>
-                              )}
-                            </span>
+              <div className="max-h-[400px] overflow-y-auto px-6 pb-6">
+                <div className="space-y-2">
+                  {filteredHolidays
+                    .sort((a, b) => a.date.getTime() - b.date.getTime())
+                    .map((holiday) => (
+                      <div key={holiday.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <div>
+                            <p className="font-medium text-sm">{holiday.name}</p>
+                            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                              <span>{format(holiday.date, 'MMM dd, yyyy')}</span>
+                              <span>•</span>
+                              <Badge variant="outline" className="text-xs">
+                                {holiday.type}
+                              </Badge>
+                              <span>•</span>
+                              <span className="flex items-center space-x-1">
+                                {holiday.country === 'Both' ? (
+                                  <>
+                                    <span>🌎</span>
+                                    <span>Global</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>{COUNTRY_FLAGS[holiday.country]}</span>
+                                    <span>{holiday.country}</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditHoliday(holiday)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => confirmDeleteHoliday(holiday)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditHoliday(holiday)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => confirmDeleteHoliday(holiday)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
             )}
           </CardContent>
@@ -691,7 +783,7 @@ export const TimeOffManagement: React.FC = () => {
                 <Users className="h-5 w-5 text-green-600" />
                 <CardTitle className="text-lg">Time Off</CardTitle>
                 <Badge variant="secondary" className="ml-2">
-                  {timeOffs.length}
+                  {filteredTimeOffs.length} of {timeOffs.length}
                 </Badge>
               </div>
               <Button onClick={() => setShowVacationForm(true)} size="sm">
@@ -702,55 +794,100 @@ export const TimeOffManagement: React.FC = () => {
             <p className="text-sm text-muted-foreground mt-2">
               Manage employee time off requests including vacations, sick leave, compensation days, and personal time.
             </p>
+            
+            {/* Search and Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by employee name or type..."
+                  value={timeOffSearchTerm}
+                  onChange={(e) => setTimeOffSearchTerm(e.target.value)}
+                  className="h-9 pl-9"
+                />
+              </div>
+              <Select value={timeOffFilterType} onValueChange={setTimeOffFilterType}>
+                <SelectTrigger className="w-full sm:w-[140px] h-9">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Vacation">Vacation</SelectItem>
+                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                  <SelectItem value="Compensation">Compensation</SelectItem>
+                  <SelectItem value="Personal">Personal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {timeOffs.length === 0 ? (
-              <div className="text-center py-8">
+              <div className="text-center py-8 px-6">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground mb-4">No time off yet</p>
                 <Button onClick={() => setShowVacationForm(true)} size="sm">
                   Add your first time off
                 </Button>
               </div>
+            ) : filteredTimeOffs.length === 0 ? (
+              <div className="text-center py-8 px-6">
+                <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-muted-foreground text-sm">No time off matches your search criteria</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setTimeOffSearchTerm('');
+                    setTimeOffFilterType('all');
+                  }}
+                  className="mt-2"
+                >
+                  Clear filters
+                </Button>
+              </div>
             ) : (
-              <div className="space-y-3">
-                {timeOffs
-                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-                  .map((vacation) => (
-                    <div key={vacation.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3"></div>
-                        <div>
-                          <p className="font-medium text-sm">{vacation.employeeName}</p>
-                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                            <span>{format(vacation.startDate, 'MMM dd')} - {format(vacation.endDate, 'MMM dd, yyyy')}</span>
-                            <span>•</span>
-                            <Badge variant="outline" className="text-xs">
-                              {vacation.type}
-                            </Badge>
-                            <span>•</span>
-                            <span>{vacation.days} days</span>
+              <div className="max-h-[400px] overflow-y-auto px-6 pb-6">
+                <div className="space-y-2">
+                  {filteredTimeOffs
+                    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                    .map((vacation) => (
+                      <div key={vacation.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div>
+                            <p className="font-medium text-sm">{vacation.employeeName}</p>
+                            <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                              <span>{format(vacation.startDate, 'MMM dd')} - {format(vacation.endDate, 'MMM dd, yyyy')}</span>
+                              <span>•</span>
+                              <Badge variant="outline" className="text-xs">
+                                {vacation.type}
+                              </Badge>
+                              <span>•</span>
+                              <span>{vacation.days} days</span>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditVacation(vacation)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => confirmDeleteVacation(vacation)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditVacation(vacation)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => confirmDeleteVacation(vacation)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
             )}
           </CardContent>
