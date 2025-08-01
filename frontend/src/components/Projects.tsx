@@ -507,6 +507,20 @@ export const Projects = () => {
                         >
                           <span className="font-medium text-xs truncate">{project.name}</span>
                         </div>
+                        
+                        {/* Dates positioned between project name and status */}
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          {project.startDate && (
+                            <>
+                              <span>Start: {format(new Date(project.startDate), 'MMM dd, yyyy')}</span>
+                              <span>•</span>
+                            </>
+                          )}
+                          {project.endDate && (
+                            <span>End: {format(new Date(project.endDate), 'MMM dd, yyyy')}</span>
+                          )}
+                        </div>
+                        
                         <span className="text-muted-foreground font-medium text-xs">Status:</span>
                         {(() => {
                           const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
@@ -522,22 +536,10 @@ export const Projects = () => {
                         })()}
                       </div>
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        {project.startDate && (
-                          <>
-                            <span>Start: {format(new Date(project.startDate), 'MMM dd, yyyy')}</span>
-                            <span>•</span>
-                          </>
-                        )}
-                        {project.endDate && (
-                          <span>End: {format(new Date(project.endDate), 'MMM dd, yyyy')}</span>
-                        )}
                         {(() => {
                           const allocatedHours = getProjectAllocatedHours(project.id);
                           return allocatedHours > 0 ? (
-                            <>
-                              <span>•</span>
-                              <span>Resources Hours Allocated: {allocatedHours.toFixed(1)}h</span>
-                            </>
+                            <span>Resources Hours Allocated: {allocatedHours.toFixed(1)}h</span>
                           ) : null;
                         })()}
                       </div>
