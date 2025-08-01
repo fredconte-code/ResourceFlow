@@ -1425,7 +1425,7 @@ export const PlannerView: React.FC = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Projects</CardTitle>
           <p className="text-muted-foreground text-sm">
-            Drag and drop projects to allocate team members to tasks on the calendar.
+            Drag and drop projects to allocate team members.
           </p>
         </CardHeader>
         <CardContent
