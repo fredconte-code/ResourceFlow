@@ -622,7 +622,7 @@ export const TimeOffManagement: React.FC = () => {
       {/* Side by Side Containers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Holidays Container */}
-        <Card>
+        <Card className="h-fit">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -763,7 +763,7 @@ export const TimeOffManagement: React.FC = () => {
         </Card>
 
         {/* Time Off Container */}
-        <Card>
+        <Card className="h-fit">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -805,6 +805,7 @@ export const TimeOffManagement: React.FC = () => {
                   <SelectItem value="Personal">Personal</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="w-full sm:w-[100px] h-9"></div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
