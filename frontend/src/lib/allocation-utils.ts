@@ -16,11 +16,21 @@ export const calculateEmployeeBreakdown = (
   const weeklyHours = getWorkingHoursForCountry(employee.country);
   const dailyHours = weeklyHours / 5; // Assuming 5 working days per week
   
-  // Calculate total calendar hours for the month (including weekends)
+  // Calculate working days for the month (excluding weekends)
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const totalDaysInMonth = differenceInDays(monthEnd, monthStart) + 1;
-  const monthlyHours = totalDaysInMonth * dailyHours; // Total calendar hours including weekends
+  
+  let workingDaysInMonth = 0;
+  let checkDate = new Date(monthStart);
+  while (checkDate <= monthEnd) {
+    if (!isWeekendDay(checkDate)) {
+      workingDaysInMonth++;
+    }
+    checkDate = addDays(checkDate, 1);
+  }
+  
+  // Calculate total working hours for the month (excluding weekends)
+  const monthlyHours = workingDaysInMonth * dailyHours;
   
   // Calculate buffer hours for the month
   const bufferHours = (monthlyHours * buffer) / 100;
@@ -69,18 +79,8 @@ export const calculateEmployeeBreakdown = (
     }
   });
   
-  // Calculate weekend hours for the current month
-  let weekendHours = 0;
-  let weekendDate = new Date(monthStart);
-  while (weekendDate <= monthEnd) {
-    if (isWeekendDay(weekendDate)) {
-      weekendHours += dailyHours;
-    }
-    weekendDate = addDays(weekendDate, 1);
-  }
-  
-  // Calculate total available hours
-  const totalAvailableHours = monthlyHours - bufferHours - holidayHours - vacationHours - weekendHours;
+  // Calculate total available hours (no need to deduct weekends since we started with working days only)
+  const totalAvailableHours = monthlyHours - bufferHours - holidayHours - vacationHours;
   
   return {
     maxHoursPerMonth: monthlyHours,
@@ -89,7 +89,7 @@ export const calculateEmployeeBreakdown = (
     bufferHours,
     holidayHours,
     vacationHours,
-    weekendHours,
+    weekendHours: 0, // No weekend hours to deduct since we started with working days only
     totalAvailableHours
   };
 };
@@ -146,7 +146,7 @@ export const calculateEmployeeAllocationPercentage = (
   vacations: Vacation[],
   buffer: number
 ) => {
-  const allocatedHours = calculateEmployeeAllocatedHoursForMonth(employee.id, allocations, currentDate);
+  const allocatedHours = calculateEmployeeAllocatedHoursForMonth(employee.id, allocations, currentDate, holidays, employee);
   const breakdown = calculateEmployeeBreakdown(employee, currentDate, holidays, vacations, buffer);
   
   // Calculate percentage based on total available hours (after all deductions)

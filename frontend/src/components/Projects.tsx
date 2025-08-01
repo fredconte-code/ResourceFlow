@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Edit2, Save, X, Calendar as CalendarIcon, Plus, AlertCircle, Loader2, Search, FolderOpen, Play, Square, Activity } from "lucide-react";
+import { Trash2, Edit2, Save, X, Calendar as CalendarIcon, Plus, AlertCircle, Loader2, Search, FolderOpen } from "lucide-react";
 import { format, startOfMonth, endOfMonth, addDays, parseISO, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { projectsApi, projectAllocationsApi, teamMembersApi, Project, ProjectAllocation, ProjectStatus, TeamMember } from "@/lib/api";
@@ -513,25 +513,16 @@ export const Projects = () => {
                         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                           {project.startDate && (
                             <>
-                              <div className="flex items-center gap-1">
-                                <Play className="h-3 w-3 text-muted-foreground" />
-                                <span>{format(new Date(project.startDate), 'MMM dd, yyyy')}</span>
-                              </div>
+                              <span>Start: {format(new Date(project.startDate), 'MMM dd, yyyy')}</span>
                               <span>•</span>
                             </>
                           )}
                           {project.endDate && (
-                            <div className="flex items-center gap-1">
-                              <Square className="h-3 w-3 text-muted-foreground" />
-                              <span>{format(new Date(project.endDate), 'MMM dd, yyyy')}</span>
-                            </div>
+                            <span>End: {format(new Date(project.endDate), 'MMM dd, yyyy')}</span>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-1">
-                          <Activity className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground font-medium text-xs">Status:</span>
-                        </div>
+                        <span className="text-muted-foreground font-medium text-xs">Status:</span>
                         {(() => {
                           const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
                           const IconComponent = statusConfig.icon;
