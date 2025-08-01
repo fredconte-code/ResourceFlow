@@ -29,7 +29,19 @@ export interface TeamMember {
 }
 
 export const teamMembersApi = {
-  getAll: (): Promise<TeamMember[]> => apiRequest('/team-members'),
+  getAll: async (): Promise<TeamMember[]> => {
+    const data = await apiRequest('/team-members');
+    // Transform snake_case to camelCase and filter active members
+    return data
+      .filter((member: any) => member.is_active !== 0) // Only include active members
+      .map((member: any) => ({
+        id: member.id,
+        name: member.name,
+        role: member.role,
+        country: member.country,
+        allocatedHours: member.allocated_hours || 0
+      }));
+  },
   
   create: (member: Omit<TeamMember, 'id'>): Promise<TeamMember> => 
     apiRequest('/team-members', {

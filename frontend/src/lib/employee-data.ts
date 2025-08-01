@@ -34,6 +34,7 @@ export const getCurrentEmployees = async (): Promise<Employee[]> => {
 };
 
 // Synchronous version for backward compatibility (returns empty array)
+// Note: This function is deprecated. Use TeamMembersContext instead for real-time data.
 export const getCurrentEmployeesSync = (): Employee[] => {
   return [];
 };

@@ -36,11 +36,12 @@ import {
 } from "recharts";
 import { getCurrentEmployeesSync, Employee } from "@/lib/employee-data";
 import { getProjectsSync } from "@/lib/project-data";
-import { projectAllocationsApi, projectsApi, ProjectAllocation, Project } from "@/lib/api";
+import { projectAllocationsApi, projectsApi, teamMembersApi, ProjectAllocation, Project, TeamMember } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/context/SettingsContext";
 import { useHolidays } from "@/context/HolidayContext";
 import { useTimeOffs } from "@/context/TimeOffContext";
+import { useTeamMembers } from "@/context/TeamMembersContext";
 import { calculateEmployeeBreakdown, calculateEmployeeAllocatedHoursForMonth } from "@/lib/allocation-utils";
 
 interface DashboardStats {
@@ -90,6 +91,7 @@ export const Dashboard: React.FC = () => {
   const { buffer, canadaHours, brazilHours } = useSettings();
   const { holidays } = useHolidays();
   const { timeOffs } = useTimeOffs();
+  const { members: teamMembers } = useTeamMembers();
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -143,20 +145,20 @@ export const Dashboard: React.FC = () => {
       window.removeEventListener('timeOffsUpdate', handleTimeOffsUpdate);
       window.removeEventListener('settingsUpdate', handleSettingsUpdate);
     };
-  }, [buffer, canadaHours, brazilHours, holidays, timeOffs]);
+  }, [buffer, canadaHours, brazilHours, holidays, timeOffs, teamMembers]);
 
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [employeesData, projects, allocationsData] = await Promise.all([
-        getCurrentEmployeesSync(),
+
+
+      const [projects, allocationsData] = await Promise.all([
         projectsApi.getAll(),
         projectAllocationsApi.getAll()
       ]);
 
-      setEmployees(employeesData);
       setAllocations(allocationsData);
       setProjects(projects);
 
@@ -164,9 +166,9 @@ export const Dashboard: React.FC = () => {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
 
-      // Calculate basic stats
-      const canadaEmployees = employees.filter(emp => emp.country === 'Canada').length;
-      const brazilEmployees = employees.filter(emp => emp.country === 'Brazil').length;
+      // Calculate basic stats using team members from context
+      const canadaEmployees = teamMembers.filter(member => member.country === 'Canada').length;
+      const brazilEmployees = teamMembers.filter(member => member.country === 'Brazil').length;
       
       // All projects are considered ongoing since status is not available in the interface
       const ongoingProjects = projects.length;
@@ -182,7 +184,19 @@ export const Dashboard: React.FC = () => {
       let overallocationCount = 0;
       let currentMonthAllocations = 0;
 
-      employees.forEach(employee => {
+      teamMembers.forEach(member => {
+        // Convert TeamMember to Employee format for calculations
+        const employee: Employee = {
+          id: member.id.toString(),
+          name: member.name,
+          role: member.role,
+          country: member.country,
+          allocatedHours: member.allocatedHours || 0,
+          availableHours: 0, // Will be calculated
+          vacationDays: 0,
+          holidayDays: 0
+        };
+
         // Calculate allocated hours for current month (excluding holidays)
         const allocatedHours = calculateEmployeeAllocatedHoursForMonth(
           employee.id.toString(),
@@ -229,8 +243,8 @@ export const Dashboard: React.FC = () => {
         ? Math.round((totalAllocatedHours / totalAvailableHours) * 100)
         : 0;
 
-      setStats({
-        totalEmployees: employees.length,
+      const finalStats = {
+        totalEmployees: teamMembers.length,
         totalProjects: projects.length,
         activeAllocations: allocations.length,
         totalHolidays: holidays.length,
@@ -246,7 +260,9 @@ export const Dashboard: React.FC = () => {
         currentMonthAllocations,
         totalCapacity: Math.round(totalCapacity),
         bufferHours: Math.round(bufferHours * 10) / 10
-      });
+      };
+
+      setStats(finalStats);
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -259,7 +275,7 @@ export const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [buffer, canadaHours, brazilHours, holidays, timeOffs, toast]);
+  }, [buffer, canadaHours, brazilHours, holidays, timeOffs, teamMembers, toast]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -273,8 +289,8 @@ export const Dashboard: React.FC = () => {
 
   // Chart data calculations
   const employeeDistributionData = useMemo(() => [
-    { name: 'Canada', value: stats.canadaEmployees, fill: '#3b82f6' },
-    { name: 'Brazil', value: stats.brazilEmployees, fill: '#10b981' }
+    { name: 'Canada', value: stats.canadaEmployees, fill: '#000000' }, // Black for Canada
+    { name: 'Brazil', value: stats.brazilEmployees, fill: '#FFD700' }  // Yellow for Brazil
   ], [stats.canadaEmployees, stats.brazilEmployees]);
 
   const projectStatusData = useMemo(() => {
@@ -344,9 +360,21 @@ export const Dashboard: React.FC = () => {
   ], [stats.totalAllocatedHours, stats.totalAvailableHours, stats.bufferHours]);
 
   const employeeUtilizationData = useMemo(() => {
-    if (!employees || !allocations) return [];
+    if (!teamMembers || !allocations) return [];
     
-    return employees.map(employee => {
+    return teamMembers.map(member => {
+      // Convert TeamMember to Employee format for calculations
+      const employee: Employee = {
+        id: member.id.toString(),
+        name: member.name,
+        role: member.role,
+        country: member.country,
+        allocatedHours: member.allocatedHours || 0,
+        availableHours: 0, // Will be calculated
+        vacationDays: 0,
+        holidayDays: 0
+      };
+
       const allocatedHours = calculateEmployeeAllocatedHoursForMonth(
         employee.id.toString(),
         allocations,
@@ -377,7 +405,7 @@ export const Dashboard: React.FC = () => {
         overallocation: allocatedHours > breakdown.totalAvailableHours
       };
     }).sort((a, b) => b.utilizationPercentage - a.utilizationPercentage);
-  }, [employees, allocations, holidays, timeOffs, buffer]);
+  }, [teamMembers, allocations, holidays, timeOffs, buffer]);
 
   if (loading) {
     return (

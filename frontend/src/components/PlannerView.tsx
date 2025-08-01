@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -20,6 +20,7 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { ChevronLeft, ChevronRight, GripVertical, Flame, ChevronDown, Filter, CalendarDays, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+
 import {
   getContrastColor,
   getDayName,
@@ -98,6 +99,8 @@ export const PlannerView: React.FC = () => {
 
   // Holiday visibility state
   const [showHolidays, setShowHolidays] = useState(false);
+  
+
 
   // Smart filter state
   const [smartFilter, setSmartFilter] = useState<string>('');
@@ -1411,7 +1414,7 @@ export const PlannerView: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold tracking-tight">Resource Calendar</h2>
           <p className="text-muted-foreground text-sm">
-            Drag projects from the sidebar to assign team members to tasks.
+            Drag and drop projects to allocate tasks, and resize durations by dragging rectangles horizontally.
           </p>
         </div>
 
