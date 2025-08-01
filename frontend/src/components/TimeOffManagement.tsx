@@ -67,50 +67,6 @@ export const TimeOffManagement: React.FC = () => {
     isRecurring: false
   }));
   
-  // Convert global time offs to local format for display
-  const timeOffs: VacationItem[] = globalTimeOffs.map(timeOff => {
-    const employee = employees.find(emp => emp.id === timeOff.employee_id);
-    return {
-      id: timeOff.id.toString(),
-      employeeId: timeOff.employee_id,
-      employeeName: timeOff.employee_name,
-      employeeRole: employee?.role || 'Unknown',
-      employeeCountry: employee?.country || 'Unknown',
-      startDate: parseISO(timeOff.start_date),
-      endDate: parseISO(timeOff.end_date),
-      days: differenceInDays(parseISO(timeOff.end_date), parseISO(timeOff.start_date)) + 1,
-      type: timeOff.type as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
-    };
-  });
-
-  // Filter holidays based on search and filters
-  const filteredHolidays = holidays.filter(holiday => {
-    const matchesSearch = holidaySearchTerm === '' || 
-      holiday.name.toLowerCase().includes(holidaySearchTerm.toLowerCase()) ||
-      format(holiday.date, 'MMMM yyyy').toLowerCase().includes(holidaySearchTerm.toLowerCase());
-    
-    const matchesCountry = holidayFilterCountry === 'all' || holiday.country === holidayFilterCountry;
-    
-    const matchesYear = holidayFilterYear === 'all' || 
-      holiday.date.getFullYear().toString() === holidayFilterYear;
-    
-    return matchesSearch && matchesCountry && matchesYear;
-  });
-
-  // Get unique years for year filter
-  const holidayYears = Array.from(new Set(holidays.map(h => h.date.getFullYear().toString()))).sort();
-
-  // Filter time offs based on search and filters
-  const filteredTimeOffs = timeOffs.filter(timeOff => {
-    const matchesSearch = timeOffSearchTerm === '' || 
-      timeOff.employeeName.toLowerCase().includes(timeOffSearchTerm.toLowerCase()) ||
-      timeOff.type.toLowerCase().includes(timeOffSearchTerm.toLowerCase());
-    
-    const matchesType = timeOffFilterType === 'all' || timeOff.type === timeOffFilterType;
-    
-    return matchesSearch && matchesType;
-  });
-  
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [showHolidayForm, setShowHolidayForm] = useState(false);
@@ -182,6 +138,50 @@ export const TimeOffManagement: React.FC = () => {
     startDate: new Date(),
     endDate: new Date(),
     type: 'Vacation' as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
+  });
+
+  // Convert global time offs to local format for display
+  const timeOffs: VacationItem[] = globalTimeOffs.map(timeOff => {
+    const employee = employees.find(emp => emp.id === timeOff.employee_id);
+    return {
+      id: timeOff.id.toString(),
+      employeeId: timeOff.employee_id,
+      employeeName: timeOff.employee_name,
+      employeeRole: employee?.role || 'Unknown',
+      employeeCountry: employee?.country || 'Unknown',
+      startDate: parseISO(timeOff.start_date),
+      endDate: parseISO(timeOff.end_date),
+      days: differenceInDays(parseISO(timeOff.end_date), parseISO(timeOff.start_date)) + 1,
+      type: timeOff.type as 'Vacation' | 'Sick Leave' | 'Compensation' | 'Personal',
+    };
+  });
+
+  // Filter holidays based on search and filters
+  const filteredHolidays = holidays.filter(holiday => {
+    const matchesSearch = holidaySearchTerm === '' || 
+      holiday.name.toLowerCase().includes(holidaySearchTerm.toLowerCase()) ||
+      format(holiday.date, 'MMMM yyyy').toLowerCase().includes(holidaySearchTerm.toLowerCase());
+    
+    const matchesCountry = holidayFilterCountry === 'all' || holiday.country === holidayFilterCountry;
+    
+    const matchesYear = holidayFilterYear === 'all' || 
+      holiday.date.getFullYear().toString() === holidayFilterYear;
+    
+    return matchesSearch && matchesCountry && matchesYear;
+  });
+
+  // Get unique years for year filter
+  const holidayYears = Array.from(new Set(holidays.map(h => h.date.getFullYear().toString()))).sort();
+
+  // Filter time offs based on search and filters
+  const filteredTimeOffs = timeOffs.filter(timeOff => {
+    const matchesSearch = timeOffSearchTerm === '' || 
+      timeOff.employeeName.toLowerCase().includes(timeOffSearchTerm.toLowerCase()) ||
+      timeOff.type.toLowerCase().includes(timeOffSearchTerm.toLowerCase());
+    
+    const matchesType = timeOffFilterType === 'all' || timeOff.type === timeOffFilterType;
+    
+    return matchesSearch && matchesType;
   });
 
   // Load data on component mount
