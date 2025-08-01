@@ -16,21 +16,28 @@ export const calculateEmployeeBreakdown = (
   const weeklyHours = getWorkingHoursForCountry(employee.country);
   const dailyHours = weeklyHours / 5; // Assuming 5 working days per week
   
-  // Calculate working days for the month (excluding weekends)
+  // Calculate total days in the month
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
+  let totalDaysInMonth = 0;
   let workingDaysInMonth = 0;
+  let weekendDaysInMonth = 0;
   let checkDate = new Date(monthStart);
+  
   while (checkDate <= monthEnd) {
+    totalDaysInMonth++;
     if (!isWeekendDay(checkDate)) {
       workingDaysInMonth++;
+    } else {
+      weekendDaysInMonth++;
     }
     checkDate = addDays(checkDate, 1);
   }
   
   // Calculate total working hours for the month (excluding weekends)
   const monthlyHours = workingDaysInMonth * dailyHours;
+  const weekendHours = weekendDaysInMonth * dailyHours;
   
   // Calculate buffer hours for the month
   const bufferHours = (monthlyHours * buffer) / 100;
@@ -79,7 +86,7 @@ export const calculateEmployeeBreakdown = (
     }
   });
   
-  // Calculate total available hours (no need to deduct weekends since we started with working days only)
+  // Calculate total available hours
   const totalAvailableHours = monthlyHours - bufferHours - holidayHours - vacationHours;
   
   return {
@@ -89,7 +96,7 @@ export const calculateEmployeeBreakdown = (
     bufferHours,
     holidayHours,
     vacationHours,
-    weekendHours: 0, // No weekend hours to deduct since we started with working days only
+    weekendHours: weekendHours, // Show actual weekend hours excluded
     totalAvailableHours
   };
 };

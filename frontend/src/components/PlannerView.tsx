@@ -1707,7 +1707,10 @@ export const PlannerView: React.FC = () => {
                                                <span className="font-medium">0</span>
                                              </div>
                                            )}
-
+                                           <div className="flex justify-between text-red-600">
+                                             <span>Deducted weekends time:</span>
+                                             <span className="font-medium">-{formatHours(breakdown.weekendHours)}</span>
+                                           </div>
                                            <div className="flex justify-between border-t pt-1">
                                              <span>Total available hours:</span>
                                              <span className="font-medium">{formatHours(breakdown.totalAvailableHours)}</span>
