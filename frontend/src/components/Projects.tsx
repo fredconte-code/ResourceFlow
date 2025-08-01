@@ -400,7 +400,8 @@ export const Projects = () => {
       </div>
 
       {/* Projects Container */}
-      <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -568,6 +569,7 @@ export const Projects = () => {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* Add Project Dialog */}
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
