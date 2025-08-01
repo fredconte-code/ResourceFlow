@@ -159,7 +159,8 @@ export const calculateEmployeeAllocationPercentage = (
   // Calculate percentage based on total available hours (after all deductions)
   const percentage = breakdown.totalAvailableHours > 0 ? (allocatedHours / breakdown.totalAvailableHours) * 100 : 0;
   
-  return percentage; // Allow percentages over 100% for overallocation
+  // Round to 2 decimal places to avoid floating-point precision issues
+  return Math.round(percentage * 100) / 100; // Allow percentages over 100% for overallocation
 };
 
 export const getEmployeeAvailableHours = (
