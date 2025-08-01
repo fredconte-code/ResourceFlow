@@ -400,7 +400,7 @@ export const Projects = () => {
       </div>
 
       {/* Projects Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="w-full">
         <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -509,7 +509,7 @@ export const Projects = () => {
                           <span className="font-medium text-xs truncate">{project.name}</span>
                         </div>
                         
-                        {/* Dates positioned between project name and status */}
+                        {/* Dates positioned between project name and resource hours */}
                         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                           {project.startDate && (
                             <>
@@ -522,46 +522,51 @@ export const Projects = () => {
                           )}
                         </div>
                         
-                        <span className="text-muted-foreground font-medium text-xs">Status:</span>
-                        {(() => {
-                          const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
-                          const IconComponent = statusConfig.icon;
-                          return (
-                            <div className="flex items-center gap-1">
-                              <div style={{ color: statusConfig.color }}>
-                                <IconComponent className="h-4 w-4" />
-                              </div>
-                              <span className="text-muted-foreground font-medium text-xs">{statusConfig.label}</span>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         {(() => {
                           const allocatedHours = getProjectAllocatedHours(project.id);
                           return allocatedHours > 0 ? (
-                            <span>Resources Hours Allocated: {allocatedHours.toFixed(1)}h</span>
+                            <>
+                              <span>•</span>
+                              <span className="text-xs text-muted-foreground">
+                                Resources Hours Allocated: {allocatedHours.toFixed(1)}h
+                              </span>
+                            </>
                           ) : null;
                         })()}
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(project)}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(project)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                  <div className="flex items-center space-x-3">
+                    {(() => {
+                      const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
+                      const IconComponent = statusConfig.icon;
+                      return (
+                        <div className="flex items-center gap-1 min-w-[140px]">
+                          <span className="text-muted-foreground font-medium text-xs w-12">Status:</span>
+                          <div style={{ color: statusConfig.color }}>
+                            <IconComponent className="h-4 w-4" />
+                          </div>
+                          <span className="text-muted-foreground font-medium text-xs min-w-[60px]">{statusConfig.label}</span>
+                        </div>
+                      );
+                    })()}
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(project)}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(project)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
