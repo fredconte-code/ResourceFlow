@@ -466,6 +466,17 @@ export const Settings = () => {
               <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
             )}
           </div>
+
+          {/* Application Version */}
+          <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+            <Code className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm text-blue-800 dark:text-blue-200">
+              <strong>Application Version:</strong> v1.0.0
+            </span>
+            <Badge variant="secondary" className="ml-auto text-xs">
+              Stable Release
+            </Badge>
+          </div>
         </CardContent>
       </Card>
       </div>
