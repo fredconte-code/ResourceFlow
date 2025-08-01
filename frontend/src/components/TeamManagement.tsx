@@ -88,10 +88,16 @@ export const TeamManagement = () => {
       loadTeamData();
     };
 
+    const handleProjectAllocationsUpdate = () => {
+      loadTeamData();
+    };
+
     window.addEventListener('teamUpdate', handleTeamUpdate);
+    window.addEventListener('projectAllocationsUpdate', handleProjectAllocationsUpdate);
     
     return () => {
       window.removeEventListener('teamUpdate', handleTeamUpdate);
+      window.removeEventListener('projectAllocationsUpdate', handleProjectAllocationsUpdate);
     };
   }, []);
 

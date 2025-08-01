@@ -70,10 +70,16 @@ export const TeamOverviewCard = () => {
       setStats(calculateTeamStats());
     };
 
+    const handleProjectAllocationsUpdate = () => {
+      setStats(calculateTeamStats());
+    };
+
     window.addEventListener('settingsUpdate', handleSettingsUpdate);
+    window.addEventListener('projectAllocationsUpdate', handleProjectAllocationsUpdate);
     
     return () => {
       window.removeEventListener('settingsUpdate', handleSettingsUpdate);
+      window.removeEventListener('projectAllocationsUpdate', handleProjectAllocationsUpdate);
     };
   }, [canadaHours, brazilHours, buffer]);
 
