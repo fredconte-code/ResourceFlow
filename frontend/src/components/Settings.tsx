@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,9 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Download, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert, Code } from "lucide-react";
+import { Check, Loader2, Download, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert, Code, Upload, FileText } from "lucide-react";
 import * as ExcelJS from 'exceljs';
 import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection } from "@/lib/api";
+import { downloadData, importData, validateImportData } from "@/lib/data-export";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
@@ -24,6 +25,13 @@ export const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Database export/import state
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importValidation, setImportValidation] = useState<{ isValid: boolean; errors: string[]; warnings: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
 
 
@@ -281,6 +289,77 @@ export const Settings = () => {
     }
   };
 
+  // Database export handler
+  const handleDatabaseExport = async () => {
+    try {
+      setExporting(true);
+      await downloadData();
+      toast({
+        title: "Export Successful",
+        description: "Database backup has been downloaded successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Export Failed",
+        description: err instanceof Error ? err.message : "Failed to export database. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Database import handler
+  const handleDatabaseImport = async (file: File) => {
+    try {
+      setImporting(true);
+      setImportValidation(null);
+      
+      const importResult = await importData(file);
+      setImportValidation(importResult.validation);
+      
+      if (importResult.validation.isValid) {
+        // Import the data using the API
+        await dataApi.import(importResult.data);
+        
+        toast({
+          title: "Import Successful",
+          description: "Database has been imported successfully. The page will refresh to show the new data.",
+        });
+        
+        // Reload settings and refresh the page
+        await loadSettings();
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        toast({
+          title: "Import Validation Failed",
+          description: `Import failed: ${importResult.validation.errors.join(', ')}`,
+          variant: "destructive"
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Import Failed",
+        description: err instanceof Error ? err.message : "Failed to import database. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // File input change handler
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleDatabaseImport(file);
+    }
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -411,10 +490,99 @@ export const Settings = () => {
                 Clear All Data
               </Button>
             </div>
+
+            {/* Database Backup Section */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Database Backup & Restore
+              </h4>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleDatabaseExport}
+                  disabled={exporting}
+                >
+                  {exporting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="mr-2 h-4 w-4" />
+                  )}
+                  {exporting ? 'Exporting...' : 'Export Database'}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={importing}
+                >
+                  {importing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  {importing ? 'Importing...' : 'Import Database'}
+                </Button>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+              
+              {importValidation && (
+                <div className={`mt-3 p-3 rounded-md border ${
+                  importValidation.isValid 
+                    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
+                    : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                }`}>
+                  <div className="flex items-start gap-2">
+                    {importValidation.isValid ? (
+                      <Check className="h-4 w-4 text-green-600 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                    )}
+                    <div className="text-sm">
+                      {importValidation.isValid ? (
+                        <span className="text-green-800 dark:text-green-200">
+                          <strong>Validation Successful:</strong> File is ready for import.
+                        </span>
+                      ) : (
+                        <div className="text-red-800 dark:text-red-200">
+                          <strong>Validation Failed:</strong>
+                          <ul className="mt-1 list-disc list-inside">
+                            {importValidation.errors.map((error, index) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {importValidation.warnings.length > 0 && (
+                        <div className="mt-2 text-amber-800 dark:text-amber-200">
+                          <strong>Warnings:</strong>
+                          <ul className="mt-1 list-disc list-inside">
+                            {importValidation.warnings.map((warning, index) => (
+                              <li key={index}>{warning}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
               <strong>Export data to Excel:</strong> Download core data (team members, projects, allocations, etc.) as an Excel file for backup or analysis. Dashboard statistics are excluded.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              <strong>Database Backup & Restore:</strong> Export your complete database as a JSON file for full backup, or import a previously exported backup file to restore your data. This includes all data including settings, holidays, and allocations.
             </p>
             {showClearDataWarning && (
               <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200 dark:border-red-800">
@@ -448,7 +616,7 @@ export const Settings = () => {
           <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <span className="text-sm text-amber-800 dark:text-amber-200">
-              <strong>Note:</strong> Data is now stored on the server. Export your data regularly as a backup.
+              <strong>Note:</strong> Data is now stored on the server. Export your data regularly as a backup. Importing a database backup will replace all existing data.
             </span>
           </div>
 
