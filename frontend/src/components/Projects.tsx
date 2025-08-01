@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Edit2, Save, X, Calendar as CalendarIcon, Plus, AlertCircle, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Edit2, Save, X, Calendar as CalendarIcon, Plus, AlertCircle, Loader2, Search, FolderOpen } from "lucide-react";
 import { format, startOfMonth, endOfMonth, addDays, parseISO, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { projectsApi, projectAllocationsApi, teamMembersApi, Project, ProjectAllocation, ProjectStatus, TeamMember } from "@/lib/api";
@@ -29,6 +30,12 @@ export const Projects = () => {
   const [employees, setEmployees] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Search and filter state
+  const [projectSearchTerm, setProjectSearchTerm] = useState("");
+  const [projectFilterStatus, setProjectFilterStatus] = useState("all");
+  const [projectFilterYear, setProjectFilterYear] = useState("all");
+  
   const [form, setForm] = useState({ 
     name: "", 
     startDate: undefined as Date | undefined, 
@@ -53,9 +60,6 @@ export const Projects = () => {
   // State for delete confirmation
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  
-  // Search state
-  const [search, setSearch] = useState("");
 
   // Load projects and allocations from API
   const loadProjects = useCallback(async () => {
@@ -99,30 +103,40 @@ export const Projects = () => {
     };
   }, [loadProjects]);
 
-  // Smart search that detects what you're searching for
+  // Smart search and filtering
   const filteredProjects = projects.filter(project => {
-    if (!search) return true;
+    const matchesSearch = projectSearchTerm === '' || 
+      project.name.toLowerCase().includes(projectSearchTerm.toLowerCase()) ||
+      getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS).label.toLowerCase().includes(projectSearchTerm.toLowerCase()) ||
+      (project.startDate && format(new Date(project.startDate), 'MMMM yyyy').toLowerCase().includes(projectSearchTerm.toLowerCase())) ||
+      (project.endDate && format(new Date(project.endDate), 'MMMM yyyy').toLowerCase().includes(projectSearchTerm.toLowerCase()));
     
-    const searchLower = search.toLowerCase();
+    const matchesStatus = projectFilterStatus === 'all' || project.status === projectFilterStatus;
     
-    // Check if search matches name, status, or dates
-    const matchesName = project.name.toLowerCase().includes(searchLower);
-    const matchesStatus = project.status?.toLowerCase().includes(searchLower) || 
-                         getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS).label.toLowerCase().includes(searchLower);
+    const matchesYear = projectFilterYear === 'all' || 
+      (project.startDate && new Date(project.startDate).getFullYear().toString() === projectFilterYear) ||
+      (project.endDate && new Date(project.endDate).getFullYear().toString() === projectFilterYear);
     
-    // Check if search matches date patterns
-    let matchesDate = false;
-    if (project.startDate) {
-      const startDateStr = format(new Date(project.startDate), 'MMM dd, yyyy').toLowerCase();
-      matchesDate = startDateStr.includes(searchLower);
-    }
-    if (project.endDate && !matchesDate) {
-      const endDateStr = format(new Date(project.endDate), 'MMM dd, yyyy').toLowerCase();
-      matchesDate = endDateStr.includes(searchLower);
-    }
-    
-    return matchesName || matchesStatus || matchesDate;
+    return matchesSearch && matchesStatus && matchesYear;
   });
+
+  // Get unique years for year filter
+  const projectYears = Array.from(new Set(
+    projects.flatMap(p => [
+      p.startDate ? new Date(p.startDate).getFullYear().toString() : null,
+      p.endDate ? new Date(p.endDate).getFullYear().toString() : null
+    ].filter(Boolean))
+  )).sort();
+
+  // Get unique statuses for status filter
+  const projectStatuses = Array.from(new Set(projects.map(p => p.status || DEFAULT_PROJECT_STATUS)));
+
+  // Clear all filters
+  const clearFilters = () => {
+    setProjectSearchTerm("");
+    setProjectFilterStatus("all");
+    setProjectFilterYear("all");
+  };
 
   // Calculate allocated hours for a specific project using the same logic as Calendar
   const getProjectAllocatedHours = (projectId: number) => {
@@ -385,39 +399,173 @@ export const Projects = () => {
         </div>
       </div>
 
-      {/* Add Project Button and Search */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center">
-        <Button onClick={() => setShowAddForm(true)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Project
-        </Button>
-        
-        <div className="flex-1">
-          <div className="relative">
-            <Input
-              placeholder="🔍 Smart search: name, status, or dates..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm pr-8"
-            />
-            {search && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearch("")}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
+      {/* Projects Container */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <FolderOpen className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg">Projects</CardTitle>
+              <Badge variant="secondary" className="ml-2">
+                {filteredProjects.length} of {projects.length}
+              </Badge>
+            </div>
+            <Button onClick={() => setShowAddForm(true)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Project
+            </Button>
           </div>
-          {search && (
-            <div className="mt-1 text-xs text-muted-foreground">
-              Found {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}
+          <p className="text-sm text-muted-foreground mt-2">
+            Manage your projects and their timelines with smart search and filtering.
+          </p>
+          
+          {/* Search and Filter Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search projects by name, status, or dates..."
+                value={projectSearchTerm}
+                onChange={(e) => setProjectSearchTerm(e.target.value)}
+                className="h-9 pl-9"
+              />
+            </div>
+            <Select value={projectFilterStatus} onValueChange={setProjectFilterStatus}>
+              <SelectTrigger className="w-full sm:w-[140px] h-9">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {projectStatuses.map((status) => {
+                  const statusConfig = getProjectStatusConfig(status);
+                  const IconComponent = statusConfig.icon;
+                  return (
+                    <SelectItem key={status} value={status}>
+                      <div className="flex items-center gap-2">
+                        <div style={{ color: statusConfig.color }}>
+                          <IconComponent className="h-4 w-4" />
+                        </div>
+                        <span>{statusConfig.label}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <Select value={projectFilterYear} onValueChange={setProjectFilterYear}>
+              <SelectTrigger className="w-full sm:w-[120px] h-9">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {projectYears.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="max-h-[400px] overflow-y-auto">
+          {filteredProjects.length === 0 ? (
+            <div className="flex items-center justify-center h-24">
+              <div className="text-center">
+                <p className="text-muted-foreground text-sm">
+                  {projectSearchTerm || projectFilterStatus !== 'all' || projectFilterYear !== 'all' 
+                    ? 'No projects match your search criteria.' 
+                    : 'No projects yet.'}
+                </p>
+                {(projectSearchTerm || projectFilterStatus !== 'all' || projectFilterYear !== 'all') ? (
+                  <Button onClick={clearFilters} className="mt-2" size="sm" variant="outline">
+                    Clear filters
+                  </Button>
+                ) : (
+                  <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
+                    Add your first project
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredProjects
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((project) => (
+                <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="px-3 py-1.5 border rounded-md flex items-center justify-center min-w-[120px] max-w-[150px] h-8"
+                          style={{ 
+                            backgroundColor: project.color,
+                            borderColor: project.color,
+                            color: getContrastColor(project.color)
+                          }}
+                        >
+                          <span className="font-medium text-xs truncate">{project.name}</span>
+                        </div>
+                        <span className="text-muted-foreground font-medium text-xs">Status:</span>
+                        {(() => {
+                          const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
+                          const IconComponent = statusConfig.icon;
+                          return (
+                            <div className="flex items-center gap-1">
+                              <div style={{ color: statusConfig.color }}>
+                                <IconComponent className="h-4 w-4" />
+                              </div>
+                              <span className="text-muted-foreground font-medium text-xs">{statusConfig.label}</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                        {project.startDate && (
+                          <>
+                            <span>Start: {format(new Date(project.startDate), 'MMM dd, yyyy')}</span>
+                            <span>•</span>
+                          </>
+                        )}
+                        {project.endDate && (
+                          <span>End: {format(new Date(project.endDate), 'MMM dd, yyyy')}</span>
+                        )}
+                        {(() => {
+                          const allocatedHours = getProjectAllocatedHours(project.id);
+                          return allocatedHours > 0 ? (
+                            <>
+                              <span>•</span>
+                              <span>Resources Hours Allocated: {allocatedHours.toFixed(1)}h</span>
+                            </>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(project)}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteClick(project)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Add Project Dialog */}
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
@@ -612,105 +760,7 @@ export const Projects = () => {
         </DialogContent>
       </Dialog>
 
-            {/* Projects List */}
-      <div className="space-y-4">
-        {/* Projects Grid */}
-        <div className="grid gap-3">
-          {filteredProjects.length === 0 ? (
-            <Card>
-              <CardContent className="flex items-center justify-center h-24">
-                <div className="text-center">
-                  <p className="text-muted-foreground text-sm">
-                    {search ? 'No projects found matching your search.' : 'No projects yet.'}
-                  </p>
-                  {!search && (
-                    <Button onClick={() => setShowAddForm(true)} className="mt-2" size="sm">
-                      Add your first project
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredProjects
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((project) => (
-            <Card key={project.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="px-3 py-1.5 border rounded-md flex items-center justify-center min-w-[120px] max-w-[150px] h-8"
-                          style={{ 
-                            backgroundColor: project.color,
-                            borderColor: project.color,
-                            color: getContrastColor(project.color)
-                          }}
-                        >
-                          <span className="font-medium text-xs truncate">{project.name}</span>
-                        </div>
-                                                 <span className="text-muted-foreground font-medium text-xs">Status:</span>
-                         {(() => {
-                           const statusConfig = getProjectStatusConfig(project.status || DEFAULT_PROJECT_STATUS);
-                           const IconComponent = statusConfig.icon;
-                           return (
-                             <div className="flex items-center gap-1">
-                               <div style={{ color: statusConfig.color }}>
-                                 <IconComponent className="h-4 w-4" />
-                               </div>
-                               <span className="text-muted-foreground font-medium text-xs">{statusConfig.label}</span>
-                             </div>
-                           );
-                         })()}
-                      </div>
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        {project.startDate && (
-                          <>
-                            <span>Start: {format(new Date(project.startDate), 'MMM dd, yyyy')}</span>
-                            <span>•</span>
-                          </>
-                        )}
-                        {project.endDate && (
-                          <span>End: {format(new Date(project.endDate), 'MMM dd, yyyy')}</span>
-                        )}
-                        {(() => {
-                          const allocatedHours = getProjectAllocatedHours(project.id);
-                          return allocatedHours > 0 ? (
-                            <>
-                              <span>•</span>
-                              <span>Resources Hours Allocated: {allocatedHours.toFixed(1)}h</span>
-                            </>
-                          ) : null;
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(project)}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClick(project)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-      </div>
+            
 
       {/* Edit Project Dialog */}
       {editingProject && (
