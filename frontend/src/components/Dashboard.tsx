@@ -103,6 +103,7 @@ export const Dashboard: React.FC = () => {
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [monthLoading, setMonthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -194,9 +195,13 @@ export const Dashboard: React.FC = () => {
     };
   }, [buffer, canadaHours, brazilHours, holidays, timeOffs, teamMembers]);
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setMonthLoading(true);
+      }
       setError(null);
 
 
@@ -355,17 +360,18 @@ export const Dashboard: React.FC = () => {
       });
     } finally {
       setLoading(false);
+      setMonthLoading(false);
     }
   }, [buffer, canadaHours, brazilHours, holidays, timeOffs, teamMembers, toast, currentDate]);
 
   // Load data when currentDate changes
   useEffect(() => {
-    loadDashboardData();
+    loadDashboardData(false); // Don't show loading for month changes
   }, [currentDate, loadDashboardData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadDashboardData();
+    await loadDashboardData(true);
     setRefreshing(false);
     toast({
       title: "Dashboard Updated",
@@ -558,7 +564,7 @@ export const Dashboard: React.FC = () => {
           <div className="text-center">
             <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={loadDashboardData}>Retry</Button>
+            <Button onClick={() => loadDashboardData(true)}>Retry</Button>
           </div>
         </div>
       </div>
@@ -579,7 +585,10 @@ export const Dashboard: React.FC = () => {
           <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-sm font-medium w-[120px] text-center hidden sm:block">
+          <div className="text-sm font-medium w-[120px] text-center hidden sm:block flex items-center justify-center">
+            {monthLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : null}
             {format(currentDate, 'MMMM yyyy')}
           </div>
           <Button variant="outline" size="sm" onClick={goToNextMonth}>
