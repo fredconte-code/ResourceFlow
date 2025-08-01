@@ -82,15 +82,7 @@ interface MonthlyData {
   workingDays: number;
 }
 
-interface EmployeeUtilization {
-  employeeId: string;
-  employeeName: string;
-  country: string;
-  allocatedHours: number;
-  availableHours: number;
-  utilizationPercentage: number;
-  overallocation: boolean;
-}
+
 
 
 
@@ -444,59 +436,51 @@ export const Dashboard: React.FC = () => {
     { name: 'Available', value: 100 - stats.averageUtilization, fill: '#e5e7eb' }
   ], [stats.averageUtilization]);
 
+  // Calculate monthly available hours for the selected year
+  const monthlyAvailableHoursData = useMemo(() => {
+    const selectedYear = currentDate.getFullYear();
+    const months = [];
+    
+    for (let month = 0; month < 12; month++) {
+      const monthDate = new Date(selectedYear, month, 1);
+      const startOfMonthDate = startOfMonth(monthDate);
+      const endOfMonthDate = endOfMonth(monthDate);
+      
+      // Calculate working days for this month
+      const daysInMonth = eachDayOfInterval({ start: startOfMonthDate, end: endOfMonthDate });
+      const workingDays = daysInMonth.filter(date => {
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+        const isHoliday = holidays?.some(holiday => 
+          isSameDay(parseISO(holiday.date), date)
+        ) || false;
+        return !isWeekend && !isHoliday;
+      }).length;
+
+      // Calculate total available hours for this month
+      const canadaEmployees = teamMembers?.filter(member => member.country === 'Canada').length || 0;
+      const brazilEmployees = teamMembers?.filter(member => member.country === 'Brazil').length || 0;
+      
+      const canadaTotalHours = canadaEmployees * canadaHours * workingDays / 5; // Assuming 8 hours per day
+      const brazilTotalHours = brazilEmployees * brazilHours * workingDays / 5; // Assuming 8 hours per day
+      
+      const totalAvailableHours = canadaTotalHours + brazilTotalHours;
+
+      months.push({
+        date: format(monthDate, 'MMM'),
+        availableHours: Math.round(totalAvailableHours)
+      });
+    }
+    
+    return months;
+  }, [currentDate, teamMembers, holidays, canadaHours, brazilHours]);
+
   const capacityBreakdownData = useMemo(() => [
     { name: 'Allocated', value: Math.round(stats.totalAllocatedHours), fill: '#3b82f6' },
     { name: 'Available', value: Math.round(stats.totalAvailableHours - stats.totalAllocatedHours), fill: '#10b981' },
     { name: 'Buffer', value: Math.round(stats.bufferHours), fill: '#f59e0b' }
   ], [stats.totalAllocatedHours, stats.totalAvailableHours, stats.bufferHours]);
 
-  const employeeUtilizationData = useMemo(() => {
-    if (!teamMembers || !allocations) return [];
-    
-    return teamMembers.map(member => {
-      // Convert TeamMember to Employee format for calculations
-      const employee: Employee = {
-        id: member.id.toString(),
-        name: member.name,
-        role: member.role,
-        country: member.country,
-        allocatedHours: member.allocatedHours || 0,
-        availableHours: 0, // Will be calculated
-        vacationDays: 0,
-        holidayDays: 0
-      };
 
-      const allocatedHours = calculateEmployeeAllocatedHoursForMonth(
-        employee.id.toString(),
-        allocations,
-        currentDate,
-        holidays,
-        employee
-      );
-
-      const breakdown = calculateEmployeeBreakdown(
-        employee,
-        currentDate,
-        holidays,
-        timeOffs,
-        buffer
-      );
-
-      const utilizationPercentage = breakdown.totalAvailableHours > 0 
-        ? Math.round((allocatedHours / breakdown.totalAvailableHours) * 100)
-        : 0;
-
-      return {
-        employeeId: employee.id,
-        employeeName: employee.name,
-        country: employee.country,
-        allocatedHours: Math.round(allocatedHours * 10) / 10,
-        availableHours: Math.round(breakdown.totalAvailableHours * 10) / 10,
-        utilizationPercentage,
-        overallocation: allocatedHours > breakdown.totalAvailableHours
-      };
-    }).sort((a, b) => b.utilizationPercentage - a.utilizationPercentage);
-  }, [currentDate, teamMembers, allocations, holidays, timeOffs, buffer]);
 
   // Calculate onboarding members
   const onboardingMembers = useMemo(() => {
@@ -606,31 +590,71 @@ export const Dashboard: React.FC = () => {
       <Card>
         <CardContent className="pt-6">
           <Tabs defaultValue="metrics" className="space-y-3">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="metrics">Metrics</TabsTrigger>
               <TabsTrigger value="resources">Resources</TabsTrigger>
-              <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="utilization">Utilization</TabsTrigger>
               <TabsTrigger value="capacity">Capacity</TabsTrigger>
-              <TabsTrigger value="employees">Employee Details</TabsTrigger>
               <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
+          {/* Project Overview */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Folder className="h-4 w-4" />
+                Projects Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{stats.totalProjects}</div>
+                  <p className="text-xs text-muted-foreground">Total Projects</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {projectStatusData.find(item => item.name === 'Active')?.value || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Active</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {projectStatusData.find(item => item.name === 'On Hold')?.value || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">On Hold</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {projectStatusData.find(item => item.name === 'Finished')?.value || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Finished</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">
+                    {projectStatusData.find(item => item.name === 'Cancelled')?.value || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Canceled</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Employee Distribution */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Globe className="h-4 w-4" />
                   Team Distribution by Country
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
                       data={employeeDistributionData}
@@ -638,7 +662,7 @@ export const Dashboard: React.FC = () => {
                       cy="50%"
                       labelLine={false}
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      outerRadius={70}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -654,14 +678,14 @@ export const Dashboard: React.FC = () => {
 
             {/* Project Status */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <TrendingUp className="h-4 w-4" />
                   Project Status Overview
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={projectStatusData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
@@ -910,66 +934,30 @@ export const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Resource Utilization */}
+            {/* Monthly Available Hours */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Resource Utilization
+                  <Clock className="h-4 w-4" />
+                  Monthly Available Hours
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={resourceUtilizationData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {resourceUtilizationData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
+                  <LineChart data={monthlyAvailableHoursData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
                     <Tooltip />
-                  </PieChart>
+                    <Line type="monotone" dataKey="availableHours" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        {/* Projects Tab */}
-        <TabsContent value="projects" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Folder className="h-4 w-4" />
-                Project Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">{stats.totalProjects}</div>
-                  <p className="text-sm text-muted-foreground">Total Projects</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600">{stats.ongoingProjects}</div>
-                  <p className="text-sm text-muted-foreground">Ongoing</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">0</div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
 
         {/* Utilization Tab */}
         <TabsContent value="utilization" className="space-y-4">
@@ -1087,51 +1075,7 @@ export const Dashboard: React.FC = () => {
           </div>
         </TabsContent>
 
-        {/* Employee Details Tab */}
-        <TabsContent value="employees" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Employee Utilization Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {employeeUtilizationData.length > 0 ? (
-                  <div className="grid gap-3">
-                    {employeeUtilizationData.map((employee) => (
-                      <div key={employee.employeeId} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="font-medium">{employee.employeeName}</p>
-                            <p className="text-sm text-muted-foreground">{employee.country}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="text-right">
-                            <p className="text-sm font-medium">{employee.allocatedHours}h / {employee.availableHours}h</p>
-                            <p className="text-xs text-muted-foreground">Allocated / Available</p>
-                          </div>
-                          <Badge 
-                            variant={employee.overallocation ? "destructive" : employee.utilizationPercentage > 80 ? "default" : "secondary"}
-                          >
-                            {employee.utilizationPercentage}%
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No employee data available</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
 
         {/* Onboarding Members Tab */}
         <TabsContent value="onboarding" className="space-y-4">
