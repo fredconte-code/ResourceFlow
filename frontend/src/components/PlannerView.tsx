@@ -325,9 +325,12 @@ export const PlannerView: React.FC = () => {
       return dayAllocations.length > 0 ? -1 : 0; // -1 indicates weekend allocation
     }
     
-    const maxDailyHours = getWorkingHoursForCountry(employee.country) / WORKING_DAYS_PER_WEEK;
+    // Calculate max daily hours using default working hours - daily allocation should be based on standard working hours
+    const maxDailyHours = (employee.country === 'Canada' ? 37.5 : 44) / WORKING_DAYS_PER_WEEK;
     // Allow percentages to exceed 100% for overallocated days
-    return maxDailyHours > 0 ? (totalAllocatedHours / maxDailyHours) * 100 : 0;
+    // Ensure precise calculation for daily allocation percentages
+    const percentage = maxDailyHours > 0 ? (totalAllocatedHours / maxDailyHours) * 100 : 0;
+    return percentage;
   };
 
 
@@ -1479,20 +1482,6 @@ export const PlannerView: React.FC = () => {
       <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h3 className="text-lg font-semibold">
-                  {format(currentDate, 'MMMM yyyy')}
-                </h3>
-                <Button variant="outline" size="sm" onClick={goToNextMonth}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={goToToday}>
-                  Today
-                </Button>
-              </div>
               <div className="flex items-center space-x-2">
                 {/* Smart Filter */}
                 <div className="flex items-center space-x-2">
@@ -1515,8 +1504,6 @@ export const PlannerView: React.FC = () => {
                       </Button>
                     )}
                   </div>
-                  
-
                 </div>
                 
                 <Button
@@ -1543,6 +1530,24 @@ export const PlannerView: React.FC = () => {
                 >
                   <CalendarDays className="h-4 w-4" />
                   Holidays + Time Off
+                </Button>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-sm font-medium min-w-[100px] text-center hidden sm:block">
+                  {format(currentDate, 'MMMM yyyy')}
+                </div>
+                <div className="text-sm font-medium min-w-[80px] text-center sm:hidden">
+                  {format(currentDate, 'MMM yyyy')}
+                </div>
+                <Button variant="outline" size="sm" onClick={goToNextMonth}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={goToToday} className="hidden sm:block">
+                  Today
                 </Button>
               </div>
             </div>
