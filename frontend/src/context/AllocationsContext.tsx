@@ -49,6 +49,9 @@ export const AllocationsProvider: React.FC<AllocationsProviderProps> = ({ childr
     try {
       const newAllocation = await projectAllocationsApi.create(allocation);
       setAllocations(prev => [...prev, newAllocation]);
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to add allocation');
     }
@@ -58,6 +61,9 @@ export const AllocationsProvider: React.FC<AllocationsProviderProps> = ({ childr
     try {
       const updatedAllocation = await projectAllocationsApi.update(id, allocation);
       setAllocations(prev => prev.map(a => a.id === id ? updatedAllocation : a));
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to update allocation');
     }
@@ -67,6 +73,9 @@ export const AllocationsProvider: React.FC<AllocationsProviderProps> = ({ childr
     try {
       await projectAllocationsApi.delete(id);
       setAllocations(prev => prev.filter(a => a.id !== id));
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to delete allocation');
     }

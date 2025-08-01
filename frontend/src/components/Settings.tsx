@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Loader2, Download, Trash2, AlertTriangle, Database, AlertCircle, Wifi, WifiOff, Server, CircleCheck, CircleX, CircleAlert, Code } from "lucide-react";
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 import { settingsApi, dataApi, Settings as ApiSettings, testApiConnection } from "@/lib/api";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -144,43 +144,90 @@ export const Settings = () => {
       const data = await dataApi.export();
       
       // Create Excel workbook
-      const workbook = XLSX.utils.book_new();
+      const workbook = new ExcelJS.Workbook();
       
-      // Convert data to sheets
+      // Helper function to add data to worksheet
+      const addDataToWorksheet = (worksheet: ExcelJS.Worksheet, data: any[], sheetName: string) => {
+        if (data && data.length > 0) {
+          // Add headers
+          const headers = Object.keys(data[0]);
+          headers.forEach((header, index) => {
+            const cell = worksheet.getCell(1, index + 1);
+            cell.value = header;
+            cell.font = { bold: true };
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFE0E0E0' }
+            };
+          });
+          
+          // Add data rows
+          data.forEach((row, rowIndex) => {
+            headers.forEach((header, colIndex) => {
+              const cell = worksheet.getCell(rowIndex + 2, colIndex + 1);
+              cell.value = row[header];
+            });
+          });
+          
+          // Auto-fit columns
+          headers.forEach((_, index) => {
+            worksheet.getColumn(index + 1).width = 15;
+          });
+        }
+      };
+      
+      // Add Team Members sheet
       if (data.teamMembers && data.teamMembers.length > 0) {
-        const teamMembersSheet = XLSX.utils.json_to_sheet(data.teamMembers);
-        XLSX.utils.book_append_sheet(workbook, teamMembersSheet, 'Team Members');
+        const teamMembersSheet = workbook.addWorksheet('Team Members');
+        addDataToWorksheet(teamMembersSheet, data.teamMembers, 'Team Members');
       }
       
+      // Add Projects sheet
       if (data.projects && data.projects.length > 0) {
-        const projectsSheet = XLSX.utils.json_to_sheet(data.projects);
-        XLSX.utils.book_append_sheet(workbook, projectsSheet, 'Projects');
+        const projectsSheet = workbook.addWorksheet('Projects');
+        addDataToWorksheet(projectsSheet, data.projects, 'Projects');
       }
       
+      // Add Holidays sheet
       if (data.holidays && data.holidays.length > 0) {
-        const holidaysSheet = XLSX.utils.json_to_sheet(data.holidays);
-        XLSX.utils.book_append_sheet(workbook, holidaysSheet, 'Holidays');
+        const holidaysSheet = workbook.addWorksheet('Holidays');
+        addDataToWorksheet(holidaysSheet, data.holidays, 'Holidays');
       }
       
+      // Add Time Off sheet
       if (data.vacations && data.vacations.length > 0) {
-        const vacationsSheet = XLSX.utils.json_to_sheet(data.vacations);
-        XLSX.utils.book_append_sheet(workbook, vacationsSheet, 'Time Off');
+        const vacationsSheet = workbook.addWorksheet('Time Off');
+        addDataToWorksheet(vacationsSheet, data.vacations, 'Time Off');
       }
       
+      // Add Project Allocations sheet
       if (data.projectAllocations && data.projectAllocations.length > 0) {
-        const allocationsSheet = XLSX.utils.json_to_sheet(data.projectAllocations);
-        XLSX.utils.book_append_sheet(workbook, allocationsSheet, 'Project Allocations');
+        const allocationsSheet = workbook.addWorksheet('Project Allocations');
+        addDataToWorksheet(allocationsSheet, data.projectAllocations, 'Project Allocations');
       }
       
+      // Add Settings sheet
       if (data.settings) {
+        const settingsSheet = workbook.addWorksheet('Settings');
         const settingsArray = Object.entries(data.settings).map(([key, value]) => ({ key, value }));
-        const settingsSheet = XLSX.utils.json_to_sheet(settingsArray);
-        XLSX.utils.book_append_sheet(workbook, settingsSheet, 'Settings');
+        addDataToWorksheet(settingsSheet, settingsArray, 'Settings');
       }
       
-      // Download file
+      // Generate and download file
       const fileName = `resourceflow-export-${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
+      const buffer = await workbook.xlsx.writeBuffer();
+      
+      // Create download link
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
       toast({
         title: "Export Successful",

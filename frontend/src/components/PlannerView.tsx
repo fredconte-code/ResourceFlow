@@ -1050,6 +1050,9 @@ export const PlannerView: React.FC = () => {
       const allocationsData = await projectAllocationsApi.getAll();
       setAllocations(allocationsData);
       
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('projectAllocationsUpdate'));
+      
     } catch (error) {
       console.error('Error deleting allocation:', error);
       toast({
