@@ -729,44 +729,38 @@ export const Dashboard: React.FC = () => {
 
       {/* Capacity Progress Bar */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Capacity Allocation Overview</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-between text-sm">
-            <span>Allocated: {stats.totalAllocatedHours}h</span>
-            <span>Available: {stats.totalAvailableHours}h</span>
-            <span>Total: {stats.totalCapacity}h</span>
+        <CardContent>
+          <div className="text-2xl font-bold mb-2">
+            {Math.round((stats.totalAllocatedHours / stats.totalCapacity) * 100)}% Utilized
           </div>
-          <div className="relative">
+          <div className="relative mb-2">
             <Progress 
               value={(stats.totalAllocatedHours / stats.totalCapacity) * 100} 
-              className="h-3"
+              className="h-2"
             />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs font-medium text-white drop-shadow-sm">
-                {Math.round((stats.totalAllocatedHours / stats.totalCapacity) * 100)}% Utilized
-              </span>
-            </div>
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Allocated Hours</span>
-            <span>Available Hours</span>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            {stats.totalAllocatedHours}h allocated, {stats.totalAvailableHours}h available
+          </p>
         </CardContent>
       </Card>
 
       {/* Charts Section */}
-      <Tabs defaultValue="overview" className="space-y-3">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="utilization">Utilization</TabsTrigger>
-          <TabsTrigger value="capacity">Capacity</TabsTrigger>
-          <TabsTrigger value="employees">Employee Details</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardContent className="pt-6">
+          <Tabs defaultValue="overview" className="space-y-3">
+            <TabsList className="grid w-full grid-cols-7">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="resources">Resources</TabsTrigger>
+              <TabsTrigger value="projects">Projects</TabsTrigger>
+              <TabsTrigger value="utilization">Utilization</TabsTrigger>
+              <TabsTrigger value="capacity">Capacity</TabsTrigger>
+              <TabsTrigger value="employees">Employee Details</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
@@ -1192,6 +1186,8 @@ export const Dashboard: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }; 
