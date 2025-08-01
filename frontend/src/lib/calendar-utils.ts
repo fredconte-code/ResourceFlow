@@ -34,14 +34,16 @@ export const getDailyAllocationColor = (percentage: number) => {
   if (percentage < 60) return 'bg-gradient-to-br from-allocation-low/60 to-allocation-low/60';
   if (percentage >= 60 && percentage <= 90) return 'bg-gradient-to-br from-allocation-optimal/60 to-allocation-optimal/60';
   if (percentage > 90 && percentage <= 100) return 'bg-gradient-to-br from-allocation-high/60 to-allocation-high/60';
-  return 'bg-gradient-to-br from-allocation-over/60 to-allocation-over/60'; // Red for overallocated days (>100%)
+  if (percentage > 100) return 'bg-gradient-to-br from-allocation-over/60 to-allocation-over/60'; // Red for overallocated days (>100%)
+  return 'bg-gradient-to-br from-allocation-high/60 to-allocation-high/60'; // Default for exactly 100%
 };
 
 export const getAllocationColor = (percentage: number) => {
   if (percentage < 60) return 'bg-allocation-low';
   if (percentage >= 60 && percentage <= 90) return 'bg-allocation-optimal';
   if (percentage > 90 && percentage <= 100) return 'bg-allocation-high';
-  return 'bg-allocation-over'; // Red for overallocation (>100%)
+  if (percentage > 100) return 'bg-allocation-over'; // Red for overallocation (>100%)
+  return 'bg-allocation-high'; // Default for exactly 100%
 };
 
 // Data filtering functions
