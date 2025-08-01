@@ -729,7 +729,7 @@ export const Dashboard: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalVacations}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.totalHolidays} holidays, {stats.upcomingVacations} upcoming
+              {stats.totalHolidays} holidays, {stats.upcomingVacations} upcoming vacations
             </p>
           </CardContent>
         </Card>
