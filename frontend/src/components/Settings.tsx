@@ -430,617 +430,196 @@ export const Settings = () => {
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="variables">
+            <AccordionItem value="calculations">
               <AccordionTrigger className="text-left">
                 <div className="flex items-center gap-2">
                   <Code className="h-4 w-4" />
-                  <span>Application Variables</span>
+                  <span>How Calculations Work</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-xs overflow-x-auto">
-                  <div className="space-y-6">
-                    {/* Header */}
-                    <div className="border-b border-gray-700 pb-2">
-                      <h3 className="text-blue-400 font-semibold"># ResourceFlow - Application Variables</h3>
-                      <p className="text-gray-400 text-xs mt-1">Documentation of all application variables and their scope</p>
+                <div className="space-y-6">
+                  {/* Employee Capacity Calculations */}
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                    <h4 className="text-blue-800 dark:text-blue-200 font-semibold mb-3">👤 Employee Capacity Calculations</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                      How the app calculates each employee's available working hours
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Monthly Hours</span>
+                        <span className="text-blue-600 dark:text-blue-400">= Total Days in Month × Daily Hours</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Daily Hours</span>
+                        <span className="text-blue-600 dark:text-blue-400">= Weekly Hours ÷ 5 (Canada: 7.5h/day, Brazil: 8.8h/day)</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Available Hours</span>
+                        <span className="text-blue-600 dark:text-blue-400">= Monthly Hours - Buffer - Holidays - Vacations - Weekends</span>
+                      </div>
                     </div>
+                  </div>
 
-                                         {/* Global Variables Section */}
-                     <div>
-                       <h4 className="text-green-400 font-semibold mb-3">## 🌍 Global Variables</h4>
-                       <p className="text-gray-400 text-xs mb-3">Variables that affect the entire application</p>
-                       
-                       <div className="space-y-2">
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">buffer</span> = <span className="text-orange-400">number</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Buffer time percentage (0-100%) for unexpected tasks</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">canadaHours</span> = <span className="text-orange-400">number</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Canadian employees (default: 37.5)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">brazilHours</span> = <span className="text-orange-400">number</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Maximum working hours per week for Brazilian employees (default: 44)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">theme</span> = <span className="text-orange-400">'light' | 'dark' | 'system'</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Application theme setting</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">holidays</span> = <span className="text-orange-400">ApiHoliday[]</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global holiday data from HolidayContext (id, name, date, country)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-green-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">refreshHolidays</span> = <span className="text-orange-400">() =&gt; Promise&lt;void&gt;</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-green-600">Global</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Function to refresh global holiday data from API</p>
-                         </div>
-                       </div>
-                     </div>
-                     {/* Inserted: Monthly Hours Calculation Explanation */}
-                     <div className="bg-gray-800 rounded p-3 border-l-4 border-yellow-500 my-4">
-                       <h4 className="text-yellow-300 font-semibold mb-2">How Total Monthly Hours Are Calculated</h4>
-                                               <p className="text-gray-200 text-xs mb-2">
-                          <strong>Total monthly hours</strong> for each employee are calculated as:
-                        </p>
-                        <ul className="list-disc pl-6 text-gray-200 text-xs mb-2">
-                          <li><strong>Daily Hours</strong>: Weekly hours ÷ 5 (Canada: 7.5h/day, Brazil: 8.8h/day)</li>
-                          <li><strong>Total Days in Month</strong>: Actual calendar days in the month (28-31 days)</li>
-                          <li><strong>Formula</strong>: <code>monthlyHours = totalDaysInMonth × dailyHours</code></li>
-                        </ul>
-                        <p className="text-gray-200 text-xs mb-2">
-                          For example, a Canadian employee in a 30-day month: <code>30 × 7.5 = 225 hours/month</code>.<br/>
-                          This represents total calendar hours (including weekends), which are then deducted separately.
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          This approach provides accurate monthly capacity by accounting for the actual number of days in each month.
-                        </p>
-                     </div>
-
-                                         {/* Local Variables Section */}
-                     <div>
-                       <h4 className="text-purple-400 font-semibold mb-3">## 🏠 Local Variables</h4>
-                       <p className="text-gray-400 text-xs mb-3">Component-specific state variables</p>
-                       
-                       <div className="space-y-2">
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">currentDate</span> = <span className="text-orange-400">Date</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Currently selected date in calendar view</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">heatmapMode</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Heatmap visualization mode state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragItem</span> = <span className="text-orange-400">Project | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Currently dragged project item</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">resizingAllocation</span> = <span className="text-orange-400">Allocation | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being resized in calendar</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editDialogOpen</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Edit allocation dialog visibility state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">serverStatus</span> = <span className="text-orange-400">'online' | 'offline' | 'checking'</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Backend server connection status</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">loading</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Component loading state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">error</span> = <span className="text-orange-400">string | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Error state for API operations</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">saving</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Save operation in progress state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">showImportDialog</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Import dialog visibility state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">showClearDataDialog</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Clear data confirmation dialog state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">selectedFile</span> = <span className="text-orange-400">File | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Selected file for import operation</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">lastChecked</span> = <span className="text-orange-400">Date | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Last server status check timestamp</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragOverCell</span> = <span className="text-orange-400">{'{employeeId: string, date: Date}'} | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Calendar cell being dragged over</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">draggingAllocation</span> = <span className="text-orange-400">Allocation | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being dragged in calendar</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editingAllocation</span> = <span className="text-orange-400">ProjectAllocation | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being edited in dialog</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editStartDate</span> = <span className="text-orange-400">Date | undefined</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Start date in edit allocation dialog</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">editEndDate</span> = <span className="text-orange-400">Date | undefined</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// End date in edit allocation dialog</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">startDatePickerOpen</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Start date picker visibility state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">endDatePickerOpen</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// End date picker visibility state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">deleteDialogOpen</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Delete confirmation dialog state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">deletingAllocation</span> = <span className="text-orange-400">ProjectAllocation | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being deleted</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">overallocationDialogOpen</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Overallocation warning dialog state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">overallocationData</span> = <span className="text-orange-400">OverallocationData | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Overallocation warning data</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragStartPosition</span> = <span className="text-orange-400">{'{x: number, y: number}'} | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Mouse position when drag started</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">doubleClickTimeout</span> = <span className="text-orange-400">NodeJS.Timeout | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Timeout for double-click detection</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">isDoubleClicking</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Double-click detection state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">dragOverProjectsBox</span> = <span className="text-orange-400">boolean</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Projects box drag over state</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-purple-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">draggingAllocationFromTimeline</span> = <span className="text-orange-400">ProjectAllocation | null</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-purple-500 text-purple-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Allocation being dragged from timeline</p>
-                         </div>
-                       </div>
-                     </div>
-
-                                         {/* Context Variables Section */}
-                     <div>
-                       <h4 className="text-blue-400 font-semibold mb-3">## 🔄 Context Variables</h4>
-                       <p className="text-gray-400 text-xs mb-3">React Context providers and state management</p>
-                       
-                       <div className="space-y-2">
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">SettingsContext</span> = <span className="text-orange-400">createContext</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-blue-600">Context</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global settings context (buffer, working hours, theme)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">HolidayContext</span> = <span className="text-orange-400">createContext</span>
-                               <Badge variant="secondary" className="ml-2 text-xs bg-blue-600">Context</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global holiday context (holidays array, refreshHolidays function)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">useSettings</span> = <span className="text-orange-400">() =&gt; SettingsContextType</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-blue-500 text-blue-400">Hook</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Hook to access settings context</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-blue-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">useHolidays</span> = <span className="text-orange-400">() =&gt; HolidayContextType</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-blue-500 text-blue-400">Hook</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Hook to access holiday context</p>
-                         </div>
-                       </div>
-                     </div>
-
-                                         {/* Data Variables Section */}
-                     <div>
-                       <h4 className="text-cyan-400 font-semibold mb-3">## 📊 Data Variables</h4>
-                       <p className="text-gray-400 text-xs mb-3">Application data arrays and objects</p>
-                       
-                       <div className="space-y-2">
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">employees</span> = <span className="text-orange-400">Employee[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of team member data</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">projects</span> = <span className="text-orange-400">Project[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project data</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">allocations</span> = <span className="text-orange-400">ProjectAllocation[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project allocation data</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">holidays</span> = <span className="text-orange-400">HolidayItem[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of holiday data (TimeOffManagement component)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">vacations</span> = <span className="text-orange-400">Vacation[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of vacation data</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">members</span> = <span className="text-orange-400">TeamMember[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of team member data (TeamManagement)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">projectAllocations</span> = <span className="text-orange-400">ProjectAllocation[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project allocations (EmployeeCard)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">employeeProjectNames</span> = <span className="text-orange-400">string[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of project names for employee</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">stats</span> = <span className="text-orange-400">TeamStats</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Team statistics object</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">weeklyData</span> = <span className="text-orange-400">WeeklyData[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Weekly capacity data for charts</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">monthlyTrends</span> = <span className="text-orange-400">MonthlyTrend[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Monthly trend data for charts</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">performanceMetrics</span> = <span className="text-orange-400">PerformanceMetric[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Team performance metrics array</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">globalHolidays</span> = <span className="text-orange-400">ApiHoliday[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Global holidays from HolidayContext (TimeOffManagement)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">vacations</span> = <span className="text-orange-400">VacationItem[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of vacation data (TimeOffManagement component)</p>
-                         </div>
-                         
-                         <div className="bg-gray-800 rounded p-2 border-l-4 border-cyan-500">
-                           <div className="flex items-start justify-between">
-                             <div>
-                               <span className="text-yellow-400">const</span> <span className="text-blue-400">employees</span> = <span className="text-orange-400">Employee[]</span>
-                               <Badge variant="outline" className="ml-2 text-xs border-cyan-500 text-cyan-400">Local</Badge>
-                             </div>
-                           </div>
-                           <p className="text-gray-300 text-xs mt-1 ml-4">// Array of employee data (TimeOffManagement component)</p>
-                         </div>
-                       </div>
-                     </div>
-
-                    {/* Footer */}
-                    <div className="border-t border-gray-700 pt-2 mt-6">
-                      <p className="text-gray-400 text-xs">Last updated: {new Date().toLocaleDateString()} - Holiday calculation fixes & global state management</p>
+                  {/* Buffer Time System */}
+                  <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                    <h4 className="text-green-800 dark:text-green-200 font-semibold mb-3">🛡️ Buffer Time System</h4>
+                    <p className="text-sm text-green-700 dark:text-green-300 mb-3">
+                      How the buffer percentage reserves time for unexpected tasks
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-green-100 dark:bg-green-900 px-2 py-1 rounded">Buffer Hours</span>
+                        <span className="text-green-600 dark:text-green-400">= (Total Monthly Hours × Buffer %) ÷ 100</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-green-100 dark:bg-green-900 px-2 py-1 rounded">Purpose</span>
+                        <span className="text-green-600 dark:text-green-400">Reserves time for meetings, emergencies, and unplanned work</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-green-100 dark:bg-green-900 px-2 py-1 rounded">Typical Range</span>
+                        <span className="text-green-600 dark:text-green-400">15-25% (configurable in settings above)</span>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Holiday and Vacation Deductions */}
+                  <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                    <h4 className="text-purple-800 dark:text-purple-200 font-semibold mb-3">🏖️ Holiday and Vacation Deductions</h4>
+                    <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
+                      How time off affects capacity calculations
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">Holidays</span>
+                        <span className="text-purple-600 dark:text-purple-400">Only count if they fall on working days (not weekends)</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">Vacations</span>
+                        <span className="text-purple-600 dark:text-purple-400">Count only working days within the vacation period</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">Country-Specific</span>
+                        <span className="text-purple-600 dark:text-purple-400">Holidays can apply to Canada, Brazil, or both countries</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Allocation Percentage Calculation */}
+                  <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+                    <h4 className="text-orange-800 dark:text-orange-200 font-semibold mb-3">📊 Allocation Percentage Calculation</h4>
+                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-3">
+                      How the app determines if an employee is overallocated
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">Formula</span>
+                        <span className="text-orange-600 dark:text-orange-400">= (Allocated Hours ÷ Available Hours) × 100</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">Available Hours</span>
+                        <span className="text-orange-600 dark:text-orange-400">Total capacity minus buffer, holidays, vacations, and weekends</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">Overallocation</span>
+                        <span className="text-orange-600 dark:text-orange-400">Percentage can exceed 100% to show overbooking</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Project Allocation Tracking */}
+                  <div className="bg-cyan-50 dark:bg-cyan-950/20 rounded-lg p-4 border border-cyan-200 dark:border-cyan-800">
+                    <h4 className="text-cyan-800 dark:text-cyan-200 font-semibold mb-3">📋 Project Allocation Tracking</h4>
+                    <p className="text-sm text-cyan-700 dark:text-cyan-300 mb-3">
+                      How project hours are calculated and tracked
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-cyan-100 dark:bg-cyan-900 px-2 py-1 rounded">Daily Allocations</span>
+                        <span className="text-cyan-600 dark:text-cyan-400">Hours assigned per working day</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-cyan-100 dark:bg-cyan-900 px-2 py-1 rounded">Date Range</span>
+                        <span className="text-cyan-600 dark:text-cyan-400">Allocations span from start date to end date</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-cyan-100 dark:bg-cyan-900 px-2 py-1 rounded">Working Days Only</span>
+                        <span className="text-cyan-600 dark:text-cyan-400">Excludes weekends and holidays automatically</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dashboard Statistics */}
+                  <div className="bg-indigo-50 dark:bg-indigo-950/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
+                    <h4 className="text-indigo-800 dark:text-indigo-200 font-semibold mb-3">📈 Dashboard Statistics</h4>
+                    <p className="text-sm text-indigo-700 dark:text-indigo-300 mb-3">
+                      How team-wide metrics are calculated
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded">Total Capacity</span>
+                        <span className="text-indigo-600 dark:text-indigo-400">Sum of all employees' available hours</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded">Utilization Rate</span>
+                        <span className="text-indigo-600 dark:text-indigo-400">= (Total Allocated Hours ÷ Total Available Hours) × 100</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded">Overallocation Count</span>
+                        <span className="text-indigo-600 dark:text-indigo-400">Number of employees exceeding 100% allocation</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Calendar View Logic */}
+                  <div className="bg-pink-50 dark:bg-pink-950/20 rounded-lg p-4 border border-pink-200 dark:border-pink-800">
+                    <h4 className="text-pink-800 dark:text-pink-200 font-semibold mb-3">📅 Calendar View Logic</h4>
+                    <p className="text-sm text-pink-700 dark:text-pink-300 mb-3">
+                      How the planner displays allocation information
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-pink-100 dark:bg-pink-900 px-2 py-1 rounded">Cell Colors</span>
+                        <span className="text-pink-600 dark:text-pink-400">Based on allocation percentage (green/yellow/red)</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-pink-100 dark:bg-pink-900 px-2 py-1 rounded">Weekend Handling</span>
+                        <span className="text-pink-600 dark:text-pink-400">Special indicators for weekend allocations</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-pink-100 dark:bg-pink-900 px-2 py-1 rounded">Drag & Drop</span>
+                        <span className="text-pink-600 dark:text-pink-400">Real-time recalculation when moving allocations</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Data Persistence */}
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800">
+                    <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-3">💾 Data Persistence</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                      How settings and data are stored
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Server Storage</span>
+                        <span className="text-gray-600 dark:text-gray-400">All data stored on backend database</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Real-time Sync</span>
+                        <span className="text-gray-600 dark:text-gray-400">Changes immediately saved to server</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Export/Import</span>
+                        <span className="text-gray-600 dark:text-gray-400">Excel format for backup and analysis</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-6">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                      These calculations ensure accurate resource planning and capacity management across your team.
+                    </p>
                   </div>
                 </div>
               </AccordionContent>
