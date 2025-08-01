@@ -1,0 +1,1071 @@
+{
+  "metadata": {
+    "created": "2025-08-01T19:51:56.709Z",
+    "version": "1.0.0",
+    "description": "ResourceFlow Database Backup"
+  },
+  "data": {
+    "teamMembers": [
+      {
+        "id": 1,
+        "name": "Frederico Conte",
+        "role": "Project Manager",
+        "country": "Brazil",
+        "allocated_hours": 40
+      },
+      {
+        "id": 2,
+        "name": "John Smith",
+        "role": "Senior Developer",
+        "country": "Canada",
+        "allocated_hours": 37.5
+      },
+      {
+        "id": 3,
+        "name": "Maria Silva",
+        "role": "Frontend Developer",
+        "country": "Brazil",
+        "allocated_hours": 44
+      },
+      {
+        "id": 4,
+        "name": "David Johnson",
+        "role": "Backend Developer",
+        "country": "Canada",
+        "allocated_hours": 37.5
+      },
+      {
+        "id": 5,
+        "name": "Ana Costa",
+        "role": "UI/UX Designer",
+        "country": "Brazil",
+        "allocated_hours": 44
+      }
+    ],
+    "projects": [
+      {
+        "id": 1,
+        "name": "ResourceFlow Platform",
+        "start_date": "2024-12-01",
+        "end_date": "2025-06-30",
+        "color": "#3b82f6",
+        "allocated_hours": 0,
+        "status": "active"
+      },
+      {
+        "id": 2,
+        "name": "Mobile App Development",
+        "start_date": "2025-01-15",
+        "end_date": "2025-08-15",
+        "color": "#10b981",
+        "allocated_hours": 0,
+        "status": "active"
+      },
+      {
+        "id": 3,
+        "name": "API Integration",
+        "start_date": "2025-01-31",
+        "end_date": "2025-05-30",
+        "color": "#f59e0b",
+        "allocated_hours": 0,
+        "status": "on_hold"
+      },
+      {
+        "id": 4,
+        "name": "Database Optimization",
+        "start_date": "2025-03-01",
+        "end_date": "2025-04-30",
+        "color": "#ef4444",
+        "allocated_hours": 0,
+        "status": "active"
+      }
+    ],
+    "holidays": [
+      {
+        "id": 1,
+        "name": "Canada Day",
+        "date": "2025-07-01",
+        "country": "Canada"
+      },
+      {
+        "id": 2,
+        "name": "Christmas Day",
+        "date": "2025-12-25",
+        "country": "Canada"
+      },
+      {
+        "id": 3,
+        "name": "Boxing Day",
+        "date": "2025-12-26",
+        "country": "Canada"
+      },
+      {
+        "id": 4,
+        "name": "New Year's Day",
+        "date": "2026-01-01",
+        "country": "Canada"
+      },
+      {
+        "id": 5,
+        "name": "Good Friday",
+        "date": "2026-04-03",
+        "country": "Canada"
+      },
+      {
+        "id": 6,
+        "name": "Easter Monday",
+        "date": "2026-04-06",
+        "country": "Canada"
+      },
+      {
+        "id": 7,
+        "name": "Victoria Day",
+        "date": "2026-05-18",
+        "country": "Canada"
+      },
+      {
+        "id": 8,
+        "name": "Canada Day",
+        "date": "2026-07-01",
+        "country": "Canada"
+      },
+      {
+        "id": 9,
+        "name": "Labour Day",
+        "date": "2026-09-07",
+        "country": "Canada"
+      },
+      {
+        "id": 10,
+        "name": "Thanksgiving Day",
+        "date": "2026-10-12",
+        "country": "Canada"
+      },
+      {
+        "id": 11,
+        "name": "Remembrance Day",
+        "date": "2026-11-11",
+        "country": "Canada"
+      },
+      {
+        "id": 12,
+        "name": "Christmas Day",
+        "date": "2026-12-25",
+        "country": "Canada"
+      },
+      {
+        "id": 13,
+        "name": "Boxing Day",
+        "date": "2026-12-26",
+        "country": "Canada"
+      },
+      {
+        "id": 14,
+        "name": "New Year's Day",
+        "date": "2027-01-01",
+        "country": "Canada"
+      },
+      {
+        "id": 15,
+        "name": "Good Friday",
+        "date": "2027-03-26",
+        "country": "Canada"
+      },
+      {
+        "id": 16,
+        "name": "Easter Monday",
+        "date": "2027-03-29",
+        "country": "Canada"
+      },
+      {
+        "id": 17,
+        "name": "Victoria Day",
+        "date": "2027-05-24",
+        "country": "Canada"
+      },
+      {
+        "id": 18,
+        "name": "Canada Day",
+        "date": "2027-07-01",
+        "country": "Canada"
+      },
+      {
+        "id": 19,
+        "name": "Labour Day",
+        "date": "2027-09-06",
+        "country": "Canada"
+      },
+      {
+        "id": 20,
+        "name": "Thanksgiving Day",
+        "date": "2027-10-11",
+        "country": "Canada"
+      },
+      {
+        "id": 21,
+        "name": "Remembrance Day",
+        "date": "2027-11-11",
+        "country": "Canada"
+      },
+      {
+        "id": 22,
+        "name": "Christmas Day",
+        "date": "2027-12-25",
+        "country": "Canada"
+      },
+      {
+        "id": 23,
+        "name": "Boxing Day",
+        "date": "2027-12-26",
+        "country": "Canada"
+      },
+      {
+        "id": 24,
+        "name": "New Year's Day",
+        "date": "2028-01-01",
+        "country": "Canada"
+      },
+      {
+        "id": 25,
+        "name": "Good Friday",
+        "date": "2028-04-14",
+        "country": "Canada"
+      },
+      {
+        "id": 26,
+        "name": "Easter Monday",
+        "date": "2028-04-17",
+        "country": "Canada"
+      },
+      {
+        "id": 27,
+        "name": "Victoria Day",
+        "date": "2028-05-22",
+        "country": "Canada"
+      },
+      {
+        "id": 28,
+        "name": "Canada Day",
+        "date": "2028-07-01",
+        "country": "Canada"
+      },
+      {
+        "id": 29,
+        "name": "Labour Day",
+        "date": "2028-09-04",
+        "country": "Canada"
+      },
+      {
+        "id": 30,
+        "name": "Thanksgiving Day",
+        "date": "2028-10-09",
+        "country": "Canada"
+      },
+      {
+        "id": 31,
+        "name": "Remembrance Day",
+        "date": "2028-11-11",
+        "country": "Canada"
+      },
+      {
+        "id": 32,
+        "name": "Christmas Day",
+        "date": "2028-12-25",
+        "country": "Canada"
+      },
+      {
+        "id": 33,
+        "name": "Boxing Day",
+        "date": "2028-12-26",
+        "country": "Canada"
+      },
+      {
+        "id": 34,
+        "name": "New Year's Day",
+        "date": "2029-01-01",
+        "country": "Canada"
+      },
+      {
+        "id": 35,
+        "name": "Good Friday",
+        "date": "2029-03-30",
+        "country": "Canada"
+      },
+      {
+        "id": 36,
+        "name": "Easter Monday",
+        "date": "2029-04-02",
+        "country": "Canada"
+      },
+      {
+        "id": 37,
+        "name": "Victoria Day",
+        "date": "2029-05-21",
+        "country": "Canada"
+      },
+      {
+        "id": 38,
+        "name": "Canada Day",
+        "date": "2029-07-01",
+        "country": "Canada"
+      },
+      {
+        "id": 39,
+        "name": "Labour Day",
+        "date": "2029-09-03",
+        "country": "Canada"
+      },
+      {
+        "id": 40,
+        "name": "Thanksgiving Day",
+        "date": "2029-10-08",
+        "country": "Canada"
+      },
+      {
+        "id": 41,
+        "name": "Remembrance Day",
+        "date": "2029-11-11",
+        "country": "Canada"
+      },
+      {
+        "id": 42,
+        "name": "Christmas Day",
+        "date": "2029-12-25",
+        "country": "Canada"
+      },
+      {
+        "id": 43,
+        "name": "Boxing Day",
+        "date": "2029-12-26",
+        "country": "Canada"
+      },
+      {
+        "id": 44,
+        "name": "Good Friday",
+        "date": "2030-04-19",
+        "country": "Canada"
+      },
+      {
+        "id": 45,
+        "name": "New Year's Day",
+        "date": "2030-01-01",
+        "country": "Canada"
+      },
+      {
+        "id": 46,
+        "name": "Easter Monday",
+        "date": "2030-04-22",
+        "country": "Canada"
+      },
+      {
+        "id": 47,
+        "name": "Victoria Day",
+        "date": "2030-05-20",
+        "country": "Canada"
+      },
+      {
+        "id": 48,
+        "name": "Canada Day",
+        "date": "2030-07-01",
+        "country": "Canada"
+      },
+      {
+        "id": 49,
+        "name": "Labour Day",
+        "date": "2030-09-02",
+        "country": "Canada"
+      },
+      {
+        "id": 50,
+        "name": "Thanksgiving Day",
+        "date": "2030-10-14",
+        "country": "Canada"
+      },
+      {
+        "id": 51,
+        "name": "Remembrance Day",
+        "date": "2030-11-11",
+        "country": "Canada"
+      },
+      {
+        "id": 52,
+        "name": "Christmas Day",
+        "date": "2030-12-25",
+        "country": "Canada"
+      },
+      {
+        "id": 53,
+        "name": "Boxing Day",
+        "date": "2030-12-26",
+        "country": "Canada"
+      },
+      {
+        "id": 54,
+        "name": "Saint-Jean-Baptiste Day",
+        "date": "2025-06-24",
+        "country": "Canada"
+      },
+      {
+        "id": 55,
+        "name": "Saint-Jean-Baptiste Day",
+        "date": "2026-06-24",
+        "country": "Canada"
+      },
+      {
+        "id": 56,
+        "name": "Saint-Jean-Baptiste Day",
+        "date": "2027-06-24",
+        "country": "Canada"
+      },
+      {
+        "id": 57,
+        "name": "Saint-Jean-Baptiste Day",
+        "date": "2028-06-24",
+        "country": "Canada"
+      },
+      {
+        "id": 58,
+        "name": "Saint-Jean-Baptiste Day",
+        "date": "2029-06-24",
+        "country": "Canada"
+      },
+      {
+        "id": 59,
+        "name": "Saint-Jean-Baptiste Day",
+        "date": "2030-06-24",
+        "country": "Canada"
+      },
+      {
+        "id": 60,
+        "name": "Montreal Foundation Day",
+        "date": "2025-05-17",
+        "country": "Canada"
+      },
+      {
+        "id": 61,
+        "name": "Montreal Foundation Day",
+        "date": "2026-05-17",
+        "country": "Canada"
+      },
+      {
+        "id": 62,
+        "name": "Montreal Foundation Day",
+        "date": "2027-05-17",
+        "country": "Canada"
+      },
+      {
+        "id": 63,
+        "name": "Montreal Foundation Day",
+        "date": "2028-05-17",
+        "country": "Canada"
+      },
+      {
+        "id": 64,
+        "name": "Montreal Foundation Day",
+        "date": "2029-05-17",
+        "country": "Canada"
+      },
+      {
+        "id": 65,
+        "name": "Montreal Foundation Day",
+        "date": "2030-05-17",
+        "country": "Canada"
+      },
+      {
+        "id": 66,
+        "name": "New Year's Day",
+        "date": "2025-01-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 67,
+        "name": "Tiradentes Day",
+        "date": "2025-04-21",
+        "country": "Brazil"
+      },
+      {
+        "id": 68,
+        "name": "Labour Day",
+        "date": "2025-05-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 69,
+        "name": "Independence Day",
+        "date": "2025-09-07",
+        "country": "Brazil"
+      },
+      {
+        "id": 70,
+        "name": "Our Lady of Aparecida",
+        "date": "2025-10-12",
+        "country": "Brazil"
+      },
+      {
+        "id": 71,
+        "name": "All Souls' Day",
+        "date": "2025-11-02",
+        "country": "Brazil"
+      },
+      {
+        "id": 72,
+        "name": "Proclamation of the Republic",
+        "date": "2025-11-15",
+        "country": "Brazil"
+      },
+      {
+        "id": 73,
+        "name": "Christmas Day",
+        "date": "2025-12-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 74,
+        "name": "New Year's Day",
+        "date": "2026-01-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 75,
+        "name": "Tiradentes Day",
+        "date": "2026-04-21",
+        "country": "Brazil"
+      },
+      {
+        "id": 76,
+        "name": "Labour Day",
+        "date": "2026-05-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 77,
+        "name": "Independence Day",
+        "date": "2026-09-07",
+        "country": "Brazil"
+      },
+      {
+        "id": 78,
+        "name": "Our Lady of Aparecida",
+        "date": "2026-10-12",
+        "country": "Brazil"
+      },
+      {
+        "id": 79,
+        "name": "All Souls' Day",
+        "date": "2026-11-02",
+        "country": "Brazil"
+      },
+      {
+        "id": 80,
+        "name": "Proclamation of the Republic",
+        "date": "2026-11-15",
+        "country": "Brazil"
+      },
+      {
+        "id": 81,
+        "name": "Christmas Day",
+        "date": "2026-12-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 82,
+        "name": "New Year's Day",
+        "date": "2027-01-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 83,
+        "name": "Tiradentes Day",
+        "date": "2027-04-21",
+        "country": "Brazil"
+      },
+      {
+        "id": 84,
+        "name": "Labour Day",
+        "date": "2027-05-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 85,
+        "name": "Independence Day",
+        "date": "2027-09-07",
+        "country": "Brazil"
+      },
+      {
+        "id": 86,
+        "name": "Our Lady of Aparecida",
+        "date": "2027-10-12",
+        "country": "Brazil"
+      },
+      {
+        "id": 87,
+        "name": "All Souls' Day",
+        "date": "2027-11-02",
+        "country": "Brazil"
+      },
+      {
+        "id": 88,
+        "name": "Proclamation of the Republic",
+        "date": "2027-11-15",
+        "country": "Brazil"
+      },
+      {
+        "id": 89,
+        "name": "Christmas Day",
+        "date": "2027-12-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 90,
+        "name": "New Year's Day",
+        "date": "2028-01-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 91,
+        "name": "Tiradentes Day",
+        "date": "2028-04-21",
+        "country": "Brazil"
+      },
+      {
+        "id": 92,
+        "name": "Labour Day",
+        "date": "2028-05-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 93,
+        "name": "Independence Day",
+        "date": "2028-09-07",
+        "country": "Brazil"
+      },
+      {
+        "id": 94,
+        "name": "Our Lady of Aparecida",
+        "date": "2028-10-12",
+        "country": "Brazil"
+      },
+      {
+        "id": 95,
+        "name": "All Souls' Day",
+        "date": "2028-11-02",
+        "country": "Brazil"
+      },
+      {
+        "id": 96,
+        "name": "Proclamation of the Republic",
+        "date": "2028-11-15",
+        "country": "Brazil"
+      },
+      {
+        "id": 97,
+        "name": "Christmas Day",
+        "date": "2028-12-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 98,
+        "name": "New Year's Day",
+        "date": "2029-01-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 99,
+        "name": "Tiradentes Day",
+        "date": "2029-04-21",
+        "country": "Brazil"
+      },
+      {
+        "id": 100,
+        "name": "Labour Day",
+        "date": "2029-05-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 101,
+        "name": "Independence Day",
+        "date": "2029-09-07",
+        "country": "Brazil"
+      },
+      {
+        "id": 102,
+        "name": "Our Lady of Aparecida",
+        "date": "2029-10-12",
+        "country": "Brazil"
+      },
+      {
+        "id": 103,
+        "name": "All Souls' Day",
+        "date": "2029-11-02",
+        "country": "Brazil"
+      },
+      {
+        "id": 104,
+        "name": "Proclamation of the Republic",
+        "date": "2029-11-15",
+        "country": "Brazil"
+      },
+      {
+        "id": 105,
+        "name": "Christmas Day",
+        "date": "2029-12-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 106,
+        "name": "New Year's Day",
+        "date": "2030-01-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 107,
+        "name": "Tiradentes Day",
+        "date": "2030-04-21",
+        "country": "Brazil"
+      },
+      {
+        "id": 108,
+        "name": "Labour Day",
+        "date": "2030-05-01",
+        "country": "Brazil"
+      },
+      {
+        "id": 109,
+        "name": "Independence Day",
+        "date": "2030-09-07",
+        "country": "Brazil"
+      },
+      {
+        "id": 110,
+        "name": "Our Lady of Aparecida",
+        "date": "2030-10-12",
+        "country": "Brazil"
+      },
+      {
+        "id": 111,
+        "name": "All Souls' Day",
+        "date": "2030-11-02",
+        "country": "Brazil"
+      },
+      {
+        "id": 112,
+        "name": "Proclamation of the Republic",
+        "date": "2030-11-15",
+        "country": "Brazil"
+      },
+      {
+        "id": 113,
+        "name": "Christmas Day",
+        "date": "2030-12-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 114,
+        "name": "São Paulo Foundation Day",
+        "date": "2025-01-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 115,
+        "name": "São Paulo Foundation Day",
+        "date": "2026-01-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 116,
+        "name": "São Paulo Foundation Day",
+        "date": "2027-01-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 117,
+        "name": "São Paulo Foundation Day",
+        "date": "2028-01-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 118,
+        "name": "São Paulo Foundation Day",
+        "date": "2029-01-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 119,
+        "name": "São Paulo Foundation Day",
+        "date": "2030-01-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 120,
+        "name": "Campinas Foundation Day",
+        "date": "2025-07-14",
+        "country": "Brazil"
+      },
+      {
+        "id": 121,
+        "name": "Campinas Foundation Day",
+        "date": "2026-07-14",
+        "country": "Brazil"
+      },
+      {
+        "id": 122,
+        "name": "Campinas Foundation Day",
+        "date": "2027-07-14",
+        "country": "Brazil"
+      },
+      {
+        "id": 123,
+        "name": "Campinas Foundation Day",
+        "date": "2028-07-14",
+        "country": "Brazil"
+      },
+      {
+        "id": 124,
+        "name": "Campinas Foundation Day",
+        "date": "2029-07-14",
+        "country": "Brazil"
+      },
+      {
+        "id": 125,
+        "name": "Campinas Foundation Day",
+        "date": "2030-07-14",
+        "country": "Brazil"
+      },
+      {
+        "id": 126,
+        "name": "Carnival Monday",
+        "date": "2025-03-03",
+        "country": "Brazil"
+      },
+      {
+        "id": 127,
+        "name": "Carnival Tuesday",
+        "date": "2025-03-04",
+        "country": "Brazil"
+      },
+      {
+        "id": 128,
+        "name": "Carnival Monday",
+        "date": "2026-02-16",
+        "country": "Brazil"
+      },
+      {
+        "id": 129,
+        "name": "Carnival Tuesday",
+        "date": "2026-02-17",
+        "country": "Brazil"
+      },
+      {
+        "id": 130,
+        "name": "Carnival Monday",
+        "date": "2027-02-08",
+        "country": "Brazil"
+      },
+      {
+        "id": 131,
+        "name": "Carnival Tuesday",
+        "date": "2027-02-09",
+        "country": "Brazil"
+      },
+      {
+        "id": 132,
+        "name": "Carnival Monday",
+        "date": "2028-02-28",
+        "country": "Brazil"
+      },
+      {
+        "id": 133,
+        "name": "Carnival Tuesday",
+        "date": "2028-02-29",
+        "country": "Brazil"
+      },
+      {
+        "id": 134,
+        "name": "Carnival Monday",
+        "date": "2029-02-12",
+        "country": "Brazil"
+      },
+      {
+        "id": 135,
+        "name": "Carnival Tuesday",
+        "date": "2029-02-13",
+        "country": "Brazil"
+      },
+      {
+        "id": 136,
+        "name": "Carnival Monday",
+        "date": "2030-02-25",
+        "country": "Brazil"
+      },
+      {
+        "id": 137,
+        "name": "Carnival Tuesday",
+        "date": "2030-02-26",
+        "country": "Brazil"
+      },
+      {
+        "id": 138,
+        "name": "Good Friday",
+        "date": "2025-04-18",
+        "country": "Brazil"
+      },
+      {
+        "id": 139,
+        "name": "Good Friday",
+        "date": "2026-04-03",
+        "country": "Brazil"
+      },
+      {
+        "id": 140,
+        "name": "Good Friday",
+        "date": "2027-03-26",
+        "country": "Brazil"
+      },
+      {
+        "id": 141,
+        "name": "Good Friday",
+        "date": "2028-04-14",
+        "country": "Brazil"
+      },
+      {
+        "id": 142,
+        "name": "Good Friday",
+        "date": "2029-03-30",
+        "country": "Brazil"
+      },
+      {
+        "id": 143,
+        "name": "Good Friday",
+        "date": "2030-04-19",
+        "country": "Brazil"
+      },
+      {
+        "id": 144,
+        "name": "Corpus Christi",
+        "date": "2025-06-19",
+        "country": "Brazil"
+      },
+      {
+        "id": 145,
+        "name": "Corpus Christi",
+        "date": "2026-06-04",
+        "country": "Brazil"
+      },
+      {
+        "id": 146,
+        "name": "Corpus Christi",
+        "date": "2027-05-27",
+        "country": "Brazil"
+      },
+      {
+        "id": 147,
+        "name": "Corpus Christi",
+        "date": "2028-06-15",
+        "country": "Brazil"
+      },
+      {
+        "id": 148,
+        "name": "Corpus Christi",
+        "date": "2029-05-31",
+        "country": "Brazil"
+      },
+      {
+        "id": 149,
+        "name": "Corpus Christi",
+        "date": "2030-06-20",
+        "country": "Brazil"
+      },
+      {
+        "id": 150,
+        "name": "Thanksgiving Day",
+        "date": "2025-10-13",
+        "country": "Canada"
+      },
+      {
+        "id": 151,
+        "name": "Remembrance Day",
+        "date": "2025-11-11",
+        "country": "Canada"
+      },
+      {
+        "id": 152,
+        "name": "Labour Day",
+        "date": "2025-09-01",
+        "country": "Canada"
+      }
+    ],
+    "vacations": [],
+    "projectAllocations": [
+      {
+        "id": 1,
+        "employee_id": "1",
+        "project_id": "1",
+        "start_date": "2025-08-01",
+        "end_date": "2025-10-30",
+        "hours_per_day": 8,
+        "status": "active"
+      },
+      {
+        "id": 2,
+        "employee_id": "2",
+        "project_id": "2",
+        "start_date": "2025-08-08",
+        "end_date": "2025-11-06",
+        "hours_per_day": 8,
+        "status": "active"
+      },
+      {
+        "id": 3,
+        "employee_id": "3",
+        "project_id": "3",
+        "start_date": "2025-08-15",
+        "end_date": "2025-11-13",
+        "hours_per_day": 8,
+        "status": "active"
+      },
+      {
+        "id": 4,
+        "employee_id": "4",
+        "project_id": "4",
+        "start_date": "2025-08-22",
+        "end_date": "2025-11-20",
+        "hours_per_day": 8,
+        "status": "active"
+      },
+      {
+        "id": 5,
+        "employee_id": "5",
+        "project_id": "1",
+        "start_date": "2025-08-29",
+        "end_date": "2025-11-27",
+        "hours_per_day": 8,
+        "status": "active"
+      }
+    ],
+    "settings": [
+      {
+        "id": 10,
+        "key": "buffer",
+        "value": "0"
+      },
+      {
+        "id": 11,
+        "key": "canadaHours",
+        "value": "37.5"
+      },
+      {
+        "id": 12,
+        "key": "brazilHours",
+        "value": "44"
+      }
+    ]
+  },
+  "summary": {
+    "teamMembers": 5,
+    "projects": 4,
+    "holidays": 152,
+    "vacations": 0,
+    "projectAllocations": 5,
+    "settings": 3
+  }
+}

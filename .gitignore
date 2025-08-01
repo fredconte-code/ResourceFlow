@@ -34,6 +34,10 @@ build
 *.sqlite3
 *.db-journal
 
+# Allow database backups to be committed
+!database-backups/
+!database-backups/*.json
+
 # IDE and editor files
 .vscode/*
 !.vscode/extensions.json
